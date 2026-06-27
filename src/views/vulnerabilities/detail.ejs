@@ -1,0 +1,169 @@
+<%- include('../_header', { title: '취약점 상세', activeMenu: 'vuln' }) %>
+
+<div class="page-header">
+  <h1>
+    <a href="/vulnerabilities" class="back-link">← 취약점 관리</a>
+    <%= vuln.management_no %> - <%= vuln.title %>
+  </h1>
+  <div class="header-actions">
+    <a href="/remediation/<%= vuln.result_id %>" class="btn primary">조치 시작</a>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <!-- 기본 정보 -->
+  <div class="detail-section">
+    <h3>📋 기본 정보</h3>
+    <table class="kv-table">
+      <tr><th>관리번호</th><td class="mono"><%= vuln.management_no %></td></tr>
+      <tr><th>룰 ID</th><td class="mono"><%= vuln.rule_id %></td></tr>
+      <tr><th>서버</th><td><%= vuln.hostname %> (<%= vuln.asset_no %>)</td></tr>
+      <tr><th>업무/용도</th><td><%= vuln.service_name %></td></tr>
+      <tr><th>카테고리</th><td><%= vuln.category %></td></tr>
+      <tr><th>위험도</th><td><span class="sev sev-<%= vuln.severity %>"><%= vuln.severity %></span></td></tr>
+      <tr><th>발견일</th><td class="mono"><%= vuln.discovered_at %></td></tr>
+      <tr><th>신규 여부</th><td>
+        <% if (vuln.is_new) { %><span class="newflag newflag-new">신규</span><% } 
+           else { %><span class="newflag newflag-old">기존 (<%= vuln.days_old %>일 전)</span><% } %>
+      </td></tr>
+    </table>
+  </div>
+
+  <!-- 진단 결과 -->
+  <div class="detail-section">
+    <h3>🔍 진단 결과</h3>
+    <div class="vuln-result-block">
+      <div class="vr-status">
+        <span class="badge b-vuln">취약</span>
+        <span class="muted">평가: <%= vuln.eval_method === 'simple' ? 'SQL' : 'AI' %></span>
+      </div>
+      <div class="vr-reason">
+        <strong>사유:</strong> <%= vuln.reason %>
+      </div>
+      <div class="vr-evidence">
+        <strong>증거:</strong> <code><%= vuln.evidence %></code>
+      </div>
+    </div>
+
+    <% if (vuln.subs && vuln.subs.length) { %>
+      <h4>소항목 (<%= vuln.subs.length %>건)</h4>
+      <table class="data-table mini">
+        <thead><tr><th>식별자</th><th>라벨</th><th>판정</th><th>사유</th></tr></thead>
+        <tbody>
+          <% vuln.subs.forEach(s => { %>
+            <tr>
+              <td class="mono small"><%= s.sub_key %></td>
+              <td><%= s.sub_label %></td>
+              <td><span class="badge b-<%= s.status === '취약' ? 'vuln' : 'safe' %>"><%= s.status %></span></td>
+              <td class="small"><%= s.reason %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</div>
+
+<!-- 룰 정보 -->
+<div class="section-box">
+  <h3>📘 룰 정의</h3>
+  <div class="rule-info-grid">
+    <div>
+      <h4>설명</h4>
+      <p><%= vuln.description %></p>
+    </div>
+    <div>
+      <h4>확인 방법</h4>
+      <pre class="mono small"><%= vuln.check_method %></pre>
+    </div>
+    <div>
+      <h4>점검 기준</h4>
+      <pre class="mono small"><%= vuln.check_criteria %></pre>
+    </div>
+    <div>
+      <h4>조치 방법</h4>
+      <pre class="mono small"><%= vuln.recommend %></pre>
+    </div>
+  </div>
+</div>
+
+<!-- CVE 정보 (핵심) -->
+<div class="section-box">
+  <h3>🛡️ 관련 CVE 정보</h3>
+  <p class="muted small">이 취약점과 연관된 알려진 CVE 목록. NVD에서 자동 매핑 + AI 추론 + 룰 수동 등록 조합.</p>
+  
+  <% vuln.cves.forEach(c => { %>
+    <div class="cve-card cvss-<%= c.severity_class %>">
+      <div class="cve-header">
+        <span class="cve-id-large">
+          <a href="https://nvd.nist.gov/vuln/detail/<%= c.id %>" target="_blank"><%= c.id %></a>
+        </span>
+        <span class="cvss-badge cvss-<%= c.severity_class %>">
+          CVSS <%= c.cvss %> · <%= c.severity_label %>
+        </span>
+        <span class="cve-source">
+          <% if (c.source === 'rule') { %>📌 룰 수동 등록
+          <% } else if (c.source === 'nvd') { %>🔗 NVD 자동 매핑
+          <% } else if (c.source === 'ai') { %>🤖 AI 추론 (신뢰도 <%= c.confidence %>%)
+          <% } %>
+        </span>
+      </div>
+      
+      <div class="cve-title"><strong><%= c.title %></strong></div>
+      <div class="cve-desc"><%= c.description %></div>
+      
+      <div class="cve-meta-grid">
+        <div>
+          <strong>영향 받는 패키지:</strong>
+          <code><%= c.affected_package %></code>
+        </div>
+        <div>
+          <strong>현재 시스템 버전:</strong>
+          <code><%= c.detected_version %></code>
+          <% if (c.is_affected) { %>
+            <span class="b-vuln">⚠ 영향받음</span>
+          <% } else { %>
+            <span class="b-safe">✓ 패치됨</span>
+          <% } %>
+        </div>
+        <div>
+          <strong>공개일:</strong> <%= c.published_date %>
+        </div>
+        <div>
+          <strong>패치 정보:</strong>
+          <% if (c.patch_available) { %>
+            <a href="<%= c.patch_url %>" target="_blank">제공됨</a> (<%= c.patch_version %>)
+          <% } else { %>
+            <span class="muted">미제공</span>
+          <% } %>
+        </div>
+      </div>
+
+      <% if (c.attack_vector) { %>
+        <div class="cve-attack">
+          <strong>공격 벡터:</strong>
+          <span class="av-badge av-<%= c.attack_vector.toLowerCase() %>"><%= c.attack_vector %></span>
+          <span class="muted small">| 권한 필요: <%= c.privileges_required %> | 사용자 상호작용: <%= c.user_interaction %></span>
+        </div>
+      <% } %>
+
+      <% if (c.exploits && c.exploits.length) { %>
+        <div class="cve-exploit">
+          <strong>⚠ 공개된 익스플로잇:</strong>
+          <% c.exploits.forEach(e => { %>
+            <a href="<%= e.url %>" target="_blank" class="exploit-link"><%= e.source %></a>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  <% }); %>
+
+  <% if (!vuln.cves.length) { %>
+    <div class="empty-cves">
+      이 취약점은 매핑된 CVE가 없습니다. 
+      <button class="btn-sm">🤖 AI로 관련 CVE 찾기</button>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../_footer') %>

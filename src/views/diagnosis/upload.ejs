@@ -1,0 +1,124 @@
+<%- include('../_header', { title: 'Raw/Script 업로드', activeMenu: 'diagnosis' }) %>
+
+<div class="page-header">
+  <h1>Raw/Script 업로드 진단</h1>
+  <p class="muted small">
+    SecuMS Raw SQLite DB 또는 Script XML을 업로드합니다. Script XML은 판단 결과가 아니라 수집 증거(raw evidence)로만 사용하고,
+    AI 또는 LLM이 해당 출력 내용을 기반으로 판정합니다.
+  </p>
+  <div class="header-actions">
+    <a href="/diagnosis" class="btn">진단 관리</a>
+  </div>
+</div>
+
+<form id="uploadForm" class="form-container" enctype="multipart/form-data">
+  <div class="form-section">
+    <h3>1) 대상 서버 선택</h3>
+    <div class="form-row inline">
+      <label>서버 *</label>
+      <select name="server_id" required>
+        <option value="">-- 선택 --</option>
+        <% (servers || []).forEach(s => { %>
+          <option value="<%= s.server_id %>">
+            <%= s.name %> (<%= s.hostname %>)<% if (s.service_name) { %> · <%= s.service_name %><% } %>
+          </option>
+        <% }) %>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>2) 수집 파일</h3>
+    <div class="form-row inline">
+      <label>SecuMS Raw DB</label>
+      <input type="file" name="dbfile" accept=".db,.sqlite,.sqlite3">
+    </div>
+    <div class="form-row inline">
+      <label>Script XML</label>
+      <input type="file" name="scriptfile" accept=".xml">
+    </div>
+    <p class="muted small">
+      둘 중 하나 이상 필요합니다. 둘 다 올리면 SecuMS raw와 Script raw evidence를 함께 진단합니다.
+    </p>
+  </div>
+
+  <div class="form-section">
+    <h3>3) 진단 방식</h3>
+    <div class="form-row inline">
+      <label>데이터 소스</label>
+      <select name="source">
+        <option value="both">자동/둘 다</option>
+        <option value="script">Script XML만</option>
+        <option value="secums">SecuMS Raw DB만</option>
+      </select>
+    </div>
+    <div class="form-row inline">
+      <label>판정 엔진</label>
+      <select name="engine">
+        <option value="ai">AI 1차 판정</option>
+        <option value="llm">LLM 상세 판정</option>
+      </select>
+    </div>
+    <div class="form-row inline">
+      <label>
+        <input type="checkbox" name="run_immediately" value="on" checked>
+        업로드 직후 진단 자동 실행
+      </label>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary" id="submitBtn">업로드 + 진단</button>
+    <a href="/diagnosis" class="btn">취소</a>
+  </div>
+</form>
+
+<div id="result" class="section-box" style="display:none; margin-top:1.5rem;">
+  <h3>실행 결과</h3>
+  <pre id="resultBody" style="background:#f8f9fa; padding:1rem; border-radius:4px; overflow:auto; max-height:400px;"></pre>
+  <div id="resultActions" style="margin-top:1rem;"></div>
+</div>
+
+<script>
+document.getElementById('uploadForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const resultBox = document.getElementById('result');
+  const resultBody = document.getElementById('resultBody');
+  const resultActions = document.getElementById('resultActions');
+
+  const fd = new FormData(e.target);
+  if (!fd.get('dbfile')?.name && !fd.get('scriptfile')?.name) {
+    alert('Raw DB 또는 Script XML 파일을 하나 이상 선택하세요.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '업로드 중...';
+  resultBox.style.display = 'block';
+  resultBody.textContent = '진단 실행 중입니다. AI는 짧게, LLM은 설정과 네트워크 상태에 따라 더 오래 걸릴 수 있습니다.';
+  resultActions.innerHTML = '';
+
+  try {
+    const res = await fetch('/diagnosis/upload', { method: 'POST', body: fd });
+    const j = await res.json();
+    resultBody.textContent = JSON.stringify(j, null, 2);
+
+    if (j.status === 'success' && j.assessment_id) {
+      resultActions.innerHTML =
+        '<a class="btn primary" href="/diagnosis">진단 목록으로</a> ' +
+        '<a class="btn" href="/diagnosis/' + j.assessment_id + '/ai" style="background:#6c5ce7;color:#fff;">결과 보기</a> ' +
+        '<a class="btn" href="/diagnosis/' + j.assessment_id + '/validate">정합성 검증</a>';
+    } else if (j.status === 'success') {
+      resultActions.innerHTML = '<a class="btn" href="/diagnosis">진단 목록으로</a>';
+    }
+  } catch (err) {
+    resultBody.textContent = '오류: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '업로드 + 진단';
+  }
+};
+</script>
+
+<%- include('../_footer') %>

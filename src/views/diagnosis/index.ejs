@@ -1,0 +1,250 @@
+<%- include('../_header', { title: '진단 관리', activeMenu: 'diagnosis' }) %>
+
+<div class="page-header">
+  <h1>진단 관리</h1>
+  <div class="header-actions">
+    <button class="btn primary" onclick="runAiDiagnosis(1)" style="background:#6c5ce7;border-color:#6c5ce7;">🤖 AI 진단 실행</button>
+    <a href="/diagnosis/upload" class="btn">📁 Raw 파일 임포트</a>
+    <a href="/scheduler/history" class="btn">🔄 자동 수집 이력</a>
+    <a href="/schedules" class="btn">예약 진단</a>
+  </div>
+</div>
+
+<!-- 진단 KPI -->
+<div class="kpi-grid kpi-4col">
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">최근 7일 진단 성공</div>
+    <div class="kpi-num"><%= kpi.success7d %></div>
+    <div class="kpi-sub">전체 <%= kpi.total7d %>건 중</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">진단 실패</div>
+    <div class="kpi-num"><%= kpi.failed7d %></div>
+    <div class="kpi-sub">조치 필요</div>
+  </div>
+  <div class="kpi-card kpi-running">
+    <div class="kpi-label">진행 중</div>
+    <div class="kpi-num"><%= kpi.running %></div>
+    <div class="kpi-sub">실시간</div>
+  </div>
+  <div class="kpi-card kpi-avg">
+    <div class="kpi-label">평균 소요시간</div>
+    <div class="kpi-num"><%= fmtMs(kpi.avgElapsedMs) %></div>
+    <div class="kpi-sub">최근 30건</div>
+  </div>
+</div>
+
+<!-- 진단 이력 -->
+<div class="section-box">
+  <h3>최근 진단 이력</h3>
+  <div class="filter-row" style="margin-bottom:12px;">
+    <input type="search" id="diagSearch" placeholder="검색 (진단ID/호스트/자산번호/실행자)...">
+    <select id="diagStatus">
+      <option value="">전체 상태</option>
+      <option value="success">성공</option>
+      <option value="failed">실패</option>
+      <option value="running">진행중</option>
+    </select>
+    <select id="diagType">
+      <option value="">전체 유형</option>
+      <option value="ai">AI</option>
+      <option value="llm">LLM</option>
+    </select>
+    <select id="diagSource">
+      <option value="">전체 소스</option>
+      <option value="secums">SecuMS</option>
+      <option value="script">Script</option>
+      <option value="both">SecuMS+Script</option>
+    </select>
+    <input type="date" id="diagFrom">
+    <input type="date" id="diagTo">
+    <button class="btn-sm" onclick="applyDiagnosisFilter()">필터 적용</button>
+    <button class="btn-sm" onclick="resetDiagnosisFilter()">초기화</button>
+  </div>
+  <table class="data-table" id="diagnosisTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>서버</th>
+        <th>자산번호</th>
+        <th>룰셋</th>
+        <th>실행 시각</th>
+        <th>소요시간</th>
+        <th>상태</th>
+        <th>결과 / 실패사유</th>
+        <th>검증 실패율</th>
+        <th>실행자</th>
+        <th>액션</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% diagnoses.forEach(d => { %>
+        <tr class="row-<%= d.status %>"
+            data-status="<%= d.status || '' %>"
+            data-type="<%= d.diagnose_type || '' %>"
+            data-source="<%= d.source_type || 'secums' %>"
+            data-date="<%= (d.executed_at || '').slice(0, 10) %>"
+            data-search="<%= (String(d.assessment_id || '') + ' ' + (d.server_name || '') + ' ' + (d.hostname || '') + ' ' + (d.asset_no || '') + ' ' + (d.executed_by || '')).toLowerCase() %>">
+          <td class="mono small"><%= d.assessment_id %></td>
+          <td>
+            <strong><%= d.server_name %></strong>
+            <div class="muted small"><%= d.hostname %></div>
+          </td>
+          <td class="mono small"><%= d.asset_no || '-' %></td>
+          <td class="small"><%= d.ruleset_ver %></td>
+          <td class="mono small"><%= d.executed_at %></td>
+          <td class="small">
+            <% if (d.elapsed_ms) { %><%= fmtMs(d.elapsed_ms) %><% } else { %>-<% } %>
+          </td>
+          <td>
+            <% if (d.status === 'success') { %>
+              <span class="status-badge st-success">✓ 성공</span>
+            <% } else if (d.status === 'failed') { %>
+              <span class="status-badge st-failed">✗ 실패</span>
+            <% } else if (d.status === 'running') { %>
+              <span class="status-badge st-running">▶ 진행중</span>
+            <% } %>
+          </td>
+          <td class="long-text small">
+            <% if (d.status === 'success') { %>
+              <span class="diag-result">
+                점검 <%= d.total_count %>건 — 
+                <span class="b-vuln">취약 <%= d.vuln_count %></span> /
+                <span class="b-safe">양호 <%= d.safe_count %></span> /
+                <span class="b-info">정보제공 <%= d.info_count || 0 %></span> /
+                <span class="b-na">판정불가 <%= d.na_count %></span>
+              </span>
+            <% } else if (d.status === 'failed') { %>
+              <div class="fail-reason">
+                <strong>실패 사유:</strong> <%= d.error_phase %>
+                <div class="fail-detail"><%= d.error_message %></div>
+              </div>
+            <% } else if (d.status === 'running') { %>
+              <div class="progress-bar"><div class="progress-fill" style="width:<%= d.progress %>%"></div></div>
+              <span class="muted small"><%= d.progress %>% — <%= d.current_step %></span>
+            <% } %>
+          </td>
+          <td class="small">
+            <% if (d.status === 'success' && (d.diagnose_type === 'ai' || d.diagnose_type === 'llm')) { %>
+              <% var realFail = typeof d.disagree_real_count === 'number' ? d.disagree_real_count : (d.disagree_count || 0);
+                 var needsReview = d.needs_review_count || 0;
+                 var compCount = typeof d.comparison_count === 'number' ? d.comparison_count : ((d.agree_count || 0) + realFail);
+                 var failRate = typeof d.validation_failure_rate === 'number'
+                   ? d.validation_failure_rate
+                   : (compCount ? Math.round(realFail / compCount * 100) : 0); %>
+              <strong style="color:<%= failRate > 0 ? '#c0392b' : '#27ae60' %>;"><%= failRate %>%</strong>
+              <div class="muted small">실패 <%= realFail %> / 검토 <%= needsReview %></div>
+            <% } else { %>
+              <span class="muted">-</span>
+            <% } %>
+          </td>
+          <td class="small"><%= d.executed_by %></td>
+          <td>
+            <% if (d.status === 'success') { %>
+              <% if (d.diagnose_type === 'ai' || d.diagnose_type === 'llm') { %>
+                <a href="/diagnosis/<%= d.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">🤖 <%= d.diagnose_type === 'llm' ? 'LLM' : 'AI' %> 결과</a>
+                <% if (d.diagnose_type === 'ai') { %>
+                  <a href="/reports/<%= d.assessment_id %>/fsi" class="btn-sm">리포트1</a>
+                  <a href="/reports/<%= d.assessment_id %>/samsung" class="btn-sm">리포트2</a>
+                <% } %>
+                <a href="/diagnosis/<%= d.assessment_id %>/cve" class="btn-sm" style="background:#8e44ad;color:#fff;">🛡 CVE</a>
+              <% } else { %>
+                <span class="muted small">(구 룰셋 진단 — AI 진단 재실행 권장)</span>
+              <% } %>
+            <% } else if (d.status === 'failed') { %>
+              <a href="/diagnosis/<%= d.assessment_id %>/retry" class="btn-sm">재시도</a>
+              <a href="/diagnosis/<%= d.assessment_id %>/log" class="btn-sm">로그</a>
+            <% } else if (d.status === 'running') { %>
+              <a href="/diagnosis/<%= d.assessment_id %>/cancel" class="btn-sm danger">중단</a>
+            <% } %>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<!-- 실패 패턴 분석 -->
+<div class="section-box">
+  <h3>실패 패턴 분석 (최근 30일)</h3>
+  <div class="fail-stats">
+    <% failPatterns.forEach(p => { %>
+      <div class="fail-pattern-row">
+        <div class="fp-label">
+          <span class="fp-phase fp-<%= p.phase %>"><%= p.phase_label %></span>
+          <%= p.error_pattern %>
+        </div>
+        <div class="fp-bar">
+          <div class="fp-fill" style="width:<%= p.count / failPatterns[0].count * 100 %>%"></div>
+        </div>
+        <div class="fp-count"><%= p.count %>회</div>
+      </div>
+    <% }); %>
+  </div>
+</div>
+
+<script>
+function applyDiagnosisFilter() {
+  const q = document.getElementById('diagSearch').value.toLowerCase();
+  const status = document.getElementById('diagStatus').value;
+  const type = document.getElementById('diagType').value;
+  const source = document.getElementById('diagSource').value;
+  const from = document.getElementById('diagFrom').value;
+  const to = document.getElementById('diagTo').value;
+
+  document.querySelectorAll('#diagnosisTable tbody tr').forEach(tr => {
+    let show = true;
+    const date = tr.dataset.date || '';
+    if (q && !tr.dataset.search.includes(q)) show = false;
+    if (status && tr.dataset.status !== status) show = false;
+    if (type && tr.dataset.type !== type) show = false;
+    if (source && tr.dataset.source !== source) show = false;
+    if (from && date && date < from) show = false;
+    if (to && date && date > to) show = false;
+    tr.style.display = show ? '' : 'none';
+  });
+}
+
+function resetDiagnosisFilter() {
+  ['diagSearch', 'diagStatus', 'diagType', 'diagSource', 'diagFrom', 'diagTo'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('#diagnosisTable tbody tr').forEach(tr => { tr.style.display = ''; });
+}
+
+['diagSearch', 'diagStatus', 'diagType', 'diagSource', 'diagFrom', 'diagTo'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(id === 'diagSearch' ? 'input' : 'change', applyDiagnosisFilter);
+});
+
+function runAiDiagnosis(serverId) {
+  if (!confirm('AI 진단을 실행합니다.\n\nSecuMS raw DB의 64개 항목을 LLM이 직접 분석하여 판정합니다.\n현재 LLM 설정: ' + (window.LLM_PROVIDER || 'mock') + ' (개발 환경이면 mock)\n\n계속할까요?')) return;
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '🤖 AI 진단 중...';
+  fetch('/diagnosis/ai-run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ server_id: serverId }),
+  })
+    .then(r => r.json())
+    .then(j => {
+      if (j.status === 'success') {
+        alert(j.message);
+        location.href = '/diagnosis/' + j.assessment_id + '/ai';
+      } else {
+        alert('실패: ' + (j.error || '오류'));
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    })
+    .catch(e => {
+      alert('오류: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = orig;
+    });
+}
+</script>
+
+<%- include('../_footer') %>

@@ -1,0 +1,153 @@
+<%- include('../_header', { title: '예약 편집 #' + schedule.schedule_id, activeMenu: 'schedules' }) %>
+
+<div class="page-header">
+  <h1>예약 편집 — <%= schedule.name %></h1>
+  <p class="muted small">
+    cron 표현식, 대상 서버, 알림 설정을 수정합니다.
+  </p>
+  <div class="header-actions">
+    <a href="/schedules" class="btn">← 예약 진단</a>
+  </div>
+</div>
+
+<form id="schForm" class="form-container">
+  <div class="form-section">
+    <h3>기본 정보</h3>
+    <div class="form-row inline">
+      <label>이름 *</label>
+      <input type="text" name="name" required maxlength="80" value="<%= schedule.name %>">
+    </div>
+    <div class="form-row inline">
+      <label>설명</label>
+      <input type="text" name="description" maxlength="200" value="<%= schedule.description || '' %>">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>실행 주기</h3>
+    <div class="form-row inline">
+      <label>cron 표현식 *</label>
+      <input type="text" id="cronInput" name="cron_expr" required value="<%= schedule.cron_expr %>">
+      <button type="button" class="btn-sm" onclick="testCron()">미리보기</button>
+    </div>
+    <p class="muted small" id="cronPreview">
+      현재: <strong><%= schedule.cron_humanized || schedule.cron_expr %></strong>
+      <% if (schedule.next_run_at && schedule.next_run_at !== '-') { %>
+        — 다음 실행: <code><%= schedule.next_run_at %></code>
+      <% } %>
+    </p>
+    <div class="form-row inline">
+      <label>빠른 선택</label>
+      <select onchange="if(this.value) { document.getElementById('cronInput').value = this.value; testCron(); }">
+        <option value="">— 자주 쓰는 패턴 —</option>
+        <option value="0 2 * * *">매일 02:00</option>
+        <option value="0 */6 * * *">6시간마다</option>
+        <option value="0 * * * *">매시 정각</option>
+        <option value="*/15 * * * *">15분마다</option>
+        <option value="0 3 * * 0">매주 일요일 03:00</option>
+        <option value="0 3 1 * *">매월 1일 03:00</option>
+        <option value="manual">수동 실행 전용</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>대상 서버</h3>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="server_scope" value="all" <%= schedule.server_scope === 'all' ? 'checked' : '' %>>
+        <strong>전체 서버</strong>
+      </label>
+      <label>
+        <input type="radio" name="server_scope" value="group" <%= schedule.server_scope === 'group' ? 'checked' : '' %>>
+        <strong>그룹</strong>
+      </label>
+    </div>
+    <div class="form-row inline" id="groupRow" style="display:<%= schedule.server_scope === 'group' ? 'flex' : 'none' %>;">
+      <label>그룹명</label>
+      <input type="text" name="server_group" value="<%= schedule.server_group || '' %>">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>알림</h3>
+    <div class="form-row inline">
+      <label>
+        <input type="checkbox" name="notify_on_vuln" value="on" <%= schedule.notify_on_vuln ? 'checked' : '' %>>
+        취약점 발견 시 알림
+      </label>
+    </div>
+    <div class="form-row inline">
+      <label>
+        <input type="checkbox" name="notify_on_failure" value="on" <%= schedule.notify_on_failure ? 'checked' : '' %>>
+        진단 실패 시 알림
+      </label>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>상태</h3>
+    <div class="form-row inline">
+      <label>
+        <input type="checkbox" name="enabled" value="on" <%= schedule.enabled ? 'checked' : '' %>>
+        활성화
+      </label>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary">저장</button>
+    <a href="/schedules" class="btn">취소</a>
+  </div>
+</form>
+
+<script>
+document.querySelectorAll('input[name="server_scope"]').forEach(r => {
+  r.addEventListener('change', e => {
+    document.getElementById('groupRow').style.display = e.target.value === 'group' ? 'flex' : 'none';
+  });
+});
+
+async function testCron() {
+  const expr = document.getElementById('cronInput').value.trim();
+  const out = document.getElementById('cronPreview');
+  if (expr === 'manual') { out.innerHTML = '<strong>수동 실행</strong>'; return; }
+  try {
+    const res = await fetch('/schedules/preview-cron?expr=' + encodeURIComponent(expr));
+    const j = await res.json();
+    if (j.status === 'success') {
+      out.innerHTML = '<strong>' + j.humanized + '</strong> — 다음: ' +
+        j.next_runs.slice(0, 3).map(t => '<code>' + t + '</code>').join(', ');
+    } else {
+      out.innerHTML = '<span style="color:#c0392b;">⚠ ' + j.error + '</span>';
+    }
+  } catch (e) {
+    out.innerHTML = '<span style="color:#c0392b;">⚠ ' + e.message + '</span>';
+  }
+}
+
+document.getElementById('schForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = {};
+  for (const [k, v] of fd.entries()) data[k] = v;
+  data.notify_on_vuln    = fd.has('notify_on_vuln');
+  data.notify_on_failure = fd.has('notify_on_failure');
+  data.enabled           = fd.has('enabled');
+
+  const res = await fetch('/schedules/<%= schedule.schedule_id %>/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const j = await res.json();
+  if (j.status === 'success') {
+    alert('수정되었습니다.');
+    location.href = '/schedules';
+  } else {
+    alert('실패: ' + (j.error || '오류'));
+  }
+};
+</script>
+
+<%- include('../_footer') %>

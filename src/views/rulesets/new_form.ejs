@@ -1,0 +1,215 @@
+<%- include('../_header', { title: '새 진단 항목 추가', activeMenu: 'rulesets' }) %>
+
+<div class="page-header">
+  <h1>새 진단 항목 추가</h1>
+  <div class="mode-tabs">
+    <a href="?mode=form" class="tab active">📝 폼 입력</a>
+    <a href="?mode=yaml" class="tab">⌨️ YAML</a>
+    <a href="?mode=ai" class="tab">🤖 AI 제안</a>
+  </div>
+</div>
+
+<div class="rule-add-layout">
+  <!-- 왼쪽: 폼 입력 -->
+  <div class="form-pane">
+    <h3>1단계: 기본 정보</h3>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>룰 ID <span class="required">*</span></label>
+        <input type="text" value="USER-001" placeholder="USER-001, CUSTOM-pam-lock 등">
+        <div class="hint">사용자 정의 룰은 USER- 또는 CUSTOM- 접두어 권장</div>
+      </div>
+      <div class="form-row">
+        <label>제목 <span class="required">*</span></label>
+        <input type="text" value="SSH PermitRootLogin 비활성화 확인" placeholder="의문문 형식 권장">
+      </div>
+      <div class="form-row">
+        <label>카테고리</label>
+        <select>
+          <option>서비스 보호</option>
+          <option>계정 및 권한관리</option>
+          <option>파일 및 디렉토리관리</option>
+          <option>로그 및 패치 관리</option>
+          <option>+ 새 카테고리</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>위험도</label>
+        <div class="radio-group">
+          <label class="radio sev-radio sev-상"><input type="radio" name="sev" checked> 상</label>
+          <label class="radio sev-radio sev-중"><input type="radio" name="sev"> 중</label>
+          <label class="radio sev-radio sev-하"><input type="radio" name="sev"> 하</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>대상 OS</label>
+        <select>
+          <option>linux</option>
+          <option>windows</option>
+          <option>all</option>
+        </select>
+      </div>
+    </div>
+
+    <h3>2단계: 점검 내용</h3>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>설명 (자연어)</label>
+        <textarea rows="4">SSH 데몬에서 root 직접 로그인이 허용되어 있으면 brute-force 공격에 노출됨. 
+PermitRootLogin이 'yes'면 즉시 취약, 'no' 또는 'prohibit-password'면 양호.</textarea>
+      </div>
+      <div class="form-row">
+        <label>확인 방법</label>
+        <textarea rows="3">/etc/ssh/sshd_config 파일에서 PermitRootLogin 값을 확인. 
+주석 처리 시 기본값(yes)으로 동작하므로 명시적 'no' 필요.</textarea>
+      </div>
+      <div class="form-row">
+        <label>점검 기준</label>
+        <textarea rows="3">양호 - PermitRootLogin이 'no' 또는 'prohibit-password'로 설정됨
+취약 - PermitRootLogin이 'yes' 또는 미설정(기본값 적용)</textarea>
+      </div>
+      <div class="form-row">
+        <label>조치 방법</label>
+        <textarea rows="3">1. /etc/ssh/sshd_config 편집
+2. PermitRootLogin no
+3. systemctl restart sshd</textarea>
+      </div>
+    </div>
+
+    <h3>3단계: 평가 방식</h3>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>판정 유형</label>
+        <div class="radio-group vertical">
+          <label class="radio">
+            <input type="radio" name="type" checked> 
+            <strong>호스트 단위</strong> — 결과 1건 (예: 포트 열림/닫힘)
+          </label>
+          <label class="radio">
+            <input type="radio" name="type"> 
+            <strong>계정/항목 단위 (per_row)</strong> — 행마다 소항목 생성 (예: 계정별 잠금 설정)
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Raw 데이터 추출 SQL <span class="required">*</span></label>
+        <textarea rows="4" class="mono">SELECT FILE, KEY, VALUE FROM U_SSHD_CONFIG_TB
+WHERE KEY = 'PermitRootLogin'</textarea>
+        <div class="hint">
+          <a href="#" class="link">[테이블 목록 보기]</a>
+          <a href="#" class="link">[샘플 실행]</a>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>판정 방식</label>
+        <div class="radio-group vertical">
+          <label class="radio">
+            <input type="radio" name="judge" checked> 
+            <strong>단순 검사 (SQL)</strong> — 즉시 판정, 빠르고 정확
+          </label>
+          <label class="radio">
+            <input type="radio" name="judge"> 
+            <strong>AI 판정 (LLM)</strong> — 자연어로 기준 작성, 복잡한 룰에 적합
+          </label>
+        </div>
+      </div>
+      
+      <!-- 단순 검사 선택 시 -->
+      <div class="form-row simple-check-pane">
+        <label>검사 타입</label>
+        <div class="check-config">
+          <select>
+            <option>not_contains - 특정 값 미포함</option>
+            <option>equals - 값 일치</option>
+            <option>regex - 정규식 매칭</option>
+            <option>perm_le - 권한 ≤ 기준</option>
+            <option>int_min - 정수 ≥ 기준</option>
+            <option>row_count_zero - 결과 0건이어야 양호</option>
+          </select>
+          <div class="check-params">
+            <label>field: <input type="text" value="VALUE"></label>
+            <label>keyword: <input type="text" value="yes"></label>
+          </div>
+          <div class="hint">선택한 타입에 따라 입력 필드가 달라집니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn primary">미리보기 / 테스트</button>
+      <button class="btn">저장</button>
+      <a href="/rulesets" class="btn">취소</a>
+    </div>
+  </div>
+
+  <!-- 오른쪽: 실시간 YAML 미리보기 + 테스트 결과 -->
+  <div class="preview-pane">
+    <h3>실시간 YAML 미리보기</h3>
+    <pre class="yaml-preview"><code>- rule_id: USER-001
+  title: SSH PermitRootLogin 비활성화 확인
+  description: |
+    SSH 데몬에서 root 직접 로그인이 허용되어 있으면 brute-force
+    공격에 노출됨. PermitRootLogin이 'yes'면 즉시 취약,
+    'no' 또는 'prohibit-password'면 양호.
+  category: 서비스 보호
+  severity: 상
+  os_target: linux
+
+  check_method: |
+    /etc/ssh/sshd_config 파일에서 PermitRootLogin 값을 확인.
+    주석 처리 시 기본값(yes)으로 동작하므로 명시적 'no' 필요.
+  check_criteria: |
+    양호 - PermitRootLogin이 'no' 또는 'prohibit-password'
+    취약 - PermitRootLogin이 'yes' 또는 미설정
+
+  context_sql: |
+    SELECT FILE, KEY, VALUE FROM U_SSHD_CONFIG_TB
+    WHERE KEY = 'PermitRootLogin'
+
+  simple_check:
+    type: not_contains
+    field: VALUE
+    keyword: yes
+
+  recommend: |
+    1. /etc/ssh/sshd_config 편집
+    2. PermitRootLogin no
+    3. systemctl restart sshd
+
+  enabled: true
+</code></pre>
+
+    <h3>테스트 결과 (jessy62 raw 데이터 기준)</h3>
+    <div class="test-result">
+      <div class="test-row">
+        <span class="test-label">context_sql 실행:</span>
+        <span class="test-result-ok">✓ 1행 반환</span>
+      </div>
+      <div class="test-detail">
+        <table class="mini-table">
+          <tr><th>FILE</th><th>KEY</th><th>VALUE</th></tr>
+          <tr><td>/etc/ssh/sshd_config</td><td>PermitRootLogin</td><td>yes</td></tr>
+        </table>
+      </div>
+      <div class="test-row">
+        <span class="test-label">simple_check 평가:</span>
+        <span class="test-result-ng">✗ 취약</span>
+      </div>
+      <div class="test-detail">
+        사유: 'yes' 포함됨 (not_contains 조건 위반)<br>
+        증거: VALUE=yes
+      </div>
+      <div class="test-row">
+        <span class="test-label">소요 시간:</span>
+        <span>3ms</span>
+      </div>
+    </div>
+
+    <div class="preview-actions">
+      <button class="btn-sm">5개 서버에서 테스트</button>
+      <button class="btn-sm">YAML 복사</button>
+    </div>
+  </div>
+</div>
+
+<%- include('../_footer') %>

@@ -1,0 +1,180 @@
+<%- include('../_header', { title: 'CVE Feed 동기화', activeMenu: 'diagnosis' }) %>
+
+<div class="page-header">
+  <h1>CVE Feed 동기화</h1>
+  <p class="muted small">
+    NVD(미국 국가취약점데이터베이스) modified feed와 CISA KEV(알려진 익스플로잇 취약점) 카탈로그를
+    주기적으로 받아 큐레이션 CVE DB를 보강합니다. 핵심 매칭 필드(패키지/버전/패치)는
+    보존되며, CVSS 점수·KEV 등재·설명만 갱신됩니다.
+  </p>
+  <div class="header-actions">
+    <button class="btn primary" onclick="runSync(false)">지금 동기화</button>
+    <button class="btn" onclick="runSync(true)">--dry-run (저장 안 함)</button>
+  </div>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid kpi-5col">
+  <div class="kpi-card">
+    <div class="kpi-label">큐레이션 CVE</div>
+    <div class="kpi-num"><%= stats.total %></div>
+    <div class="kpi-sub">매칭 대상 (SoT)</div>
+  </div>
+  <div class="kpi-card kpi-<%= stats.sync_available ? 'success' : 'fail' %>">
+    <div class="kpi-label">Feed 동기화</div>
+    <div class="kpi-num" style="font-size:1.6rem; padding-top:0.4rem;">
+      <%= stats.sync_available ? '활성' : '미실행' %>
+    </div>
+    <div class="kpi-sub">NVD + CISA KEV</div>
+  </div>
+  <div class="kpi-card kpi-running">
+    <div class="kpi-label">보강된 CVE</div>
+    <div class="kpi-num"><%= stats.enriched %></div>
+    <div class="kpi-sub">CVSS/설명/KEV 갱신</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">신규 KEV 등재</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= stats.kev_newly_added %></div>
+    <div class="kpi-sub">즉시 조치 권고</div>
+  </div>
+  <div class="kpi-card kpi-avg">
+    <div class="kpi-label">CVSS 갱신</div>
+    <div class="kpi-num"><%= stats.cvss_updated %></div>
+    <div class="kpi-sub">NVD 재평가 반영</div>
+  </div>
+</div>
+
+<!-- 폐쇄망 안내 -->
+<% if (!stats.sync_available) { %>
+  <div class="section-box" style="background:#fff8e1;">
+    <h3>⚠ 동기화 이력 없음</h3>
+    <p class="muted small">아직 한 번도 동기화하지 않았습니다. 인터넷 접근 가능 환경이라면 [지금 동기화] 버튼을 누르세요.</p>
+    <details>
+      <summary><strong>폐쇄망 환경 — 수동 import 절차</strong></summary>
+      <ol style="margin-top:0.5rem;">
+        <li>인터넷 가능 PC에서 다음 파일을 받아옵니다:
+          <ul>
+            <li><code>https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-modified.json.gz</code></li>
+            <li><code>https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json</code></li>
+          </ul>
+        </li>
+        <li>두 파일을 서버의 <code>data/cve/feeds/</code> 디렉토리에 복사</li>
+        <li>서버 측에서 수동 실행: <code>node scripts/sync-cve.js --from-file=data/cve/feeds/nvdcve-1.1-modified.json.gz</code></li>
+      </ol>
+    </details>
+  </div>
+<% } %>
+
+<!-- 동기화 이력 -->
+<div class="section-box">
+  <h3>동기화 이력 (<%= history.length %>회)</h3>
+  <% if (!history.length) { %>
+    <p class="muted">이력이 없습니다.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>시각</th>
+          <th>전체 CVE</th>
+          <th>신규</th>
+          <th>CVSS 변경</th>
+          <th>KEV 신규</th>
+          <th>설명 보강</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% history.forEach(h => { %>
+          <tr>
+            <td class="mono small"><%= h.timestamp %></td>
+            <td><%= h.total_cves %></td>
+            <td><%= h.new_count > 0 ? '<strong>' + h.new_count + '</strong>' : 0 %></td>
+            <td><%= h.cvss_changed %></td>
+            <td>
+              <% if (h.kev_added > 0) { %>
+                <span style="color:#c0392b;font-weight:600;"><%= h.kev_added %></span>
+              <% } else { %>0<% } %>
+            </td>
+            <td><%= h.description_updated %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<!-- 큐레이션 미등록 KEV (즉시 검토 필요) -->
+<div class="section-box">
+  <h3>큐레이션 미등록 KEV CVE (<%= untracked_kev.length %>건)</h3>
+  <p class="muted small">
+    CISA KEV에 등재됐으나 큐레이션 DB(cve-centos7-curated.json)에는 없어
+    자동 매칭 대상이 아닙니다. CentOS 7 환경에 영향이 있으면 큐레이션 추가를 검토하세요.
+  </p>
+  <% if (!untracked_kev.length) { %>
+    <p class="muted">없음. 모든 KEV가 큐레이션에 등록되어 있습니다.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>CVE</th>
+          <th>벤더</th>
+          <th>제품</th>
+          <th>이름</th>
+          <th>조치 기한</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% untracked_kev.forEach(u => { %>
+          <tr>
+            <td><strong><%= u.cve_id %></strong></td>
+            <td class="small"><%= u.vendor || '-' %></td>
+            <td class="small"><code><%= u.product || '-' %></code></td>
+            <td class="small"><%= u.name || '-' %></td>
+            <td class="small mono"><%= u.due || '-' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<!-- 실행 결과 출력 -->
+<div id="syncResult" class="section-box" style="display:none;">
+  <h3>실행 결과</h3>
+  <pre id="syncResultBody" style="background:#f8f9fa; padding:1rem; border-radius:4px; overflow:auto; max-height:500px; font-size:0.85rem;"></pre>
+</div>
+
+<script>
+async function runSync(dryRun) {
+  if (!confirm(dryRun
+    ? '--dry-run 모드로 동기화를 실행할까요? (DB 저장 안 함, 출력만 확인)'
+    : 'NVD/KEV에서 최신 데이터를 받아 CVE DB를 갱신합니다. 진행할까요?')) return;
+
+  const box = document.getElementById('syncResult');
+  const body = document.getElementById('syncResultBody');
+  box.style.display = 'block';
+  body.textContent = '동기화 실행 중... (수십 초 소요)';
+
+  try {
+    const res = await fetch('/cve/sync/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dry_run: !!dryRun }),
+    });
+    const j = await res.json();
+    body.textContent =
+      `=== exit code: ${j.exit_code} ===\n\n` +
+      (j.stdout || '(no stdout)') +
+      (j.stderr ? '\n\n=== stderr ===\n' + j.stderr : '');
+
+    if (j.status === 'success' && !dryRun) {
+      setTimeout(() => {
+        if (confirm('동기화 완료. 페이지를 새로고침해 통계를 갱신할까요?')) location.reload();
+      }, 1500);
+    }
+  } catch (e) {
+    body.textContent = '오류: ' + e.message;
+  }
+}
+</script>
+
+<%- include('../_footer') %>

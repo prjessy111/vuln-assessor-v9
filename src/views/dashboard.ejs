@@ -1,0 +1,201 @@
+<%- include('_header', { title: '대시보드' }) %>
+
+<div class="dash-header">
+  <h1>대시보드</h1>
+  <div class="dash-period">
+    기준 시점: <%= now %>
+    <a href="/collect" class="btn-sm primary">+ 새 수집</a>
+    <a href="/assess/new" class="btn-sm">진단 실행</a>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card kpi-vuln">
+    <div class="kpi-label">전체 취약 항목</div>
+    <div class="kpi-num"><%= kpi.totalVuln %></div>
+    <div class="kpi-sub"><%= kpi.severeVuln %>건이 위험도 '상'</div>
+  </div>
+  <div class="kpi-card kpi-new">
+    <div class="kpi-label">신규 발견 (이번 진단)</div>
+    <div class="kpi-num"><%= kpi.newVuln %></div>
+    <div class="kpi-sub">전체 대비 <%= kpi.newPct %>%</div>
+  </div>
+  <div class="kpi-card kpi-pending">
+    <div class="kpi-label">미조치</div>
+    <div class="kpi-num"><%= kpi.pending %></div>
+    <div class="kpi-sub">담당자 미지정 <%= kpi.noAssignee %>건</div>
+  </div>
+  <div class="kpi-card kpi-rate">
+    <div class="kpi-label">조치율</div>
+    <div class="kpi-num"><%= kpi.fixRate %>%</div>
+    <div class="kpi-sub"><%= kpi.fixed %> / <%= kpi.totalVuln %> 완료</div>
+  </div>
+  <div class="kpi-card kpi-servers">
+    <div class="kpi-label">진단 서버</div>
+    <div class="kpi-num"><%= kpi.serverCount %></div>
+    <div class="kpi-sub">최근 7일 진단 <%= kpi.recentAssess %>건</div>
+  </div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-box">
+    <h3>카테고리별 취약 분포</h3>
+    <svg viewBox="0 0 200 200" class="donut-svg">
+      <%
+        const cats = Object.entries(categoryStats);
+        const total = cats.reduce((s, [_, n]) => s + n, 0) || 1;
+        const colors = ['#e74c3c', '#e67e22', '#f1c40f', '#3498db', '#9b59b6', '#1abc9c', '#34495e'];
+        let cumA = -Math.PI / 2;
+        const cx = 100, cy = 100, r = 70, sw = 28;
+      %>
+      <% cats.forEach(([name, n], idx) => {
+        const a1 = cumA;
+        const a2 = cumA + (n / total) * 2 * Math.PI;
+        cumA = a2;
+        const large = (a2 - a1) > Math.PI ? 1 : 0;
+        const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+        const x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+      %>
+        <path d="M <%= x1 %> <%= y1 %> A <%= r %> <%= r %> 0 <%= large %> 1 <%= x2 %> <%= y2 %>"
+              fill="none" stroke="<%= colors[idx % colors.length] %>" stroke-width="<%= sw %>"></path>
+      <% }); %>
+      <text x="100" y="95" text-anchor="middle" font-size="14" fill="#666">전체</text>
+      <text x="100" y="115" text-anchor="middle" font-size="22" font-weight="bold" fill="#2c3e50"><%= total %></text>
+    </svg>
+    <div class="donut-legend">
+      <% cats.forEach(([name, n], idx) => { const pct = Math.round(n / total * 100); %>
+        <div class="legend-item" title="<%= name %>: <%= n %>건 (<%= pct %>%)">
+          <span class="dot" style="background:<%= colors[idx % colors.length] %>"></span>
+          <span class="legend-text"><%= name %></span>
+          <span class="legend-num"><%= n %> · <%= pct %>%</span>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <div class="chart-box wide">
+    <h3>최근 4주 취약 추이</h3>
+    <svg viewBox="0 0 500 200" class="trend-svg" preserveAspectRatio="xMidYMid meet">
+      <%
+        const maxVal = Math.max(1, ...trend.map(t => t.vuln));
+        const barW = 70, gap = 30, startX = 70;
+        const baseY = 170, topY = 30, plotH = baseY - topY;
+        // 눈금선 4단계
+        const ticks = [0, 0.25, 0.5, 0.75, 1];
+      %>
+      <% ticks.forEach(tk => { const gy = baseY - tk * plotH; const gv = Math.round(maxVal * tk); %>
+        <line x1="60" y1="<%= gy %>" x2="490" y2="<%= gy %>" stroke="<%= tk === 0 ? '#bbb' : '#eee' %>"/>
+        <text x="52" y="<%= gy + 4 %>" text-anchor="end" font-size="10" fill="#999"><%= gv %></text>
+      <% }); %>
+      <% trend.forEach((t, idx) => {
+        const x = startX + idx * (barW + gap);
+        const h = (t.vuln / maxVal) * plotH;
+        const y = baseY - h;
+      %>
+        <rect x="<%= x %>" y="<%= y %>" width="<%= barW %>" height="<%= h %>" fill="#2980b9" rx="4"/>
+        <text x="<%= x + barW/2 %>" y="<%= y - 6 %>" text-anchor="middle"
+              font-size="14" font-weight="bold" fill="#2c3e50"><%= t.vuln %></text>
+        <text x="<%= x + barW/2 %>" y="190" text-anchor="middle" font-size="11" fill="#666"><%= t.label %></text>
+      <% }); %>
+    </svg>
+  </div>
+</div>
+
+<div class="chart-box full">
+  <h3>호스트별 취약 항목 수 (위험도 상/중/하 누적)</h3>
+  <%
+    const maxHostVuln = Math.max(1, ...hostStats.map(h => h.total));
+  %>
+  <% hostStats.forEach(h => { %>
+    <div class="bar-row">
+      <div class="bar-label"><%= h.hostname %> <span class="muted small">(<%= h.service_name || '-' %>)</span></div>
+      <div class="bar-track" title="상 <%= h.sev_high %> · 중 <%= h.sev_mid %> · 하 <%= h.sev_low %> (총 <%= h.total %>)">
+        <% const wHi = h.sev_high / maxHostVuln * 100;
+           const wMd = h.sev_mid / maxHostVuln * 100;
+           const wLo = h.sev_low / maxHostVuln * 100; %>
+        <div class="bar-seg sev-high" style="width:<%= wHi %>%" title="상 <%= h.sev_high %>건"><%= wHi >= 7 ? h.sev_high : '' %></div>
+        <div class="bar-seg sev-mid"  style="width:<%= wMd %>%" title="중 <%= h.sev_mid %>건"><%= wMd >= 7 ? h.sev_mid : '' %></div>
+        <div class="bar-seg sev-low"  style="width:<%= wLo %>%" title="하 <%= h.sev_low %>건"><%= wLo >= 7 ? h.sev_low : '' %></div>
+      </div>
+      <div class="bar-total"><%= h.total %></div>
+    </div>
+  <% }); %>
+  <div class="bar-legend">
+    <span class="legend-item"><span class="dot sev-high"></span>상</span>
+    <span class="legend-item"><span class="dot sev-mid"></span>중</span>
+    <span class="legend-item"><span class="dot sev-low"></span>하</span>
+  </div>
+</div>
+
+<div class="workqueue-box">
+  <h3>미조치 우선 처리 큐
+    <span class="muted small">— 신규 + 위험도 상 + 담당자 미지정 우선</span>
+  </h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>관리번호</th><th>서버</th><th>취약점</th>
+        <th>위험도</th><th>신규</th><th>담당자</th>
+        <th>전달일자</th><th>조치상태</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% workqueue.forEach(w => { %>
+        <tr>
+          <td class="mono small"><%= w.management_no %></td>
+          <td><%= w.hostname %></td>
+          <td><%= w.title %></td>
+          <td><span class="sev sev-<%= w.severity %>"><%= w.severity %></span></td>
+          <td>
+            <% if (w.is_new) { %><span class="newflag newflag-new">신규</span>
+            <% } else { %><span class="newflag newflag-old">기존</span><% } %>
+          </td>
+          <td>
+            <% if (w.assignee) { %><%= w.assignee %>
+            <% } else { %><span class="muted">미지정</span><% } %>
+          </td>
+          <td class="small"><%= w.delivered_at || '-' %></td>
+          <td><span class="fix-status fs-<%= w.fix_status === '진행중' ? 'progress' : 'pending' %>"><%= w.fix_status %></span></td>
+          <td><a href="/diagnosis/<%= w.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">🤖 AI 결과</a></td>
+        </tr>
+      <% }); %>
+      <% if (!workqueue.length) { %>
+        <tr><td colspan="9" class="empty">미조치 항목이 없습니다 🎉</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<h2>서버별 진단 현황</h2>
+<div class="server-cards">
+  <% summaries.forEach(s => { %>
+    <div class="server-card">
+      <div class="server-card-header">
+        <span class="server-name"><%= s.name %></span>
+        <span class="os-badge"><%= s.os_type ? s.os_type.toUpperCase() : '?' %></span>
+      </div>
+      <div class="server-card-host"><%= s.hostname %></div>
+      <% if (s.asset_no) { %>
+        <div class="server-card-meta">자산 <%= s.asset_no %> · <%= s.service_name || '-' %></div>
+      <% } %>
+      <% if (s.executed_at) { %>
+        <div class="server-card-time">최근 진단: <%= s.executed_at %></div>
+        <div class="card-badges">
+          <span class="badge total">총 <%= s.total_count %></span>
+          <% if (s.vuln_count) { %><span class="badge b-vuln">취약 <%= s.vuln_count %></span><% } %>
+          <% if (s.safe_count) { %><span class="badge b-safe">양호 <%= s.safe_count %></span><% } %>
+          <% if (s.na_count) { %><span class="badge b-na">N/A <%= s.na_count %></span><% } %>
+        </div>
+        <div class="card-actions">
+          <a href="/diagnosis/<%= s.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">🤖 AI 결과</a>
+          <a href="/assess/new?server_id=<%= s.server_id %>" class="btn-sm">재진단</a>
+        </div>
+      <% } else { %>
+        <div class="server-card-time muted">진단 이력 없음</div>
+        <a href="/assess/new?server_id=<%= s.server_id %>" class="btn-sm">진단 실행</a>
+      <% } %>
+    </div>
+  <% }); %>
+</div>
+
+<%- include('_footer') %>

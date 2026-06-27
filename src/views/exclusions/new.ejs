@@ -1,0 +1,99 @@
+<%- include('../_header', { title: '제외 등록', activeMenu: 'exclusions' }) %>
+
+<div class="page-header">
+  <h1>제외 등록</h1>
+  <p class="muted small">
+    진단 대상에서 영구적으로 제외할 항목을 등록합니다.
+    구조적으로 점검이 불가/무의미한 경우만 사용하세요 (예: 해당 OS 미설치 데몬, 정책상 미사용 기능).
+    한시적 면제가 필요하면 <a href="/exceptions/new">예외 신청</a>을 사용하세요.
+  </p>
+  <div class="header-actions">
+    <a href="/exclusions" class="btn">← 제외 관리</a>
+  </div>
+</div>
+
+<form id="exclusionForm" class="form-container">
+  <div class="form-section">
+    <h3>대상 항목</h3>
+    <div class="form-row inline">
+      <label>점검 항목 *</label>
+      <select name="rule_id" required>
+        <option value="">— 점검 항목 선택 —</option>
+        <% (checkItems || []).forEach(ci => { %>
+          <option value="<%= ci.srv %>" <%= prefill && prefill.rule_id === ci.srv ? 'selected' : '' %>>
+            <%= ci.srv %> · <%= ci.title %>
+          </option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-row inline"><label>호스트명</label>
+      <input type="text" name="hostname" placeholder="예: jessy207 (CSV 일괄 시 비워도 됨)"></div>
+    <div class="form-row inline"><label>계정명</label>
+      <input type="text" name="username" placeholder="시스템 계정 등 (예: bin, daemon). 호스트 전체면 비움"
+             value="<%= (prefill && prefill.username) || '' %>"></div>
+    <div class="form-row">
+      <label>CSV 일괄 등록</label>
+      <textarea name="targets_csv" rows="4" placeholder="호스트명,계정명  (한 줄에 하나)&#10;jessy207,bin&#10;jessy207,daemon&#10;jessy167,   ← 계정 비우면 호스트 전체"></textarea>
+      <span class="muted small">시스템 계정 등 여러 호스트/계정을 같은 점검항목에서 한 번에 제외. (CSV 입력 시 위 단일 호스트/계정은 무시)</span>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>제외 사유</h3>
+    <div class="form-row inline">
+      <label>유형 *</label>
+      <select name="reason_type" required>
+        <option value="">— 선택 —</option>
+        <option value="구조적 미해당">구조적 미해당 (해당 항목 부재)</option>
+        <option value="OS 미지원">OS/배포판 미지원</option>
+        <option value="정책상 미사용">정책상 사용하지 않는 기능</option>
+        <option value="중복 점검">다른 룰로 중복 점검됨</option>
+        <option value="False Positive">반복적 오탐</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>상세 사유 *</label>
+      <textarea name="reason" required rows="5"
+                placeholder="이 항목을 진단 대상에서 영구 제외해야 하는 구체적 근거 (감사 추적 대비)"></textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary">제외 등록</button>
+    <a href="/exclusions" class="btn">취소</a>
+  </div>
+</form>
+
+<script>
+document.getElementById('exclusionForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  if (!data.rule_id) { alert('점검 항목을 선택하세요.'); return; }
+
+  // CSV 일괄: "호스트명,계정명" 한 줄에 하나 → targets 배열
+  if (data.targets_csv && data.targets_csv.trim()) {
+    data.targets = data.targets_csv.trim().split(/\r?\n/).map(function(line){
+      var p = line.split(',');
+      return { hostname: (p[0]||'').trim(), username: (p[1]||'').trim() };
+    }).filter(function(t){ return t.hostname || t.username; });
+    if (!data.targets.length) { alert('CSV 형식을 확인하세요 (호스트명,계정명).'); return; }
+  }
+  delete data.targets_csv;
+
+  const res = await fetch('/exclusions/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const j = await res.json();
+  if (j.status === 'success') {
+    alert('제외 항목이 등록되었습니다.' + (j.count > 1 ? ' (' + j.count + '건)' : ''));
+    location.href = '/exclusions';
+  } else {
+    alert('실패: ' + (j.error || '오류'));
+  }
+};
+</script>
+
+<%- include('../_footer') %>

@@ -1,0 +1,121 @@
+<meta charset="utf-8">
+<title>SecuMS 검증시스템 — 데모</title>
+<style>
+  :root{ --ink:#1a2332; --muted:#5b6675; --line:#e3e8ef; --brand:#0b5fff; --bg:#f7f9fc; }
+  *{box-sizing:border-box;}
+  body{font-family:'Malgun Gothic','맑은 고딕',system-ui,sans-serif; color:var(--ink); margin:0; background:var(--bg); line-height:1.6;}
+  .page{max-width:1100px; margin:0 auto; padding:28px 22px 64px;}
+  h1{font-size:24px; margin:4px 0;}
+  .sub{color:var(--muted); font-size:14px; margin-bottom:18px;}
+  .videobox{background:#000; border-radius:12px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.18); margin-bottom:10px;}
+  .videobox video{width:100%; display:block;}
+  .vhint{color:var(--muted); font-size:12.5px; text-align:center; margin-bottom:30px;}
+  h2{font-size:18px; margin:34px 0 14px; padding-left:10px; border-left:4px solid var(--brand);}
+  .step{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .step .no{display:inline-block; min-width:26px; height:26px; line-height:26px; text-align:center; background:var(--brand); color:#fff; border-radius:50%; font-weight:800; font-size:13px; margin-right:8px;}
+  .step h3{display:inline; font-size:16px;}
+  .step .cap{color:var(--muted); font-size:13.5px; margin:8px 0 12px;}
+  .step img{width:100%; border:1px solid var(--line); border-radius:8px; display:block;}
+  .step .imgs{display:grid; gap:10px;}
+  .step .imgs.two{grid-template-columns:1fr 1fr;}
+  @media(max-width:720px){ .step .imgs.two{grid-template-columns:1fr;} }
+  .tag{display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:10px; background:#eef4ff; color:var(--brand); margin-left:6px;}
+</style>
+
+<div class="page">
+  <h1>SecuMS 검증시스템 — 데모</h1>
+  <div class="sub">AI 기반 보안 취약점 진단 · 정합성 자동 검증 — 점검 수행 과정과 주요 관리 기능</div>
+
+  <div class="videobox">
+    <video src="img/SecuMS 검증시스템 데모.mp4" controls preload="metadata"></video>
+  </div>
+  <div class="vhint">▶ 재생 컨트롤로 일시정지·구간 반복 가능. 아래는 화면별 상세(동영상 순서와 동일).</div>
+
+  <h2>화면별 데모 (동영상 순서)</h2>
+
+  <div class="step"><span class="no">1</span><h3>로그인</h3>
+    <div class="cap">관리자 계정으로 Vuln Assessor 검증 시스템에 로그인합니다.</div>
+    <div class="imgs"><img src="img/로그인화면.png" alt="로그인"></div>
+  </div>
+
+  <div class="step"><span class="no">2</span><h3>수집 관리</h3>
+    <div class="cap">점검할 대상 서버를 확인합니다. 점검 방식은 ① SecuMS Raw Data ② Script 두 가지를 지원합니다.</div>
+    <div class="imgs"><img src="img/수집관리.PNG" alt="수집관리"></div>
+  </div>
+
+  <div class="step"><span class="no">3</span><h3>Script 전체 진단 실행</h3>
+    <div class="cap">Script 방식으로 전체 서버 진단을 시작합니다. 진단 엔진은 <b>사내 LLM</b>을 사용해 외부 전송 없이 내부에서 점검합니다.</div>
+    <div class="imgs"><img src="img/스크립트_점검_시작_팝업.PNG" alt="Script 전체 진단"></div>
+  </div>
+
+  <div class="step"><span class="no">4</span><h3>점검 완료 요약</h3>
+    <div class="cap">점검은 시간이 소요되므로 완료된 결과 기준으로 설명합니다. 서버별 성공/실패 · 모수 · 취약/양호/N/A · 소요시간.</div>
+    <div class="imgs"><img src="img/수집후점검팝업.PNG" alt="점검 완료"></div>
+  </div>
+
+  <div class="step"><span class="no">5</span><h3>진단 관리</h3>
+    <div class="cap">진단이 정상 수행됐는지 확인합니다. KPI(성공/실패/진행중/평균 소요시간) 실데이터 집계, 소요시간 분·초 표기.</div>
+    <div class="imgs"><img src="img/진단관리.PNG" alt="진단관리"></div>
+  </div>
+
+  <div class="step"><span class="no">6</span><h3>리포트 (진단 결과)</h3>
+    <div class="cap">리포트1·리포트2·3-way 정합성 리포트를 제공합니다. 리포트1은 항목별 <b>취약/양호/점검불가</b> 상세 판정을, 3-way는 ①SecuMS-AI ②Script-AI ③정답지를 나란히 비교합니다.</div>
+    <div class="imgs"><img src="img/리포트결과.PNG" alt="리포트 결과"><img src="img/리포트1.PNG" alt="리포트1"><img src="img/3way_리포트.PNG" alt="3-way 정합성"></div>
+  </div>
+
+  <div class="step"><span class="no">7</span><h3>점검현황</h3>
+    <div class="cap">OS별 점검 완료 현황과 호스트별 취약점 개수·준수율을 한눈에 확인합니다.</div>
+    <div class="imgs"><img src="img/점검현황.PNG" alt="점검현황"></div>
+  </div>
+
+  <div class="step"><span class="no">8</span><h3>서버별 점검 이력</h3>
+    <div class="cap">각 서버의 과거 진단 내역을 시각별로 조회합니다 (진단일시·소요·취약/양호·준수율 추이).</div>
+    <div class="imgs"><img src="img/서버별점검이력.PNG" alt="서버별 점검 이력"></div>
+  </div>
+
+  <div class="step"><span class="no">9</span><h3>서버 관리 (Healthcheck)</h3>
+    <div class="cap">서버 상태와 헬스체크. 메모리/CPU/디스크 사용 현황(에이전트리스 실수집)·연결 가능/불가 확인.</div>
+    <div class="imgs"><img src="img/서버관리.PNG" alt="서버관리"></div>
+  </div>
+
+  <div class="step"><span class="no">10</span><h3>CVE 동기화</h3>
+    <div class="cap">NVD·CISA KEV 피드를 큐레이션 CVE DB에 보강. rpm/핫픽스 기반 결정론적 매칭, KEV(악용 중) 포함.</div>
+    <div class="imgs"><img src="img/CVE_리포트.PNG" alt="CVE 리포트"></div>
+  </div>
+
+  <div class="step"><span class="no">11</span><h3>예외 관리</h3>
+    <div class="cap">업무상 점검 항목에 예외가 필요할 때 한시적 예외 처리. 목록(승인/만료) + 신청 폼(제목·정책·OS·관련근거·점검항목 다중선택).</div>
+    <div class="imgs two"><img src="img/예외관리_1.PNG" alt="예외관리 목록"><img src="img/예외관리_2.PNG" alt="예외 신청 폼"></div>
+  </div>
+
+  <div class="step"><span class="no">12</span><h3>제외 관리</h3>
+    <div class="cap">로직상 제외가 필요한 항목 제외(오탐·시스템 계정 등).</div>
+    <div class="imgs two"><img src="img/제외관리_1.PNG" alt="제외관리 목록"><img src="img/제외관리_2.PNG" alt="제외관리 폼"></div>
+  </div>
+
+  <div class="step"><span class="no">13</span><h3>알림 관리</h3>
+    <div class="cap">진단 중 발생한 이벤트의 발송 이력을 관리합니다 (console/이메일/Slack).</div>
+    <div class="imgs"><img src="img/알림화면.PNG" alt="알림 관리"></div>
+  </div>
+
+  <div class="step"><span class="no">14</span><h3>조치 관리</h3>
+    <div class="cap">취약점 조치 날짜와 조치 항목을 관리합니다.</div>
+    <div class="imgs"><img src="img/조치관리.PNG" alt="조치관리"></div>
+  </div>
+
+  <div class="step"><span class="no">15</span><h3>취약점 관리</h3>
+    <div class="cap">발견된 취약점을 위험도·조치 상태별로 통합 조회합니다.</div>
+    <div class="imgs"><img src="img/취약점관리.PNG" alt="취약점관리"></div>
+  </div>
+
+  <div class="step"><span class="no">16</span><h3>예약 진단</h3>
+    <div class="cap">cron 표현식으로 자동 점검 일정을 등록합니다. 대상은 전체/개별 호스트 선택.</div>
+    <div class="imgs"><img src="img/예약진단.PNG" alt="예약진단"></div>
+  </div>
+
+  <div class="step"><span class="no">17</span><h3>대시보드</h3>
+    <div class="cap">점검 결과의 주요 지표를 그래프와 표로 확인합니다 (취약 분포·추이·호스트별 누적).</div>
+    <div class="imgs"><img src="img/대시보드.PNG" alt="대시보드"></div>
+  </div>
+
+</div>

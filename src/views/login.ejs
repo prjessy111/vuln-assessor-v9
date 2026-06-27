@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 — Vuln Assessor</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "맑은 고딕", Roboto, sans-serif;
+    }
+    .login-box {
+      width: 380px;
+      background: #fff;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .login-logo .icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+    .login-logo h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #2c3e50;
+    }
+    .login-logo .sub {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-top: 4px;
+    }
+    .login-form .form-row {
+      margin-bottom: 14px;
+    }
+    .login-form label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 4px;
+    }
+    .login-form input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d5dbdb;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .login-form input:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+    .login-form button {
+      width: 100%;
+      padding: 12px;
+      background: #2980b9;
+      color: #fff;
+      border: 0;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .login-form button:hover {
+      background: #1b6f9c;
+    }
+    .login-error {
+      padding: 10px 12px;
+      background: #fadbd8;
+      border: 1px solid #c0392b;
+      color: #a93226;
+      border-radius: 4px;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+    .login-footer {
+      text-align: center;
+      font-size: 11px;
+      color: #95a5a6;
+      margin-top: 20px;
+    }
+    .first-run-notice {
+      background: #ebf5fb;
+      border-left: 3px solid #3498db;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: #1b4f72;
+      margin-bottom: 16px;
+      border-radius: 0 4px 4px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">🛡</div>
+      <h1>Vuln Assessor</h1>
+      <div class="sub">LSware 취약점 진단 시스템</div>
+    </div>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="login-error"><%= error %></div>
+    <% } %>
+
+    <% if (typeof firstRun !== 'undefined' && firstRun) { %>
+      <div class="first-run-notice">
+        <strong>최초 실행 안내</strong><br>
+        기본 관리자: <code>admin</code> / <code>admin123!</code><br>
+        첫 로그인 후 즉시 비밀번호를 변경하세요.
+      </div>
+    <% } %>
+
+    <form class="login-form" method="POST" action="/login">
+      <input type="hidden" name="from" value="<%= typeof from !== 'undefined' ? from : '/' %>">
+      <div class="form-row">
+        <label>아이디</label>
+        <input type="text" name="username" autofocus required autocomplete="username">
+      </div>
+      <div class="form-row">
+        <label>비밀번호</label>
+        <input type="password" name="password" required autocomplete="current-password">
+      </div>
+      <button type="submit">로그인</button>
+    </form>
+
+    <div class="login-footer">
+      © LSware Vuln Assessor v9.13
+    </div>
+  </div>
+</body>
+</html>

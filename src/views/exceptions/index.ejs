@@ -1,0 +1,191 @@
+<%- include('../_header', { title: '예외 관리', activeMenu: 'exceptions' }) %>
+
+<div class="page-header">
+  <h1>예외 관리</h1>
+  <p class="muted small">
+    취약 판정을 받았으나 운영상 사유로 일정 기간 예외 처리하는 항목.
+    승인 후에만 효력 발생. 만료 임박 시 사전에 연장하거나 조치 완료해야 함.
+  </p>
+  <div class="header-actions">
+    <a href="/exceptions/new" class="btn primary">+ 예외 신청</a>
+  </div>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid kpi-5col">
+  <div class="kpi-card">
+    <div class="kpi-label">전체</div>
+    <div class="kpi-num"><%= kpi.total %></div>
+    <div class="kpi-sub">등록된 예외</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">활성</div>
+    <div class="kpi-num" style="color:#27ae60;"><%= kpi.active %></div>
+    <div class="kpi-sub">승인 + 유효기간 내</div>
+  </div>
+  <div class="kpi-card kpi-running">
+    <div class="kpi-label">승인 대기</div>
+    <div class="kpi-num" style="color:#e67e22;"><%= kpi.pending %></div>
+    <div class="kpi-sub">CISO 검토 필요</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#e67e22;">
+    <div class="kpi-label">만료 임박</div>
+    <div class="kpi-num" style="color:#e67e22;"><%= kpi.expiring %></div>
+    <div class="kpi-sub">30일 이내 만료</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">만료됨</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= kpi.expired %></div>
+    <div class="kpi-sub">갱신/조치 필요</div>
+  </div>
+</div>
+
+<!-- 필터 -->
+<div class="section-box">
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="🔍 룰ID / 호스트 / 사유 / 신청자 / 승인자 검색" class="filter-input">
+    <select id="statusFilter" class="filter-select">
+      <option value="">전체 상태</option>
+      <option value="승인">승인</option>
+      <option value="대기">대기</option>
+      <option value="반려">반려</option>
+    </select>
+    <select id="expiryFilter" class="filter-select">
+      <option value="">전체 기간</option>
+      <option value="active">유효</option>
+      <option value="expiring">만료 임박 (30일)</option>
+      <option value="expired">만료됨</option>
+    </select>
+  </div>
+</div>
+
+<!-- 예외 목록 -->
+<div class="section-box">
+  <h3>등록된 예외 (<%= exceptions.length %>건)</h3>
+  <% if (!exceptions.length) { %>
+    <p class="muted">등록된 예외가 없습니다. <a href="/exceptions/new">새 예외 신청</a>.</p>
+  <% } else { %>
+    <table class="data-table" id="exceptionsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>룰 / 호스트</th>
+          <th>사유</th>
+          <th>유효기간</th>
+          <th>잔여일</th>
+          <th>승인 상태</th>
+          <th>신청자</th>
+          <th>승인자</th>
+          <th>액션</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% exceptions.forEach(e => { %>
+          <tr data-status="<%= e.approval_status %>"
+              data-expiry="<%= e.is_expired ? 'expired' : (e.days_left !== null && e.days_left <= 30 ? 'expiring' : 'active') %>"
+              data-search="<%= ((e.rule_id || '') + ' ' + (e.hostname || '') + ' ' + (e.reason || '') + ' ' + (e.requested_by || '') + ' ' + (e.approved_by || '')).toLowerCase() %>">
+            <td>#<%= e.exception_id %></td>
+            <td>
+              <strong><%= e.rule_id || '-' %></strong>
+              <% if (e.hostname) { %>
+                <div class="small muted"><%= e.hostname %></div>
+              <% } %>
+            </td>
+            <td class="small" style="max-width:280px;">
+              <%= (e.reason || '').substring(0, 120) %><% if ((e.reason || '').length > 120) { %>...<% } %>
+            </td>
+            <td class="small">
+              <% if (e.effective_from && e.effective_until) { %>
+                <%= e.effective_from %><br><%= e.effective_until %>
+              <% } else if (e.effective_until) { %>
+                ~ <%= e.effective_until %>
+              <% } else { %>
+                <span class="muted">미설정</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (e.is_expired) { %>
+                <span style="color:#c0392b;font-weight:600;">만료</span>
+              <% } else if (e.days_left === null) { %>
+                <span class="muted">-</span>
+              <% } else if (e.days_left <= 30) { %>
+                <span style="color:#e67e22;font-weight:600;"><%= e.days_left %>일</span>
+              <% } else { %>
+                <span><%= e.days_left %>일</span>
+              <% } %>
+            </td>
+            <td>
+              <% var st = e.approval_status || '대기'; %>
+              <% var color = st === '승인' ? '#27ae60' : st === '반려' ? '#c0392b' : '#e67e22'; %>
+              <span style="color:<%= color %>;font-weight:600;"><%= st %></span>
+            </td>
+            <td class="small"><%= e.requested_by || '-' %></td>
+            <td class="small"><%= e.approved_by || '-' %></td>
+            <td>
+              <% if ((e.approval_status || '대기') === '대기') { %>
+                <button class="btn-sm" onclick="approve(<%= e.exception_id %>, 'approve')">승인</button>
+                <button class="btn-sm" onclick="approve(<%= e.exception_id %>, 'reject')">반려</button>
+              <% } else if (e.is_expired || (e.days_left !== null && e.days_left <= 30)) { %>
+                <button class="btn-sm" onclick="extend(<%= e.exception_id %>)">기간 연장</button>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<script>
+function approve(id, action) {
+  const note = prompt(action === 'approve' ? '승인 메모 (선택):' : '반려 사유:');
+  if (action === 'reject' && !note) {
+    alert('반려 시 사유 입력이 필요합니다.');
+    return;
+  }
+  fetch('/exceptions/' + id + '/approve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, note }),
+  })
+    .then(r => r.json())
+    .then(j => {
+      if (j.status === 'success') location.reload();
+      else alert('실패: ' + (j.error || '오류'));
+    });
+}
+
+function extend(id) {
+  const until = prompt('새 만료일 (YYYY-MM-DD):');
+  if (!until) return;
+  fetch('/exceptions/' + id + '/extend', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ effective_until: until }),
+  })
+    .then(r => r.json())
+    .then(j => {
+      if (j.status === 'success') location.reload();
+      else alert('실패: ' + (j.error || '오류'));
+    });
+}
+
+// 필터링
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const st = document.getElementById('statusFilter').value;
+  const exp = document.getElementById('expiryFilter').value;
+  document.querySelectorAll('#exceptionsTable tbody tr').forEach(tr => {
+    const matchQ = !q || (tr.dataset.search || '').toLowerCase().includes(q);
+    const matchS = !st || tr.dataset.status === st;
+    const matchE = !exp || tr.dataset.expiry === exp;
+    tr.style.display = (matchQ && matchS && matchE) ? '' : 'none';
+  });
+}
+['searchInput', 'statusFilter', 'expiryFilter'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(id === 'searchInput' ? 'input' : 'change', applyFilters);
+});
+</script>
+
+<%- include('../_footer') %>

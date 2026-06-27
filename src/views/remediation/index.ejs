@@ -1,0 +1,322 @@
+<%- include('../_header', { title: '조치 관리', activeMenu: 'remediation' }) %>
+
+<div class="page-header">
+  <h1>조치 관리</h1>
+  <p class="muted small">
+    발견된 취약점의 조치 진행 상태를 관리합니다. 
+    <a href="/vulnerabilities">취약점 관리</a>에서 발견된 항목이 여기 자동으로 등록됩니다.
+  </p>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid kpi-5col">
+  <div class="kpi-card kpi-total">
+    <div class="kpi-label">전체 조치 대상</div>
+    <div class="kpi-num"><%= stats.total %></div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">미조치</div>
+    <div class="kpi-num"><%= stats.미조치 %></div>
+    <div class="kpi-sub">즉시 조치 필요</div>
+  </div>
+  <div class="kpi-card kpi-running">
+    <div class="kpi-label">진행중</div>
+    <div class="kpi-num"><%= stats.진행중 %></div>
+    <div class="kpi-sub">조치 작업 중</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">조치완료</div>
+    <div class="kpi-num"><%= stats.조치완료 %></div>
+    <div class="kpi-sub">완료율 <%= stats.completion_rate %>%</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">기한 초과 (30일+)</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= stats.overdue %></div>
+    <div class="kpi-sub">긴급 검토</div>
+  </div>
+</div>
+
+<!-- 필터 -->
+<div class="section-box">
+  <div class="filter-row">
+    <select id="filterServer">
+      <option value="">전체 서버</option>
+      <% servers.forEach(s => { %>
+        <option value="<%= s.hostname %>"><%= s.hostname %></option>
+      <% }); %>
+    </select>
+    <select id="filterSeverity">
+      <option value="">전체 위험도</option>
+      <option value="상">상</option>
+      <option value="중">중</option>
+      <option value="하">하</option>
+    </select>
+    <select id="filterStatus">
+      <option value="">전체 상태</option>
+      <option value="미조치">미조치</option>
+      <option value="진행중">진행중</option>
+      <option value="조치완료">조치완료</option>
+      <option value="예외">예외</option>
+    </select>
+    <select id="filterOverdue">
+      <option value="">전체 기한</option>
+      <option value="overdue">30일 이상 미조치</option>
+      <option value="normal">30일 미만/완료</option>
+    </select>
+    <input type="search" id="filterText" placeholder="검색 (취약점/룰ID/담당자/호스트)...">
+    <label class="muted small">발견일</label>
+    <input type="date" id="filterFrom" title="발견일 시작">
+    <span>~</span>
+    <input type="date" id="filterTo" title="발견일 종료">
+    <button class="btn-sm" onclick="applyFilter()">필터 적용</button>
+    <button class="btn-sm" onclick="resetFilter()">초기화</button>
+  </div>
+</div>
+
+<!-- 조치 워크플로 (칸반 스타일) -->
+<div class="kanban-board">
+  <% ['미조치', '진행중', '조치완료', '예외'].forEach(status => { 
+    const items = byStatus[status] || [];
+    const colorClass = status === '미조치' ? 'col-fail' 
+                     : status === '진행중' ? 'col-running'
+                     : status === '조치완료' ? 'col-success'
+                     : 'col-exception';
+  %>
+    <div class="kanban-col <%= colorClass %>" data-status="<%= status %>">
+      <div class="kanban-header">
+        <h3><%= status %></h3>
+        <span class="kanban-count"><%= items.length %></span>
+      </div>
+      <div class="kanban-body" id="col-<%= status %>">
+        <% items.forEach(v => { %>
+          <div class="kanban-card sev-<%= v.severity %>" 
+               data-result-id="<%= v.result_id %>"
+               data-hostname="<%= v.hostname %>"
+               data-severity="<%= v.severity %>"
+               data-status="<%= status %>"
+               data-overdue="<%= (v.days_old > 30 && status === '미조치') ? 'overdue' : 'normal' %>"
+               data-discovered="<%= (v.discovered_at || '').slice(0,10) %>"
+               data-search="<%= (v.title + ' ' + v.rule_id + ' ' + (v.assignee || '') + ' ' + v.hostname + ' ' + (v.service_name || '')).toLowerCase() %>"
+               onclick="openModal(<%= JSON.stringify(v).replace(/"/g, '&quot;') %>)">
+            <div class="card-header">
+              <span class="rule-id-badge"><%= v.rule_id %></span>
+              <span class="severity-badge sev-<%= v.severity %>"><%= v.severity %></span>
+              <% if (v.is_new) { %><span class="badge-new">신규</span><% } %>
+              <% if (v.days_old > 30 && status === '미조치') { %>
+                <span class="badge-overdue" title="30일 이상 미조치">⚠</span>
+              <% } %>
+            </div>
+            <div class="card-title"><%= v.title %></div>
+            <div class="card-meta">
+              <div class="meta-line">
+                <span class="meta-icon">🖥</span>
+                <strong><%= v.hostname %></strong>
+                <% if (v.service_name) { %>
+                  <span class="muted">(<%= v.service_name %>)</span>
+                <% } %>
+              </div>
+              <% if (v.assignee) { %>
+                <div class="meta-line">
+                  <span class="meta-icon">👤</span>
+                  <%= v.assignee %>
+                </div>
+              <% } %>
+              <% if (v.fixed_at) { %>
+                <div class="meta-line muted small">
+                  완료: <%= v.fixed_at %>
+                </div>
+              <% } else { %>
+                <div class="meta-line muted small">
+                  발견: <%= v.discovered_at?.slice(0, 10) %> (<%= v.days_old %>일 경과)
+                </div>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+        <% if (items.length === 0) { %>
+          <div class="kanban-empty">항목 없음</div>
+        <% } %>
+      </div>
+    </div>
+  <% }); %>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 조치 상세/편집 모달                                    -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="remModal" class="modal" style="display:none;">
+  <div class="modal-backdrop" onclick="closeModal()"></div>
+  <div class="modal-content" style="max-width: 720px;">
+    <div class="modal-header">
+      <h3>조치 처리 — <span id="modalRuleId"></span></h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- 취약점 요약 -->
+      <table class="info-table">
+        <tr>
+          <th>호스트</th><td id="modalHostname"></td>
+          <th>자산번호</th><td id="modalAssetNo"></td>
+        </tr>
+        <tr>
+          <th>위험도</th><td id="modalSeverity"></td>
+          <th>발견일</th><td id="modalDiscovered"></td>
+        </tr>
+      </table>
+      
+      <div class="vuln-detail-box">
+        <div class="detail-label">취약점</div>
+        <div class="detail-text" id="modalTitle"></div>
+      </div>
+      
+      <div class="vuln-detail-box">
+        <div class="detail-label">진단 사유</div>
+        <div class="detail-text" id="modalReason"></div>
+      </div>
+      
+      <div class="vuln-detail-box" id="evidenceBox">
+        <div class="detail-label">증거 (Evidence)</div>
+        <pre class="code-block-small" id="modalEvidence"></pre>
+      </div>
+      
+      <!-- 조치 입력 -->
+      <h4 style="margin-top:20px;">조치 처리</h4>
+      <form id="remForm">
+        <input type="hidden" id="formResultId">
+        <div class="form-row inline">
+          <label>조치 상태</label>
+          <select id="formFixStatus" name="fix_status">
+            <option value="미조치">미조치</option>
+            <option value="진행중">진행중</option>
+            <option value="조치완료">조치완료</option>
+            <option value="예외">예외 신청</option>
+          </select>
+        </div>
+        <div class="form-row inline">
+          <label>담당자</label>
+          <input type="text" id="formAssignee" name="assignee" placeholder="홍길동 또는 팀명">
+        </div>
+        <div class="form-row inline">
+          <label>조치 내용</label>
+          <textarea id="formFixMethod" name="fix_method" rows="3"
+                    placeholder="실제 수행한 조치 내용 (예: PermitRootLogin=no 설정 후 sshd 재시작)"></textarea>
+        </div>
+        <div class="form-row inline">
+          <label>미조치 사유</label>
+          <textarea id="formMisnotice" name="misnotice_reason" rows="2"
+                    placeholder="미조치 시 사유 (옵션)"></textarea>
+        </div>
+        <div class="form-row inline">
+          <label>비고</label>
+          <input type="text" id="formNote" name="note" placeholder="기타 메모">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">취소</button>
+      <button class="btn primary" onclick="saveRemediation()">저장</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+let currentVuln = null;
+
+function openModal(v) {
+  currentVuln = v;
+  document.getElementById('modalRuleId').textContent = v.rule_id;
+  document.getElementById('modalHostname').textContent = v.hostname || '-';
+  document.getElementById('modalAssetNo').textContent = v.asset_no || '-';
+  document.getElementById('modalSeverity').innerHTML = 
+    '<span class="severity-badge sev-' + v.severity + '">' + v.severity + '</span>';
+  document.getElementById('modalDiscovered').textContent = 
+    (v.discovered_at || '').slice(0, 19) + ' (' + v.days_old + '일 경과)';
+  document.getElementById('modalTitle').textContent = v.title || '';
+  document.getElementById('modalReason').textContent = v.reason || '(사유 없음)';
+  
+  const evBox = document.getElementById('evidenceBox');
+  if (v.evidence) {
+    evBox.style.display = 'block';
+    document.getElementById('modalEvidence').textContent = v.evidence;
+  } else {
+    evBox.style.display = 'none';
+  }
+  
+  document.getElementById('formResultId').value = v.result_id;
+  document.getElementById('formFixStatus').value = v.fix_status || '미조치';
+  document.getElementById('formAssignee').value = v.assignee || '';
+  document.getElementById('formFixMethod').value = '';
+  document.getElementById('formMisnotice').value = '';
+  document.getElementById('formNote').value = '';
+  
+  document.getElementById('remModal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('remModal').style.display = 'none';
+}
+
+async function saveRemediation() {
+  if (!currentVuln) return;
+  
+  const data = {
+    fix_status: document.getElementById('formFixStatus').value,
+    assignee: document.getElementById('formAssignee').value,
+    fix_method: document.getElementById('formFixMethod').value,
+    misnotice_reason: document.getElementById('formMisnotice').value,
+    note: document.getElementById('formNote').value,
+  };
+  
+  const res = await fetch('/remediation/' + currentVuln.result_id + '/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const j = await res.json();
+  
+  if (j.status === 'success') {
+    alert('조치 정보가 저장되었습니다.');
+    location.reload();
+  } else {
+    alert('실패: ' + (j.error || '오류'));
+  }
+}
+
+function applyFilter() {
+  const server = document.getElementById('filterServer').value;
+  const sev = document.getElementById('filterSeverity').value;
+  const status = document.getElementById('filterStatus').value;
+  const overdue = document.getElementById('filterOverdue').value;
+  const text = document.getElementById('filterText').value.toLowerCase();
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    let show = true;
+    if (server && card.dataset.hostname !== server) show = false;
+    if (sev && card.dataset.severity !== sev) show = false;
+    if (status && card.dataset.status !== status) show = false;
+    if (overdue && card.dataset.overdue !== overdue) show = false;
+    if (text && !card.dataset.search.includes(text)) show = false;
+    const d = card.dataset.discovered || '';
+    if (from && (!d || d < from)) show = false;
+    if (to && (!d || d > to)) show = false;
+    card.style.display = show ? '' : 'none';
+  });
+}
+
+function resetFilter() {
+  ['filterServer','filterSeverity','filterStatus','filterOverdue','filterText','filterFrom','filterTo']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.querySelectorAll('.kanban-card').forEach(c => c.style.display = '');
+}
+
+['filterServer','filterSeverity','filterStatus','filterOverdue','filterText','filterFrom','filterTo'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener((id === 'filterText') ? 'input' : 'change', applyFilter);
+});
+</script>
+
+<%- include('../_footer') %>

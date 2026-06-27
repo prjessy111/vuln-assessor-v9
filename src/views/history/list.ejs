@@ -1,0 +1,65 @@
+<%- include('../_header', { title: '진단 이력' }) %>
+
+<h1>진단 이력</h1>
+
+<form method="get" class="form-inline">
+  <label>서버 선택</label>
+  <select name="server_id" onchange="this.form.submit()">
+    <option value="">--- 선택 ---</option>
+    <% servers.forEach(s => { %>
+      <option value="<%= s.server_id %>"
+        <%= selectedServer && selectedServer.server_id === s.server_id ? 'selected' : '' %>>
+        <%= s.name %> (<%= s.hostname %>)
+      </option>
+    <% }); %>
+  </select>
+</form>
+
+<% if (selectedServer) { %>
+  <h3><%= selectedServer.name %> 진단 이력 (<%= assessments.length %>건)</h3>
+  <form method="get" action="/history/compare" id="compareForm">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>선택</th>
+          <th>진단ID</th>
+          <th>실행일시</th>
+          <th>실행자</th>
+          <th>룰셋</th>
+          <th>전체</th><th>취약</th><th>양호</th><th>N/A</th>
+          <th>소요(ms)</th>
+          <th>액션</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% assessments.forEach(a => { %>
+          <tr>
+            <td><input type="checkbox" name="ids" value="<%= a.assessment_id %>"></td>
+            <td>#<%= a.assessment_id %></td>
+            <td><%= a.executed_at %></td>
+            <td><%= a.executed_by || '-' %></td>
+            <td><%= a.ruleset_ver %></td>
+            <td><%= a.total_count %></td>
+            <td class="vuln-cell"><%= a.vuln_count %></td>
+            <td><%= a.safe_count %></td>
+            <td><%= a.na_count %></td>
+            <td><%= fmtMs(a.elapsed_ms) %></td>
+            <td><a href="/diagnosis/<%= a.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">🤖 AI 결과</a></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+    <button type="button" class="btn primary" onclick="doCompare()">선택한 2건 비교</button>
+  </form>
+
+  <script>
+    function doCompare() {
+      const boxes = document.querySelectorAll('input[name="ids"]:checked');
+      if (boxes.length !== 2) { alert('비교할 진단 2건을 선택하세요.'); return; }
+      const [a, b] = [boxes[0].value, boxes[1].value];
+      location.href = `/history/compare?a=${a}&b=${b}`;
+    }
+  </script>
+<% } %>
+
+<%- include('../_footer') %>

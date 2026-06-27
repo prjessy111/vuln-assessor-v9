@@ -1,0 +1,146 @@
+<%- include('../_header', { title: '실행 이력 #' + run.run_id, activeMenu: 'schedules' }) %>
+
+<div class="page-header">
+  <h1>실행 이력 상세</h1>
+  <p class="muted small">
+    예약 "<strong><%= run.schedule_name %></strong>"의 <%= run.started_at %> 실행 결과입니다.
+  </p>
+  <div class="header-actions">
+    <a href="/schedules" class="btn">← 예약 진단</a>
+    <% if (typeof schedule !== 'undefined' && schedule) { %>
+      <a href="/schedules/<%= schedule.schedule_id %>/edit" class="btn">예약 편집</a>
+    <% } %>
+  </div>
+</div>
+
+<!-- 요약 KPI -->
+<div class="kpi-grid kpi-5col">
+  <div class="kpi-card">
+    <div class="kpi-label">상태</div>
+    <% var stColor = run.status === '성공' ? '#27ae60'
+                   : run.status === '실패' ? '#c0392b'
+                   : run.status === '부분실패' ? '#e67e22'
+                   : '#888'; %>
+    <div class="kpi-num" style="color:<%= stColor %>;"><%= run.status %></div>
+    <div class="kpi-sub">전체 결과</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">성공</div>
+    <div class="kpi-num" style="color:#27ae60;"><%= run.success %></div>
+    <div class="kpi-sub">/ <%= run.total %>대</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">실패</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= run.failed %></div>
+    <div class="kpi-sub">대상 서버</div>
+  </div>
+  <div class="kpi-card kpi-avg">
+    <div class="kpi-label">소요</div>
+    <div class="kpi-num"><%= fmtMs(run.elapsed_ms || 0) %></div>
+    <div class="kpi-sub">전체 처리 시간</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">트리거</div>
+    <div class="kpi-num" style="font-size:1.2rem;">
+      <% if (run.triggered_by === 'cron') { %>⏰ 자동<% } else { %>👤 수동<% } %>
+    </div>
+    <div class="kpi-sub"><%= run.triggered_by %></div>
+  </div>
+</div>
+
+<!-- 메타 정보 -->
+<div class="section-box">
+  <h3>실행 정보</h3>
+  <table class="data-table" style="max-width:700px;">
+    <tr>
+      <th style="width:160px;">예약 ID / 이름</th>
+      <td>
+        #<%= run.schedule_id %>
+        <% if (typeof schedule !== 'undefined' && schedule) { %>
+          <span class="muted">/</span> <%= run.schedule_name %>
+          <% if (schedule.cron_expr) { %>
+            <span class="muted small">(<code><%= schedule.cron_expr %></code>)</span>
+          <% } %>
+        <% } else { %>
+          <span class="muted">(예약 삭제됨)</span>
+        <% } %>
+      </td>
+    </tr>
+    <tr><th>실행 ID</th><td class="mono"><%= run.run_id %></td></tr>
+    <tr><th>시작 시각</th><td class="mono"><%= run.started_at %></td></tr>
+    <tr><th>종료 시각</th><td class="mono"><%= run.finished_at %></td></tr>
+  </table>
+</div>
+
+<!-- 서버별 결과 -->
+<div class="section-box">
+  <h3>서버별 결과 (<%= (run.per_server || []).length %>대)</h3>
+  <% if (!run.per_server || !run.per_server.length) { %>
+    <p class="muted">서버별 결과가 기록되지 않았습니다.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>서버</th>
+          <th>호스트명</th>
+          <th>상태</th>
+          <th>취약 발견</th>
+          <th>소요</th>
+          <th>진단 ID</th>
+          <th>액션</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% run.per_server.forEach(p => { %>
+          <tr style="background:<%= p.status === 'failed' ? '#fff5f5' : 'transparent' %>;">
+            <td>#<%= p.server_id %></td>
+            <td class="mono"><%= p.hostname || '-' %></td>
+            <td>
+              <% if (p.status === 'success') { %>
+                <span style="color:#27ae60;font-weight:600;">✓ 성공</span>
+              <% } else { %>
+                <span style="color:#c0392b;font-weight:600;">✗ 실패</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (p.status === 'success' && typeof p.vuln_count === 'number') { %>
+                <% if (p.vuln_count > 0) { %>
+                  <span style="color:#c0392b;font-weight:600;"><%= p.vuln_count %>건</span>
+                <% } else { %>
+                  <span style="color:#27ae60;">없음</span>
+                <% } %>
+              <% } else { %>
+                <span class="muted">-</span>
+              <% } %>
+            </td>
+            <td class="mono small">
+              <%= p.elapsed_ms !== undefined ? fmtMs(p.elapsed_ms) : '-' %>
+            </td>
+            <td class="mono small">
+              <% if (p.assessment_id) { %>
+                #<%= p.assessment_id %>
+              <% } else { %>
+                <span class="muted">-</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (p.assessment_id) { %>
+                <a href="/diagnosis/<%= p.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">🤖 AI 결과</a>
+                <a href="/diagnosis/<%= p.assessment_id %>/cve" class="btn-sm">CVE</a>
+              <% } %>
+            </td>
+          </tr>
+          <% if (p.status === 'failed' && p.error) { %>
+            <tr style="background:#fff5f5;">
+              <td colspan="7" class="small" style="padding-left:2rem;color:#c0392b;">
+                <strong>오류:</strong> <%= p.error %>
+              </td>
+            </tr>
+          <% } %>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../_footer') %>

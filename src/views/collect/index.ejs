@@ -1,0 +1,73 @@
+<%- include('../_header', { title: 'Raw 수집' }) %>
+
+<h1>Raw 데이터 수집</h1>
+<p class="muted">Agent에 SSH 접속하여 SecuMS raw SQLite 파일을 진단 PC로 가져옵니다.</p>
+
+<% if (!servers.length) { %>
+  <div class="empty">SSH 정보가 등록된 서버가 없습니다. <a href="/servers">서버 관리</a>에서 SSH 정보를 등록하세요.</div>
+<% } else { %>
+<form method="post" action="/collect/run" class="form-block">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="check_all" onchange="toggleAll(this)"></th>
+        <th>표시명</th><th>호스트</th><th>OS</th><th>SSH 사용자</th>
+        <th>raw 경로</th><th>마지막 수집</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% servers.forEach(s => { %>
+        <tr>
+          <td><input type="checkbox" name="server_ids" value="<%= s.server_id %>" class="row_check"></td>
+          <td><%= s.name %></td>
+          <td><code><%= s.hostname %>:<%= s.ssh_port||22 %></code></td>
+          <td><span class="os-badge"><%= s.os_type.toUpperCase() %></span></td>
+          <td><%= s.ssh_user %> <span class="muted small">(<%= s.ssh_auth_type %>)</span></td>
+          <td><code class="small"><%= s.remote_raw_path %></code></td>
+          <td class="small"><%= s.last_collected_at || '-' %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <div class="form-row">
+    <label>실행자</label>
+    <input name="executed_by" placeholder="이름 또는 ID (옵션)">
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary large">선택 서버에서 수집 시작</button>
+    <a href="/collect/history" class="btn">수집 이력 보기</a>
+  </div>
+</form>
+
+<script>
+function toggleAll(box) {
+  document.querySelectorAll('.row_check').forEach(c => c.checked = box.checked);
+}
+</script>
+<% } %>
+
+<h2>최근 수집 (최근 20건)</h2>
+<table class="data-table">
+  <thead>
+    <tr><th>시작</th><th>서버</th><th>상태</th><th>파일</th><th>크기</th><th>실행자</th></tr>
+  </thead>
+  <tbody>
+    <% recent.forEach(c => { %>
+      <tr class="status-<%= c.status==='성공'?'safe':c.status==='실패'?'vuln':'' %>">
+        <td class="small"><%= c.started_at %></td>
+        <td><%= c.server_name %> <span class="muted small">(<%= c.hostname %>)</span></td>
+        <td><span class="badge b-<%= c.status==='성공'?'safe':c.status==='실패'?'vuln':'na' %>"><%= c.status %></span></td>
+        <td class="small"><code><%= c.raw_file_path || '-' %></code></td>
+        <td class="small"><%= c.file_size ? Math.round(c.file_size/1024)+' KB' : '-' %></td>
+        <td class="small"><%= c.triggered_by || '-' %></td>
+      </tr>
+    <% }); %>
+    <% if (!recent.length) { %>
+      <tr><td colspan="6" class="empty">수집 이력이 없습니다.</td></tr>
+    <% } %>
+  </tbody>
+</table>
+
+<%- include('../_footer') %>

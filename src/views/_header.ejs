@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title><%= typeof title !== 'undefined' ? title : '취약점 진단 시스템' %></title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">🛡️</span>
+    <span class="brand-name">Vuln Assessor</span>
+  </div>
+  <%
+    // 활성 메뉴 → 그룹 매핑 (부모 하이라이트용)
+    var _g = { diagnosis:'diag', collection:'diag', schedules:'diag',
+               reports:'rpt', 'inspection-status':'rpt', 'security-grade':'rpt', 'cve-sync':'rpt',
+               vuln:'vuln', remediation:'vuln', exceptions:'vuln', exclusions:'vuln',
+               notifications:'ops', audit:'ops', users:'ops' };
+    var _ag = _g[activeMenu] || activeMenu;
+    var isAdmin = (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin');
+  %>
+  <nav class="main-nav">
+    <a href="/" class="<%= activeMenu === 'dashboard' ? 'active' : '' %>">대시보드</a>
+
+    <div class="nav-group <%= _ag === 'diag' ? 'active' : '' %>">
+      <span class="nav-top">진단 ▾</span>
+      <div class="nav-drop">
+        <a href="/diagnosis" class="<%= activeMenu === 'diagnosis' ? 'active' : '' %>">진단 관리</a>
+        <a href="/collection" class="<%= activeMenu === 'collection' ? 'active' : '' %>">수집 관리</a>
+        <a href="/schedules" class="<%= activeMenu === 'schedules' ? 'active' : '' %>">예약 진단</a>
+      </div>
+    </div>
+
+    <div class="nav-group <%= _ag === 'rpt' ? 'active' : '' %>">
+      <span class="nav-top">리포트·현황 ▾</span>
+      <div class="nav-drop">
+        <a href="/reports" class="<%= activeMenu === 'reports' ? 'active' : '' %>">리포트</a>
+        <a href="/inspection-status" class="<%= activeMenu === 'inspection-status' ? 'active' : '' %>">점검현황</a>
+        <a href="/security-grade" class="<%= activeMenu === 'security-grade' ? 'active' : '' %>">서버별 점검 이력</a>
+        <a href="/cve-sync" class="<%= activeMenu === 'cve-sync' ? 'active' : '' %>">CVE 동기화</a>
+      </div>
+    </div>
+
+    <div class="nav-group <%= _ag === 'vuln' ? 'active' : '' %>">
+      <span class="nav-top">취약점 관리 ▾</span>
+      <div class="nav-drop">
+        <a href="/vulnerabilities" class="<%= activeMenu === 'vuln' ? 'active' : '' %>">취약점 관리</a>
+        <a href="/remediation" class="<%= activeMenu === 'remediation' ? 'active' : '' %>">조치 관리</a>
+        <a href="/exceptions" class="<%= activeMenu === 'exceptions' ? 'active' : '' %>">예외 관리</a>
+        <a href="/exclusions" class="<%= activeMenu === 'exclusions' ? 'active' : '' %>">제외 관리</a>
+      </div>
+    </div>
+
+    <a href="/servers" class="<%= activeMenu === 'servers' ? 'active' : '' %>">서버 관리</a>
+
+    <div class="nav-group <%= _ag === 'ops' ? 'active' : '' %>">
+      <span class="nav-top">운영 ▾</span>
+      <div class="nav-drop">
+        <a href="/notifications" class="<%= activeMenu === 'notifications' ? 'active' : '' %>">알림</a>
+        <a href="/audit" class="<%= activeMenu === 'audit' ? 'active' : '' %>">감사 로그</a>
+        <% if (isAdmin) { %><a href="/users" class="<%= activeMenu === 'users' ? 'active' : '' %>">사용자 관리</a><% } %>
+      </div>
+    </div>
+  </nav>
+  <div class="user-area">
+    <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+      <a href="/users/me/password" class="user-name" title="비밀번호 변경" style="text-decoration:none;color:inherit;">
+        <%= currentUser.name %>
+        <% if (currentUser.role === 'admin') { %><span class="role-mini">👑</span>
+        <% } else if (currentUser.role === 'operator') { %><span class="role-mini">🔧</span>
+        <% } else { %><span class="role-mini">👁</span><% } %>
+      </a>
+      <a href="/logout" class="btn-sm">로그아웃</a>
+    <% } %>
+  </div>
+</header>
+<main class="container">

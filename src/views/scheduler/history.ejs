@@ -1,0 +1,175 @@
+<%- include('../_header', { title: '자동 수집 이력', activeMenu: 'diagnosis' }) %>
+
+<div class="page-header">
+  <h1>🔄 자동 수집 + 진단</h1>
+  <div class="header-actions">
+    <a href="/diagnosis" class="btn">진단 관리로</a>
+    <button class="btn primary" onclick="runAll()" style="background:#27ae60;border-color:#27ae60;">▶ 전체 실행 (수집+진단)</button>
+    <button class="btn" onclick="location.reload()">🔁 새로고침</button>
+  </div>
+</div>
+
+<p class="muted small" style="margin:0.5rem 0 1rem;">
+  servers.csv 에 등록된 모든 서버를 순차적으로 수집 + AI 진단합니다.
+  터미널의 <code>npm run scheduler</code> 와 동일한 동작.
+</p>
+
+<h2 style="margin-top:1.5rem;">📋 servers.csv 등록 서버 (<%= csvServers.length %>개)</h2>
+<% if (csvServers.length === 0) { %>
+  <p class="muted" style="padding:1rem;background:#fffbe6;border-left:3px solid #f1c40f;">
+    ⚠ <code>servers.csv</code> 파일이 없거나 비어 있습니다.<br>
+    프로젝트 루트(<code>vuln-assessor-v9/</code>)에 <code>servers.csv</code> 파일을 만들어 주세요.<br>
+    형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
+  </p>
+<% } else { %>
+  <table class="data-table" style="margin-bottom:1.5rem;">
+    <thead>
+      <tr>
+        <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
+        <th style="width:180px;">개별 실행</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% csvServers.forEach(s => { %>
+        <tr>
+          <td><strong><%= s.hostname %></strong></td>
+          <td class="mono small"><%= s.ip %></td>
+          <td><%= s.os %></td>
+          <td class="small"><%= s.username %></td>
+          <td class="small"><%= s.asset_no %></td>
+          <td>
+            <button class="btn-sm primary" onclick="fetchAndRun('<%= s.ip %>', '<%= s.hostname %>')" style="background:#6c5ce7;">🔄 수집+진단</button>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+
+<h2 style="margin-top:1.5rem;">🕒 실행 이력</h2>
+<p class="muted small">
+  최근 <strong><%= history.length %></strong>건 표시 (전체 <%= total %>건).
+</p>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width:140px;">시작 시각</th>
+      <th>호스트</th><th style="width:110px;">IP</th><th style="width:70px;">OS</th>
+      <th style="width:80px;">수집</th><th style="width:80px;">진단</th>
+      <th style="width:90px;">결과 ID</th><th>요약</th><th style="width:80px;">소요</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (!history.length) { %>
+      <tr>
+        <td colspan="9" class="empty" style="padding:40px;text-align:center;">
+          자동 수집 이력이 없습니다.<br>
+          <span class="muted small">위 [▶ 전체 실행] 버튼을 누르거나 <code>npm run scheduler</code> 실행 시 기록됩니다.</span>
+        </td>
+      </tr>
+    <% } %>
+    <% history.forEach(h => { %>
+      <tr>
+        <td class="small mono"><%= h.started_at %></td>
+        <td><strong><%= h.hostname %></strong></td>
+        <td class="mono small"><%= h.ip %></td>
+        <td><%= h.os %></td>
+        <td>
+          <% if (h.fetch_status === 'success') { %><span style="color:#27ae60;font-weight:600;">✓ 성공</span>
+          <% } else if (h.fetch_status === 'failed') { %><span style="color:#c0392b;font-weight:600;" title="<%= h.fetch_error %>">✗ 실패</span>
+          <% } else { %><span class="muted">-</span><% } %>
+        </td>
+        <td>
+          <% if (h.diagnose_status === 'success') { %><span style="color:#27ae60;font-weight:600;">✓ 완료</span>
+          <% } else if (h.diagnose_status === 'skipped') { %><span class="muted" title="<%= h.diagnose_error %>">건너뜀</span>
+          <% } else if (h.diagnose_status === 'failed') { %><span style="color:#c0392b;font-weight:600;" title="<%= h.diagnose_error %>">✗ 실패</span>
+          <% } else { %><span class="muted">-</span><% } %>
+        </td>
+        <td>
+          <% if (h.assessment_id) { %><a href="/diagnosis/<%= h.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">#<%= h.assessment_id %></a>
+          <% } else { %><span class="muted">-</span><% } %>
+        </td>
+        <td class="small">
+          <% if (h.summary) { %>
+            <span style="color:#c0392b;">취약 <%= h.summary.vuln %></span> /
+            <span style="color:#27ae60;">양호 <%= h.summary.safe %></span>
+            <% if (h.summary.info) { %>/ 정보제공 <%= h.summary.info %><% } %>
+          <% } else if (h.fetch_error) { %>
+            <span class="muted" style="font-size:0.85em;"><%= h.fetch_error.substring(0, 80) %></span>
+          <% } else if (h.diagnose_error) { %>
+            <span class="muted" style="font-size:0.85em;"><%= h.diagnose_error.substring(0, 80) %></span>
+          <% } else { %><span class="muted">-</span><% } %>
+        </td>
+        <td class="small mono"><%= h.elapsed_ms ? fmtMs(h.elapsed_ms) : '-' %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<script>
+async function fetchAndRun(serverId, hostname) {
+  if (!confirm('[' + hostname + '] 원격에서 raw DB 수집 후 AI 진단을 실행합니다.\n진행할까요?')) return;
+  const btns = document.querySelectorAll('button[onclick*="fetchAndRun"]');
+  btns.forEach(function(b) { b.disabled = true; });
+  try {
+    const res = await fetch('/diagnosis/fetch-and-run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server_id: serverId }),
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      const s = data.summary || {};
+      alert('✅ [' + data.hostname + '] 완료!\n취약 ' + s.vuln + ' / 양호 ' + s.safe + ' / 정보제공 ' + (s.info || 0) + '건\n일치율 ' + s.agreement_rate + '%\n검증 실패율 ' + (s.validation_failure_rate || 0) + '%');
+      location.href = '/diagnosis/' + data.assessment_id + '/ai';
+    } else {
+      const reason = data.fetch_status === 'failed' ? '수집 실패: ' + data.fetch_error :
+                     data.diagnose_status === 'failed' ? '진단 실패: ' + data.diagnose_error :
+                     data.error || '알 수 없는 오류';
+      alert('❌ [' + (data.hostname || hostname) + '] 처리 실패\n\n' + reason);
+    }
+  } catch (e) {
+    alert('네트워크 오류: ' + e.message);
+  } finally {
+    btns.forEach(function(b) { b.disabled = false; });
+  }
+}
+
+async function runAll() {
+  if (!confirm('servers.csv 의 모든 서버를 순차로 [수집 + 진단] 합니다.\n시간이 걸릴 수 있습니다. 진행할까요?')) return;
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ 실행 중... (페이지를 떠나지 마세요)';
+  try {
+    const res = await fetch('/scheduler/run-all', { method: 'POST' });
+    const data = await res.json();
+    if (data.status === 'completed') {
+      const s = data.summary;
+      let msg = '✅ 일괄 처리 완료\n\n전체 ' + s.total + '개\n' +
+                '진단 성공: ' + s.success + '개\n수집만: ' + s.fetched_only + '개\n실패: ' + s.failed + '개\n\n';
+      if (data.results) {
+        msg += '상세:\n';
+        data.results.forEach(function(r) {
+          const tag = r.diagnose_status === 'success' ? '✓' : 
+                      r.fetch_status === 'failed' ? '✗ 수집' : '⚠';
+          const detail = r.summary ? '(취약 ' + r.summary.vuln + ')' : 
+                         (r.error ? '(' + r.error.substring(0, 40) + ')' : '');
+          msg += '  ' + tag + ' ' + r.hostname + ' ' + detail + '\n';
+        });
+      }
+      alert(msg);
+      location.reload();
+    } else {
+      alert('❌ 일괄 처리 실패\n\n' + (data.error || '?'));
+    }
+  } catch (e) {
+    alert('네트워크 오류: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ 전체 실행 (수집+진단)';
+  }
+}
+</script>
+
+<%- include('../_footer') %>

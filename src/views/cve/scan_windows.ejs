@@ -1,0 +1,212 @@
+<%- include('../_header', { title: 'Windows CVE 자동 진단', activeMenu: 'diagnosis' }) %>
+
+<div class="page-header">
+  <h1>Windows CVE 자동 진단 #<%= assessment_id %></h1>
+  <p class="muted small">
+    설치된 <strong><%= result.packages_count %>개 핫픽스(KB)</strong>와 OS 빌드를 기준으로,
+    알려진 Windows 보안 취약점(CVE)의 패치 적용 여부를 결정론적으로 판정한 결과입니다.
+    누락된 보안 업데이트(KB)는 미패치(AFFECTED)로 분류됩니다.
+  </p>
+  <div class="header-actions">
+    <a href="/diagnosis/<%= assessment_id %>/ai" class="btn" style="background:#6c5ce7;color:#fff;">🤖 AI 결과로</a>
+    <a href="/cve/sync" class="btn">CVE Feed 동기화</a>
+  </div>
+</div>
+
+<div class="info-box" style="background:#eef2ff; border-left:4px solid #6c5ce7; padding:0.75rem 1rem; margin:0 0 1rem; border-radius:4px;">
+  <strong>🪟 Windows 패치 기반 진단</strong>
+  <span class="muted small">
+    — OS: <strong><%= result.env.os_distro %></strong> (빌드 <%= result.env.os_version %>)
+    · 설치 핫픽스 <strong><%= result.packages_count %></strong>건
+    <% if (result.hotfixes && result.hotfixes.length) { %>
+      (<%= result.hotfixes.map(h => h.id).join(', ') %>)
+    <% } %>
+  </span>
+</div>
+
+<% if (result.error) { %>
+  <div class="alert alert-warning"><strong>⚠ 오류:</strong> <%= result.error %></div>
+<% } else { %>
+
+<!-- 환경 정보 -->
+<table class="info-table">
+  <tr>
+    <th>호스트명</th><td><%= result.env.hostname %></td>
+    <th>OS</th><td><%= result.env.os_distro %> (<%= result.env.os_version %>)</td>
+  </tr>
+  <tr>
+    <th>설치 핫픽스</th><td><strong><%= result.packages_count %>건</strong></td>
+    <th>매칭된 CVE</th><td><strong><%= result.summary.total %>건</strong> (취약 <%= result.summary.actually_vulnerable %>)</td>
+  </tr>
+</table>
+
+<!-- KPI 카드 -->
+<div class="kpi-grid kpi-5col" style="margin-top:16px;">
+  <div class="kpi-card kpi-critical">
+    <div class="kpi-label">CRITICAL</div>
+    <div class="kpi-num"><%= result.summary.by_severity.critical %></div>
+    <div class="kpi-sub">CVSS 9.0+</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">HIGH</div>
+    <div class="kpi-num"><%= result.summary.by_severity.high %></div>
+    <div class="kpi-sub">CVSS 7.0~8.9</div>
+  </div>
+  <div class="kpi-card kpi-warning">
+    <div class="kpi-label">MEDIUM</div>
+    <div class="kpi-num"><%= result.summary.by_severity.medium %></div>
+    <div class="kpi-sub">CVSS 4.0~6.9</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">CISA KEV</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= result.summary.kev_count %></div>
+    <div class="kpi-sub">활성 익스플로잇</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">패치됨</div>
+    <div class="kpi-num"><%= result.summary.patched_count %></div>
+    <div class="kpi-sub">KB 적용 확인</div>
+  </div>
+</div>
+
+<!-- 우선순위 KPI -->
+<div class="kpi-grid kpi-4col" style="margin-top:12px;">
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">IMMEDIATE</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= result.summary.by_priority.IMMEDIATE || 0 %></div>
+    <div class="kpi-sub">즉시 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#e67e22;">
+    <div class="kpi-label">URGENT</div>
+    <div class="kpi-num" style="color:#e67e22;"><%= result.summary.by_priority.URGENT || 0 %></div>
+    <div class="kpi-sub">긴급 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#f39c12;">
+    <div class="kpi-label">SCHEDULED</div>
+    <div class="kpi-num" style="color:#f39c12;"><%= result.summary.by_priority.SCHEDULED || 0 %></div>
+    <div class="kpi-sub">정기 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#7f8c8d;">
+    <div class="kpi-label">MONITOR</div>
+    <div class="kpi-num" style="color:#7f8c8d;"><%= result.summary.by_priority.MONITOR || 0 %></div>
+    <div class="kpi-sub">모니터링</div>
+  </div>
+</div>
+
+<!-- CVE 목록 -->
+<div class="section-box" style="margin-top:20px;">
+  <h3>매칭된 CVE 목록 (우선순위 정렬)</h3>
+  <table class="data-table cve-table">
+    <thead>
+      <tr>
+        <th width="110">CVE ID</th>
+        <th>이름</th>
+        <th width="60">CVSS</th>
+        <th width="50">KEV</th>
+        <th width="60">EPSS</th>
+        <th>대상 / 패치 KB</th>
+        <th width="100">우선순위</th>
+        <th width="80">실제 위험</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% result.matches.forEach(m => {
+        const j = m.ai_judgment || {};
+        const isPatched = m.backport.isPatched;
+      %>
+        <tr class="row-priority-<%= (j.patch_priority || 'monitor').toLowerCase() %>">
+          <td class="mono"><strong><%= m.cve_id %></strong></td>
+          <td class="small">
+            <%= m.cve_name %>
+            <% if (m.exploit_public) { %><span class="badge-exploit">PoC</span><% } %>
+          </td>
+          <td><span class="sev-badge sev-<%= m.severity.toLowerCase() %>"><%= m.cvss_v3 %></span></td>
+          <td class="text-center">
+            <% if (m.cisa_kev) { %><span class="kev-badge">🔴</span><% } else { %><span class="muted">·</span><% } %>
+          </td>
+          <td class="text-center small"><%= (m.epss * 100).toFixed(1) %>%</td>
+          <td class="mono small">
+            <%= m.pkg_full %>
+            <% if (isPatched) { %>
+              <div class="muted small" style="color:#27ae60;">✓ 패치 적용됨 (<%= m.fix_kb %>)</div>
+            <% } else { %>
+              <div class="muted small" style="color:#c0392b;">⚠ 미설치 KB: <%= m.fix_kb %></div>
+            <% } %>
+            <% if (m.service_note) { %>
+              <div class="muted small"><%= m.service_note %></div>
+            <% } %>
+          </td>
+          <td>
+            <% if (j.patch_priority === 'IMMEDIATE') { %>
+              <span class="prio-badge prio-immediate">🚨 IMMEDIATE</span>
+            <% } else if (j.patch_priority === 'URGENT') { %>
+              <span class="prio-badge prio-urgent">⚠ URGENT</span>
+            <% } else if (j.patch_priority === 'SCHEDULED') { %>
+              <span class="prio-badge prio-scheduled">SCHEDULED</span>
+            <% } else { %>
+              <span class="prio-badge prio-monitor">MONITOR</span>
+            <% } %>
+          </td>
+          <td class="text-center">
+            <% if (j.is_vulnerable) { %>
+              <span class="status-cell st-vuln">취약</span>
+            <% } else { %>
+              <span class="status-cell st-safe">안전</span>
+            <% } %>
+          </td>
+        </tr>
+        <tr class="cve-detail-row">
+          <td colspan="8" class="cve-detail">
+            <div class="cve-detail-grid">
+              <div class="cve-detail-block">
+                <div class="detail-label">📝 AI 판정 근거</div>
+                <div class="detail-text"><%= j.rationale_ko %></div>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">💀 공격 시나리오</div>
+                <div class="detail-text"><%= j.exploit_scenario %></div>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">🔧 권장 조치</div>
+                <ul class="detail-list">
+                  <% (j.recommended_actions || []).forEach(a => { %><li><%= a %></li><% }); %>
+                </ul>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">📋 패치 정보</div>
+                <div class="detail-text">
+                  <strong>권고:</strong> <%= m.patches && m.patches.upstream || '-' %><br>
+                  <strong>수정 KB:</strong> <%= (m.fixed_by_kb || []).join(', ') || '-' %><br>
+                  <strong>설치된 핫픽스:</strong> <%= (m.installed_kbs || []).join(', ') || '(없음)' %>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      <% }); %>
+      <% if (!result.matches.length) { %>
+        <tr><td colspan="8" class="empty" style="padding:32px;text-align:center;">
+          매칭된 CVE가 없습니다. (큐레이션된 Windows CVE DB 기준 — 해당 OS 빌드 대상 항목 없음)
+        </td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<div class="info-box" style="margin-top:20px;">
+  <h4>Windows CVE 자동 진단 동작 방식</h4>
+  <ul>
+    <li><strong>Stage 1 — 인벤토리 추출:</strong> OS 빌드 + 설치 핫픽스(<%= result.packages_count %>개 KB) + 서비스 상태</li>
+    <li><strong>Stage 2 — 패치 판정:</strong> 빌드 UBR ≥ 수정 UBR 이거나 수정 KB가 설치됨 → 패치, 아니면 미설치</li>
+    <li><strong>Stage 3 — 조건 평가:</strong> 일부 CVE는 특정 서비스(SMB·Spooler·Netlogon 등) 실행 여부로 공격 표면 가중</li>
+    <li><strong>Stage 4 — 우선순위:</strong> CISA KEV → 미패치 → CVSS 순</li>
+  </ul>
+  <p class="small muted" style="margin-top:12px;">
+    ※ 본 기능은 큐레이션된 핵심 Windows Server CVE만 포함합니다. 운영 환경에서는 Microsoft 보안 업데이트 가이드(MSRC) /
+    NVD 피드를 동기화하여 KB-CVE 매핑을 최신으로 유지해야 합니다. 설치 프로그램(서드파티 SW) 단위 CVE는 인벤토리 수집 확장이 필요합니다.
+  </p>
+</div>
+
+<% } %>
+
+<%- include('../_footer') %>

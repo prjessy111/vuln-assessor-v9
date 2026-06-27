@@ -1,0 +1,54 @@
+<%- include('../_header', { title: '수집 결과' }) %>
+
+<h1>Raw 수집 결과</h1>
+
+<%
+  const okCount = results.filter(r => r.ok).length;
+  const failCount = results.length - okCount;
+%>
+<div class="summary-cards">
+  <div class="summary-card total"><div>전체</div><div class="num"><%= results.length %></div></div>
+  <div class="summary-card safe"><div>성공</div><div class="num"><%= okCount %></div></div>
+  <div class="summary-card vuln"><div>실패</div><div class="num"><%= failCount %></div></div>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>서버</th><th>호스트</th><th>결과</th><th>파일/사유</th><th>크기</th><th>액션</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% results.forEach(r => { %>
+      <tr class="status-<%= r.ok ? 'safe' : 'vuln' %>">
+        <td>#<%= r.server_id %></td>
+        <td><code><%= r.hostname %></code></td>
+        <td>
+          <% if (r.ok) { %><span class="badge b-safe">성공</span>
+          <% } else { %><span class="badge b-vuln">실패</span><% } %>
+        </td>
+        <td class="small">
+          <% if (r.ok) { %>
+            <code><%= r.raw_file_path %></code><br>
+            <span class="muted">SHA-256: <%= r.raw_file_hash.slice(0,32) %>...</span>
+          <% } else { %>
+            <span style="color:#c0392b"><%= r.error %></span>
+          <% } %>
+        </td>
+        <td class="small"><%= r.file_size ? Math.round(r.file_size/1024)+' KB' : '-' %></td>
+        <td>
+          <% if (r.ok) { %>
+            <a href="/assess/new?server_id=<%= r.server_id %>&prefill_raw=<%= encodeURIComponent(r.raw_file_path) %>" class="btn-sm primary">진단 실행</a>
+          <% } %>
+        </td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<div class="form-actions" style="margin-top:20px;">
+  <a href="/collect" class="btn">수집 화면으로</a>
+  <a href="/collect/history" class="btn">전체 이력 보기</a>
+</div>
+
+<%- include('../_footer') %>

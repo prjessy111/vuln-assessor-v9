@@ -1,0 +1,45 @@
+<%- include('../_header', { title: '룰셋 관리' }) %>
+
+<h1>룰셋 관리</h1>
+
+<form method="get" class="form-inline">
+  <label>룰셋 버전</label>
+  <select name="v" onchange="this.form.submit()">
+    <% versions.forEach(v => { %>
+      <option value="<%= v %>" <%= v === currentVer ? 'selected' : '' %>><%= v %></option>
+    <% }); %>
+  </select>
+</form>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>활성</th><th>항목ID</th><th>OS</th><th>분류</th>
+      <th>점검항목</th><th>중요도</th><th>check_type</th><th>파라미터</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% rules.forEach(r => { %>
+      <tr>
+        <td>
+          <form method="post" action="/rules/<%= r.rule_id %>/toggle">
+            <input type="hidden" name="ruleset_ver" value="<%= r.ruleset_ver %>">
+            <input type="hidden" name="enabled" value="<%= r.enabled ? '0' : '1' %>">
+            <button class="toggle <%= r.enabled ? 'on' : 'off' %>">
+              <%= r.enabled ? 'ON' : 'OFF' %>
+            </button>
+          </form>
+        </td>
+        <td><%= r.rule_id %></td>
+        <td><span class="os-badge"><%= r.os_target.toUpperCase() %></span></td>
+        <td><%= r.category %></td>
+        <td><%= r.title %></td>
+        <td><span class="sev sev-<%= r.severity %>"><%= r.severity %></span></td>
+        <td><code><%= r.check_type %></code></td>
+        <td><code><%= JSON.stringify(r.check_param || {}) %></code></td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<%- include('../_footer') %>

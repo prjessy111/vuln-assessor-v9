@@ -1,0 +1,617 @@
+<%- include('../_header', { title: '서버 관리', activeMenu: 'servers' }) %>
+<style>
+  /* 리소스 사용률 셀 — 세로 쌓기(컴팩트) */
+  .metric { min-width:84px; }
+  .metric-top { line-height:1.2; }
+  .metric-top .pct { font-size:14px; font-weight:800; color:#0b1f3a; }
+  .metric-top .abs { display:block; font-size:11px; color:#46505f; }
+  .metric-spec { font-size:10.5px; color:#7a8493; white-space:nowrap; }
+  .disk-bar { position:relative; background:#eef1f5; border-radius:3px; height:5px; min-width:64px; overflow:hidden; margin-top:3px; }
+  /* 액션 버튼 세로 스택 — 줄바꿈 금지 */
+  .action-cell { white-space:nowrap; width:120px; }
+  .action-cell .btn-sm { display:block; width:100%; margin:2px 0; padding:4px 6px; text-align:center; white-space:nowrap; font-size:11.5px; }
+  /* 행 높이 정리 */
+  #serverTable tbody td { vertical-align:middle; padding-top:8px; padding-bottom:8px; }
+  .disk-fill { height:100%; }
+  .disk-ok { background:#2ecc71; } .disk-warning { background:#f39c12; } .disk-critical { background:#e74c3c; }
+  /* 컬럼별 검색 행 */
+  #serverTable thead tr.col-filter th { padding:3px 4px; background:#f5f7fa; }
+  #serverTable thead tr.col-filter input { width:100%; box-sizing:border-box; font-size:11px; padding:3px 5px; border:1px solid #d0d7e2; border-radius:3px; }
+  .col-search { display:flex; gap:3px; }
+  .col-search .match-mode { font-size:10.5px; padding:2px; border:1px solid #d0d7e2; border-radius:3px; flex:0 0 auto; }
+  /* 정렬 헤더 */
+  #serverTable thead th.sortable { cursor:pointer; user-select:none; }
+  #serverTable thead th.sortable:hover { background:#e9eef6; }
+  .sort-ind { font-size:10px; color:#0b5fff; }
+  /* 컬럼명(헤더) 중앙 정렬 */
+  #serverTable thead tr:first-child th { text-align:center; }
+  /* 컬럼 폭 자동 맞춤 (full-width 늘어남 방지) */
+  #serverTable { width:auto; table-layout:auto; }
+  #serverTable th, #serverTable td { white-space:nowrap; }
+  #serverTable thead tr.col-filter input { min-width:80px; }
+  #serverTable thead tr.col-filter th { vertical-align:top; }
+</style>
+
+<div class="page-header">
+  <h1>서버 관리</h1>
+  <div class="header-actions">
+    <button type="button" class="btn" onclick="hcAll(this)">전체 헬스체크 실행</button>
+    <a href="/servers/export.csv" class="btn">⬇ CSV 다운로드</a>
+  </div>
+</div>
+
+<!-- 헬스 KPI -->
+<div class="kpi-grid kpi-3col">
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">정상 서버</div>
+    <div class="kpi-num"><%= health.healthy %></div>
+    <div class="kpi-sub">전체 <%= health.total %>대 중</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">이상 감지</div>
+    <div class="kpi-num"><%= health.unhealthy %></div>
+    <div class="kpi-sub">즉시 점검 필요</div>
+  </div>
+  <div class="kpi-card kpi-running">
+    <div class="kpi-label">미응답</div>
+    <div class="kpi-num"><%= health.unreachable %></div>
+    <div class="kpi-sub">네트워크/SSH 점검</div>
+  </div>
+</div>
+
+<!-- 서버 헬스체크 테이블 -->
+<div class="section-box">
+  <h3>서버 상태 현황</h3>
+  <%
+    var lastHc = null;
+    (servers || []).forEach(function(s){ if (s.checked_at && (!lastHc || s.checked_at > lastHc)) lastHc = s.checked_at; });
+    var lastHcDisp = lastHc ? String(lastHc).replace('T',' ').slice(0,16) : '없음 (헬스체크 미실행)';
+  %>
+  <p class="muted small" style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <span>마지막 헬스체크: <strong><%= lastHcDisp %></strong></span>
+    <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+      <input type="checkbox" id="autoRefreshChk" onchange="toggleAutoRefresh(this)"> 5분마다 자동 갱신
+    </label>
+    <span class="muted" id="autoRefreshState"></span>
+  </p>
+  <div style="margin-bottom:8px;">
+    <button class="btn-sm" onclick="resetServerFilter()">검색 초기화</button>
+    <span class="muted small" id="filterCount" style="margin-left:8px;"></span>
+  </div>
+  <div class="table-scroll" style="overflow-x:auto; max-width:100%;">
+  <table class="data-table healthcheck-table" id="serverTable">
+    <thead>
+      <tr>
+        <th class="sortable" onclick="sortTable(0,'str')">호스트명 <span class="sort-ind"></span></th>
+        <th class="sortable" onclick="sortTable(1,'ip')">IP <span class="sort-ind"></span></th>
+        <th class="sortable" onclick="sortTable(2,'str')">OS <span class="sort-ind"></span></th>
+        <th class="sortable" onclick="sortTable(3,'str')">상태 <span class="sort-ind"></span></th>
+        <th class="sortable" onclick="sortTable(4,'num')">CPU <span class="sort-ind"></span></th>
+        <th class="sortable" onclick="sortTable(5,'num')">메모리 <span class="sort-ind"></span></th>
+        <th class="sortable" onclick="sortTable(6,'num')">디스크 <span class="sort-ind"></span></th>
+        <th class="sortable" onclick="sortTable(7,'str')">마지막 수집 <span class="sort-ind"></span></th>
+        <th class="sortable" onclick="sortTable(8,'str')">마지막 진단 <span class="sort-ind"></span></th>
+        <th>액션</th>
+      </tr>
+      <tr class="col-filter">
+        <th>
+          <div class="col-search">
+            <select id="hostMatchMode" class="match-mode" title="Contains=부분일치 / Exact match=정확히 같은 이름">
+              <option value="like">Contains</option>
+              <option value="exact">Exact match</option>
+            </select>
+            <input type="text" data-col="0" id="hostFilter" placeholder="호스트…">
+          </div>
+        </th>
+        <th><input type="text" data-col="1" placeholder="IP…"></th>
+        <th><input type="text" data-col="2" placeholder="OS…"></th>
+        <th><input type="text" data-col="3" placeholder="상태…"></th>
+        <th></th><th></th><th></th>
+        <th><input type="text" data-col="7" placeholder="수집일…"></th>
+        <th><input type="text" data-col="8" placeholder="진단일…"></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% servers.forEach(s => { %>
+        <% var statusKey = s.ssh_status === 'ok' ? 'online' : (s.ssh_status && s.ssh_status !== 'ok' ? 'offline' : 'unknown'); %>
+        <tr class="row-health-<%= s.overall_health %>"
+            data-os="<%= s.os_type || '' %>"
+            data-health="<%= s.overall_health || 'unknown' %>"
+            data-status="<%= statusKey %>"
+            data-agent="<%= s.agent_status || 'unknown' %>"
+            data-search="<%= ((s.name || '') + ' ' + (s.hostname || '') + ' ' + (s.ip_address || '') + ' ' + (s.asset_no || '') + ' ' + (s.service_name || '')).toLowerCase() %>">
+          <td><strong><%= s.hostname %></strong></td>
+          <td class="mono small"><%= s.ip_address %></td>
+          <td><span class="os-badge os-<%= s.os_type %>"><%= (s.os_type||'').toUpperCase() %></span></td>
+          <td>
+            <% if (s.ssh_status === 'ok') { %>
+              <span class="hc-badge hc-ok">🟢 연결 가능</span>
+            <% } else if (s.ssh_status && s.ssh_status !== 'ok') { %>
+              <span class="hc-badge hc-fail">🔴 연결 불가</span>
+            <% } else { %>
+              <span class="hc-badge hc-unknown">- 미확인</span>
+            <% } %>
+          </td>
+
+          <!-- CPU: % + 스펙(GHz·core) -->
+          <td>
+            <% var cpuSpec = []; if (typeof s.cpu_mhz==='number' && s.cpu_mhz>0) cpuSpec.push((s.cpu_mhz/1000).toFixed(1)+'GHz'); if (typeof s.cpu_cores==='number') cpuSpec.push(s.cpu_cores+'코어'); %>
+            <% if (typeof s.cpu_usage_pct === 'number') { var cz = s.cpu_usage_pct>90?'critical':s.cpu_usage_pct>80?'warning':'ok'; %>
+              <div class="metric" title="<%= cpuSpec.length ? cpuSpec.join(' · ')+' 중 '+s.cpu_usage_pct+'% 사용' : s.cpu_usage_pct+'% 사용' %>">
+                <div class="metric-top"><span class="pct"><%= s.cpu_usage_pct %>%</span></div>
+                <% if (cpuSpec.length) { %><div class="metric-spec"><%= cpuSpec.join(' · ') %></div><% } %>
+                <div class="disk-bar"><div class="disk-fill disk-<%= cz %>" style="width:<%= s.cpu_usage_pct %>%"></div></div>
+              </div>
+            <% } else { %><span class="muted small">-</span><% } %>
+          </td>
+
+          <!-- 메모리: % + 사용/전체 GB -->
+          <td>
+            <% var mt = (typeof s.mem_total_mb==='number') ? (s.mem_total_mb/1024).toFixed(1) : null; var mu = (typeof s.mem_used_mb==='number') ? (s.mem_used_mb/1024).toFixed(1) : null; %>
+            <% if (typeof s.mem_usage_pct === 'number') { var mz = s.mem_usage_pct>90?'critical':s.mem_usage_pct>80?'warning':'ok'; %>
+              <div class="metric" title="<%= (mt&&mu) ? '전체 '+mt+'GB 중 '+mu+'GB 사용 ('+s.mem_usage_pct+'%)' : s.mem_usage_pct+'% 사용' %>">
+                <div class="metric-top"><span class="pct"><%= s.mem_usage_pct %>%</span><% if (mt&&mu) { %><span class="abs"><%= mu %> / <%= mt %> GB</span><% } %></div>
+                <div class="disk-bar"><div class="disk-fill disk-<%= mz %>" style="width:<%= s.mem_usage_pct %>%"></div></div>
+              </div>
+            <% } else { %><span class="muted small">-</span><% } %>
+          </td>
+
+          <!-- 디스크: % + 사용/전체 GB -->
+          <td>
+            <% if (typeof s.disk_usage_pct === 'number') { var dz = s.disk_usage_pct>90?'critical':s.disk_usage_pct>80?'warning':'ok'; %>
+              <div class="metric" title="<%= (s.disk_used_gb!=null&&s.disk_total_gb!=null) ? '전체 '+s.disk_total_gb+'GB 중 '+s.disk_used_gb+'GB 사용 ('+s.disk_usage_pct+'%)' : s.disk_usage_pct+'% 사용' %>">
+                <div class="metric-top"><span class="pct"><%= s.disk_usage_pct %>%</span><% if (typeof s.disk_used_gb==='number' && typeof s.disk_total_gb==='number') { %><span class="abs"><%= s.disk_used_gb %> / <%= s.disk_total_gb %> GB</span><% } %></div>
+                <div class="disk-bar"><div class="disk-fill disk-<%= dz %>" style="width:<%= s.disk_usage_pct %>%"></div></div>
+              </div>
+            <% } else { %><span class="muted small">-</span><% } %>
+          </td>
+
+          <td class="mono small">
+            <% if (s.last_collected_at) { %>
+              <%= s.last_collected_at %>
+              <% if (s.collected_stale) { %>
+                <div class="alert-text small">⚠ 24h+ 경과</div>
+              <% } %>
+            <% } else { %>
+              <span class="muted">미수집</span>
+            <% } %>
+          </td>
+          <td class="mono small">
+            <% if (s.last_diagnosed_at) { %><%= s.last_diagnosed_at %>
+            <% } else { %><span class="muted">미진단</span><% } %>
+          </td>
+          <td class="action-cell">
+            <button type="button" class="btn-sm" onclick="hcOne('<%= s.server_id %>', this)">헬스체크</button>
+            <button type="button" class="btn-sm" style="background:#16a085;color:#fff;" onclick="batchRun('<%= s.server_id %>','<%= s.hostname %>','<%= s.os_type %>','script', this)" title="배포→수집→진단 일괄">스크립트 배치</button>
+            <button type="button" class="btn-sm" style="background:#8e44ad;color:#fff;" onclick="batchRun('<%= s.server_id %>','<%= s.hostname %>','<%= s.os_type %>','secums', this)" title="SecuMS raw data 수집→진단 일괄">raw data 배치</button>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- 헬스체크 항목 설명 -->
+<div class="section-box">
+  <h3>지표 정의 및 판정 기준</h3>
+  <table class="data-table healthcheck-desc">
+    <thead><tr><th>항목</th><th>방법</th><th>판정 기준</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>디스크 사용률</strong></td>
+        <td>Linux: <code>df / </code> (루트 파일시스템) / Windows: <code>C:</code> 드라이브(시스템 드라이브)</td>
+        <td>≤80% 정상 / 80~90% 경고 / 90%+ 위험 <span class="muted">— 기준: OS 설치 드라이브(C:·/)</span></td>
+      </tr>
+      <tr>
+        <td><strong>CPU 사용률</strong></td>
+        <td><code>vmstat</code>(Linux) / <code>Win32_Processor</code>(Windows)</td>
+        <td>≤80% 정상 / 80~90% 경고 / 90%+ 위험</td>
+      </tr>
+      <tr>
+        <td><strong>메모리 사용률</strong></td>
+        <td><code>free</code>(Linux) / <code>Win32_OperatingSystem</code>(Windows)</td>
+        <td>≤80% 정상 / 80~90% 경고 / 90%+ 위험</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- Agent Push 토큰 관리 모달                            -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="agentModal" class="modal" style="display:none;">
+  <div class="modal-backdrop" onclick="closeAgentModal()"></div>
+  <div class="modal-content" style="max-width: 720px;">
+    <div class="modal-header">
+      <h3>🔑 Agent Push 설정 — <span id="agentHostname"></span></h3>
+      <button class="modal-close" onclick="closeAgentModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted small">
+        Agent Push 방식은 점검 대상이 진단 서버로 raw 데이터를 직접 업로드합니다.
+        SSH 접근 없이 Linux/Unix/Windows 모두 지원.
+      </p>
+
+      <!-- 현재 토큰 상태 -->
+      <div id="tokenStatus" class="info-box" style="margin: 16px 0;">
+        <strong id="tokenStatusText">토큰 상태 확인 중...</strong>
+      </div>
+
+      <!-- 새 토큰 발급 결과 -->
+      <div id="newToken" style="display:none; margin: 16px 0;">
+        <div class="alert" style="background:#fef9e7; border-left:4px solid #f39c12; padding:12px; border-radius:0 4px 4px 0;">
+          <strong>⚠ 이 토큰은 다시 표시되지 않습니다. 즉시 복사하세요.</strong>
+        </div>
+        <div style="margin-top:8px;">
+          <label class="small" style="font-weight:bold;">발급된 토큰 (1회만 표시):</label>
+          <div style="display:flex; gap:8px; margin-top:4px;">
+            <input type="text" id="tokenValue" readonly 
+                   style="flex:1; padding:8px; font-family:monospace; font-size:11px; background:#f8f9fa;">
+            <button class="btn-sm" onclick="copyToken()">📋 복사</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 설치 가이드 -->
+      <h4 style="margin-top:20px;">설치 가이드</h4>
+      <div class="install-tabs">
+        <button class="tab-btn active" onclick="showTab('linux')">Linux / Unix</button>
+        <button class="tab-btn" onclick="showTab('windows')">Windows</button>
+      </div>
+
+      <div id="tab-linux" class="tab-content" style="display:block;">
+        <ol class="small">
+          <li>위 토큰을 복사한다.</li>
+          <li>점검 대상 호스트에서:
+            <pre class="code-block">mkdir -p /opt/lsware /etc/lsware /var/log/lsware
+echo "&lt;복사한 토큰&gt;" &gt; /etc/lsware/agent.token
+chmod 600 /etc/lsware/agent.token</pre>
+          </li>
+          <li>스크립트 다운로드:
+            <pre class="code-block">curl -O <span id="linuxUrl"></span>
+chmod +x lsware-push-*.sh
+mv lsware-push-*.sh /opt/lsware/push.sh</pre>
+          </li>
+          <li>테스트 실행:
+            <pre class="code-block">/opt/lsware/push.sh</pre>
+          </li>
+          <li>cron 등록 (매일 02:00):
+            <pre class="code-block">echo "0 2 * * * /opt/lsware/push.sh &gt;&gt; /var/log/lsware/push.log 2&gt;&amp;1" | crontab -</pre>
+          </li>
+        </ol>
+        <a id="downloadLinux" href="#" class="btn primary">📥 push.sh 다운로드</a>
+      </div>
+
+      <div id="tab-windows" class="tab-content" style="display:none;">
+        <ol class="small">
+          <li>위 토큰을 복사한다.</li>
+          <li>점검 대상 호스트(관리자 PowerShell)에서:
+            <pre class="code-block">New-Item -ItemType Directory -Path C:\LSware -Force
+New-Item -ItemType Directory -Path C:\LSware\Logs -Force
+"&lt;복사한 토큰&gt;" | Out-File C:\LSware\agent.token -Encoding ascii</pre>
+          </li>
+          <li>스크립트 다운로드 + 저장:
+            <pre class="code-block">Invoke-WebRequest -Uri "<span id="winUrl"></span>" -OutFile C:\LSware\push.ps1</pre>
+          </li>
+          <li>실행 정책 설정 + 테스트:
+            <pre class="code-block">Set-ExecutionPolicy -Scope LocalMachine RemoteSigned
+C:\LSware\push.ps1</pre>
+          </li>
+          <li>작업 스케줄러 등록:
+            <pre class="code-block">schtasks /create /tn "LSware Push" /tr "powershell -File C:\LSware\push.ps1" /sc daily /st 02:00</pre>
+          </li>
+        </ol>
+        <a id="downloadWindows" href="#" class="btn primary">📥 push.ps1 다운로드</a>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" onclick="closeAgentModal()">닫기</button>
+      <button id="revokeBtn" class="btn" style="background:#c0392b;color:#fff;" onclick="revokeToken()">토큰 폐기</button>
+      <button id="issueBtn" class="btn primary" onclick="issueToken()">새 토큰 발급</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentServerId = null;
+let currentServerOs = 'linux';
+
+// 헬스체크 (SSH/WinRM 실수집) — 개별
+async function hcOne(id, btn) {
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const r = await fetch('/servers/' + id + '/healthcheck', { method: 'POST' });
+    const j = await r.json();
+    if (j.ssh_status === 'ok') { location.reload(); }
+    else { alert('헬스체크 실패: ' + (j.error || '미응답')); btn.disabled = false; btn.textContent = orig; location.reload(); }
+  } catch (e) { alert('오류: ' + e.message); btn.disabled = false; btn.textContent = orig; }
+}
+// 헬스체크 — 전체
+async function hcAll(btn) {
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 전체 헬스체크 중...';
+  try {
+    const r = await fetch('/servers/healthcheck/all', { method: 'POST' });
+    const j = await r.json();
+    alert('전체 헬스체크 완료 (' + (j.count || 0) + '대)');
+    location.reload();
+  } catch (e) { alert('오류: ' + e.message); btn.disabled = false; btn.textContent = orig; }
+}
+
+// one-click 배치: 스크립트(배포→수집→진단) / SecuMS(raw 수집→진단)
+async function batchRun(id, host, os, source, btn) {
+  const label = source === 'script' ? '스크립트(배포→수집→진단)' : 'SecuMS(수집→진단)';
+  if (!confirm(host + ' — ' + label + ' 일괄 실행. 수 분 소요됩니다. 계속할까요?')) return;
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 배치 중...';
+  try {
+    let res;
+    if (source === 'script') {
+      const fd = new FormData();
+      fd.append('server_id', id); fd.append('hostname', host); fd.append('os', os);
+      fd.append('use_standard_script', 'true'); fd.append('script_action', 'deploy_run_diagnose');
+      fd.append('engine', 'ai_llm'); fd.append('scan_mode', 'full');
+      res = await fetch('/collection/script-deploy', { method: 'POST', body: fd });
+    } else {
+      res = await fetch('/diagnosis/fetch-and-run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ server_id: id, source: 'secums' }) });
+    }
+    const j = await res.json();
+    if (j.status === 'success') { alert(host + ' — ' + label + ' 완료'); location.reload(); }
+    else { alert('배치 실패: ' + (j.error || res.status)); btn.disabled = false; btn.textContent = orig; }
+  } catch (e) { alert('배치 오류: ' + e.message); btn.disabled = false; btn.textContent = orig; }
+}
+
+function applyServerFilter() {
+  const q = ((document.getElementById('serverSearch') || {}).value || '').toLowerCase();
+  const os = (document.getElementById('serverOs') || {}).value || '';
+  const status = (document.getElementById('serverStatus') || {}).value || '';
+  const health = (document.getElementById('serverHealth') || {}).value || '';
+  const hostMode = (document.getElementById('hostMatchMode') || {}).value || 'like';
+  // 컬럼별 검색 입력값 수집
+  const colInputs = [...document.querySelectorAll('#serverTable thead tr.col-filter input')]
+    .map(i => ({ col: parseInt(i.dataset.col, 10), val: i.value.trim().toLowerCase() }))
+    .filter(c => c.val);
+
+  let shown = 0;
+  const rows = document.querySelectorAll('#serverTable tbody tr');
+  rows.forEach(tr => {
+    let show = true;
+    if (q && !tr.dataset.search.includes(q)) show = false;
+    if (os && tr.dataset.os !== os) show = false;
+    if (status && tr.dataset.status !== status) show = false;
+    if (health && tr.dataset.health !== health) show = false;
+    if (show && colInputs.length) {
+      const cells = tr.children;
+      for (const c of colInputs) {
+        const cell = cells[c.col];
+        if (!cell) { show = false; break; }
+        const text = cell.textContent.trim().toLowerCase();
+        // 호스트(col 0)는 모드(포함/일치) 적용
+        const ok = (c.col === 0 && hostMode === 'exact') ? (text === c.val) : text.includes(c.val);
+        if (!ok) { show = false; break; }
+      }
+    }
+    tr.style.display = show ? '' : 'none';
+    if (show) shown++;
+  });
+  const fc = document.getElementById('filterCount');
+  if (fc) fc.textContent = shown + ' / ' + rows.length + '대 표시';
+}
+
+function resetServerFilter() {
+  ['serverSearch', 'serverOs', 'serverStatus', 'serverHealth'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const hm = document.getElementById('hostMatchMode'); if (hm) hm.value = 'like';
+  document.querySelectorAll('#serverTable thead tr.col-filter input').forEach(i => { i.value = ''; });
+  document.querySelectorAll('#serverTable tbody tr').forEach(tr => { tr.style.display = ''; });
+  const fc = document.getElementById('filterCount'); if (fc) fc.textContent = '';
+}
+
+['serverSearch', 'serverOs', 'serverStatus', 'serverHealth', 'hostMatchMode'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener((id === 'serverSearch' || id === 'hostFilter') ? 'input' : 'change', applyServerFilter);
+});
+document.querySelectorAll('#serverTable thead tr.col-filter input').forEach(i => {
+  i.addEventListener('input', applyServerFilter);
+});
+
+// 컬럼 정렬 (클릭 토글 ▲▼)
+let sortState = { col: -1, dir: 1 };
+function sortTable(col, type) {
+  const tbody = document.querySelector('#serverTable tbody');
+  const rows = [...tbody.querySelectorAll('tr')];
+  sortState.dir = (sortState.col === col) ? -sortState.dir : 1;
+  sortState.col = col;
+  const getKey = (tr) => {
+    const cell = tr.children[col];
+    const t = cell ? cell.textContent.trim() : '';
+    if (type === 'num') {
+      // 메트릭 셀은 .pct(퍼센트)만 기준으로 — %와 절대값이 붙어 파싱 깨지는 것 방지
+      const pctEl = cell ? cell.querySelector('.pct') : null;
+      const raw = pctEl ? pctEl.textContent : t;
+      const n = parseFloat(String(raw).replace(/[^0-9.\-]/g, ''));
+      return isNaN(n) ? -1 : n;
+    }
+    if (type === 'ip') { return t.split('.').map(o => String(o.replace(/[^0-9]/g, '')).padStart(3, '0')).join('.'); }
+    return t.toLowerCase();
+  };
+  rows.sort((a, b) => {
+    const ka = getKey(a), kb = getKey(b);
+    if (ka < kb) return -1 * sortState.dir;
+    if (ka > kb) return 1 * sortState.dir;
+    return 0;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+  // 정렬 표시 갱신
+  document.querySelectorAll('#serverTable thead th .sort-ind').forEach(s => s.textContent = '');
+  const ind = document.querySelectorAll('#serverTable thead tr:first-child th')[col].querySelector('.sort-ind');
+  if (ind) ind.textContent = sortState.dir === 1 ? '▲' : '▼';
+}
+
+// 5분 자동 갱신 (옵션, 기본 OFF) — ON이면 5분마다 전체 헬스체크 후 새로고침
+const AUTO_REFRESH_MS = 5 * 60 * 1000;
+function armAutoRefresh() {
+  clearTimeout(window._arTimer);
+  const st = document.getElementById('autoRefreshState');
+  if (st) st.textContent = '(ON)';
+  window._arTimer = setTimeout(async () => {
+    const st2 = document.getElementById('autoRefreshState');
+    try { if (st2) st2.textContent = '(갱신 중…)'; await fetch('/servers/healthcheck/all', { method: 'POST' }); }
+    catch (e) {}
+    location.reload();
+  }, AUTO_REFRESH_MS);
+}
+function toggleAutoRefresh(chk) {
+  if (chk.checked) { localStorage.setItem('serverAutoRefresh', '1'); armAutoRefresh(); }
+  else {
+    localStorage.removeItem('serverAutoRefresh');
+    clearTimeout(window._arTimer);
+    const st = document.getElementById('autoRefreshState'); if (st) st.textContent = '';
+  }
+}
+(function () {
+  if (localStorage.getItem('serverAutoRefresh') === '1') {
+    const c = document.getElementById('autoRefreshChk');
+    if (c) { c.checked = true; armAutoRefresh(); }
+  }
+})();
+
+async function fetchAndRun(serverId, hostname) {
+  if (!confirm(`[${hostname}] 원격에서 raw DB 수집 후 AI 진단을 실행합니다.\n네트워크 상태에 따라 시간이 걸릴 수 있습니다.\n진행할까요?`)) return;
+  
+  const btns = document.querySelectorAll('button[onclick*="fetchAndRun"]');
+  btns.forEach(b => { b.disabled = true; b.textContent = '⏳ 진행 중...'; });
+  
+  try {
+    const res = await fetch('/diagnosis/fetch-and-run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server_id: serverId }),
+    });
+    const data = await res.json();
+    
+    if (data.status === 'success') {
+      const s = data.summary || {};
+      alert(`✅ [${data.hostname}] 수집 + AI 진단 완료!\n\n` +
+            `진단 ID: ${data.assessment_id}\n` +
+            `취약: ${s.vuln}건 / 양호: ${s.safe}건 / 정보제공: ${s.info || 0}건\n` +
+            `SecuMS 일치율: ${s.agreement_rate}%\n` +
+            `검증 실패율: ${s.validation_failure_rate || 0}%\n` +
+            `소요: ${data.elapsed_ms}ms`);
+      location.href = '/diagnosis/' + data.assessment_id + '/ai';
+    } else {
+      let msg = `❌ [${data.hostname || hostname}] 처리 실패\n\n`;
+      if (data.fetch_status === 'failed') {
+        msg += `수집 단계 실패: ${data.fetch_error || '?'}\n`;
+        msg += `(SSH 연결, 사용자명/비밀번호, 방화벽 등 확인)`;
+      } else if (data.diagnose_status === 'skipped') {
+        msg += `수집 성공했지만 진단 건너뜀:\n${data.diagnose_error || '?'}`;
+      } else if (data.diagnose_status === 'failed') {
+        msg += `진단 단계 실패: ${data.diagnose_error || '?'}`;
+      } else {
+        msg += data.error || '알 수 없는 오류';
+      }
+      alert(msg);
+    }
+  } catch (e) {
+    alert('네트워크 오류: ' + e.message);
+  } finally {
+    btns.forEach(b => { b.disabled = false; b.textContent = '🔄 수집+진단'; });
+  }
+}
+
+function manageAgent(serverId, hostname, osType, hasToken) {
+  currentServerId = serverId;
+  currentServerOs = osType === 'windows' ? 'windows' : 'linux';
+  document.getElementById('agentHostname').textContent = hostname;
+  
+  // 토큰 상태
+  if (hasToken) {
+    document.getElementById('tokenStatusText').innerHTML = 
+      '✅ 토큰 발급됨. 점검 대상에서 Agent Push 사용 가능.';
+    document.getElementById('revokeBtn').style.display = 'inline-block';
+  } else {
+    document.getElementById('tokenStatusText').innerHTML = 
+      '⚠ 토큰 미발급. [새 토큰 발급] 버튼을 눌러 시작하세요.';
+    document.getElementById('revokeBtn').style.display = 'none';
+  }
+  
+  // 다운로드 URL
+  const baseUrl = window.location.origin;
+  document.getElementById('linuxUrl').textContent = baseUrl + '/servers/' + serverId + '/agent-script/linux';
+  document.getElementById('winUrl').textContent = baseUrl + '/servers/' + serverId + '/agent-script/windows';
+  document.getElementById('downloadLinux').href = '/servers/' + serverId + '/agent-script/linux';
+  document.getElementById('downloadWindows').href = '/servers/' + serverId + '/agent-script/windows';
+  
+  // 새 토큰 영역 숨김
+  document.getElementById('newToken').style.display = 'none';
+  
+  // 기본 탭
+  showTab(currentServerOs);
+  
+  document.getElementById('agentModal').style.display = 'flex';
+}
+
+function closeAgentModal() {
+  document.getElementById('agentModal').style.display = 'none';
+  document.getElementById('newToken').style.display = 'none';
+}
+
+function showTab(os) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  event?.target?.classList?.add('active');
+  document.getElementById('tab-' + os).style.display = 'block';
+  // 첫 호출 (자동) 시
+  if (!event) {
+    [...document.querySelectorAll('.tab-btn')].find(b => 
+      b.textContent.toLowerCase().includes(os)
+    )?.classList.add('active');
+  }
+}
+
+async function issueToken() {
+  if (!currentServerId) return;
+  if (!confirm('새 토큰을 발급하면 기존 토큰은 즉시 무효화됩니다. 진행할까요?')) return;
+  
+  const res = await fetch('/servers/' + currentServerId + '/agent-token', { method: 'POST' });
+  const j = await res.json();
+  
+  if (j.status === 'success') {
+    document.getElementById('tokenValue').value = j.token;
+    document.getElementById('newToken').style.display = 'block';
+    document.getElementById('tokenStatusText').innerHTML = 
+      '✅ 새 토큰 발급됨. 아래 토큰을 즉시 복사하여 점검 대상에 저장하세요.';
+    document.getElementById('revokeBtn').style.display = 'inline-block';
+  } else {
+    alert('실패: ' + (j.error || '오류'));
+  }
+}
+
+async function revokeToken() {
+  if (!currentServerId) return;
+  if (!confirm('토큰을 폐기하면 해당 Agent는 더 이상 업로드할 수 없습니다. 진행할까요?')) return;
+  
+  const res = await fetch('/servers/' + currentServerId + '/agent-token/revoke', { method: 'POST' });
+  const j = await res.json();
+  
+  if (j.status === 'success') {
+    alert('토큰이 폐기되었습니다.');
+    location.reload();
+  } else {
+    alert('실패: ' + (j.error || '오류'));
+  }
+}
+
+function copyToken() {
+  const input = document.getElementById('tokenValue');
+  input.select();
+  document.execCommand('copy');
+  alert('토큰이 클립보드에 복사되었습니다.');
+}
+</script>
+
+<%- include('../_footer') %>

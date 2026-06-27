@@ -1,0 +1,104 @@
+<%- include('../_header', { title: '보안등급', activeMenu: 'security-grade' }) %>
+<style>
+  .grade-badge { display:inline-block; min-width:20px; padding:1px 8px; border-radius:10px; font-weight:800; font-size:12px; color:#fff; }
+  .g-A{background:#1aa260;} .g-B{background:#2980b9;} .g-C{background:#f39c12;} .g-D{background:#e67e22;} .g-F{background:#c0392b;} .g--{background:#95a5a6;}
+  .ch-badge{display:inline-block;padding:2px 8px;border-radius:4px;background:#eaf5ea;color:#1e8449;font-size:11px;font-weight:700;}
+  #gradeTable thead th.sortable{cursor:pointer;user-select:none;} #gradeTable thead th.sortable:hover{background:#e9eef6;}
+  .gfilter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .gfilter input,.gfilter select{font-size:13px;padding:5px 8px;border:1px solid #d0d7e2;border-radius:4px;}
+</style>
+
+<div class="page-header">
+  <h1>서버별 점검 이력</h1>
+  <div class="header-actions">
+    <span class="muted small">기준일: <%= now %> · 정책: 전자금융기반시설_2026</span>
+  </div>
+</div>
+
+<div class="section-box">
+  <h3>서버별 점검 결과 <span class="muted small" style="font-weight:normal;">— 준수율 = 양호 항목 ÷ 전체 항목 (실제 진단 집계)</span></h3>
+  <div class="gfilter">
+    <input type="search" id="gSearch" placeholder="호스트/IP 검색…">
+    <select id="gOs">
+      <option value="">전체 OS</option>
+      <option value="linux">Linux</option>
+      <option value="windows">Windows</option>
+    </select>
+    <button class="btn-sm" onclick="resetG()">초기화</button>
+  </div>
+  <div class="table-scroll" style="overflow-x:auto;">
+  <table class="data-table" id="gradeTable">
+    <thead>
+      <tr>
+        <th class="sortable" onclick="sortG(0,'str')">호스트명</th>
+        <th>정책</th>
+        <th class="sortable" onclick="sortG(2,'str')">OS</th>
+        <th>IP</th>
+        <th class="sortable" onclick="sortG(4,'num')">취약점 개수</th>
+        <th class="sortable" onclick="sortG(5,'num')">준수율 (양호/전체)</th>
+        <th>최근 점검일</th>
+        <th>운영자</th><th>도메인</th><th>통신방식</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% agents.forEach(a => { %>
+        <tr data-os="<%= a.os_type || '' %>" data-grade="<%= a.grade %>"
+            data-search="<%= ((a.hostname||'')+' '+(a.ip_address||'')).toLowerCase() %>">
+          <td><a href="/security-grade/<%= encodeURIComponent(a.hostname) %>"><strong><%= a.hostname %></strong></a></td>
+          <td class="small">전자금융기반시설_2026_OS</td>
+          <td><span class="os-badge os-<%= a.os_type %>"><%= String(a.os_type||'').toUpperCase() %></span></td>
+          <td class="mono small"><%= a.ip_address %></td>
+          <td data-v="<%= a.checked ? a.vuln_count : -1 %>"><%= a.checked ? a.vuln_count : '-' %></td>
+          <td data-v="<%= a.grade_pct == null ? -1 : a.grade_pct %>">
+            <% if (a.checked && a.score_total) { %>
+              <strong><%= a.score %> / <%= a.score_total %></strong> <span class="muted small">(<%= a.grade_pct %>%)</span>
+            <% } else { %><span class="muted">-</span><% } %>
+          </td>
+          <td class="mono small"><%= a.last_at ? String(a.last_at).slice(0,16) : '-' %></td>
+          <td class="small"><%= a.operator %></td>
+          <td class="small"><%= a.domain %></td>
+          <td><span class="ch-badge"><%= a.channel %></span></td>
+        </tr>
+      <% }); %>
+      <% if (!agents.length) { %><tr><td colspan="10" class="empty">대상 서버가 없습니다</td></tr><% } %>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+function applyG() {
+  const q = ((document.getElementById('gSearch')||{}).value || '').toLowerCase();
+  const os = (document.getElementById('gOs')||{}).value || '';
+  document.querySelectorAll('#gradeTable tbody tr').forEach(tr => {
+    if (!tr.dataset.search) return;
+    let show = true;
+    if (q && !tr.dataset.search.includes(q)) show = false;
+    if (os && tr.dataset.os !== os) show = false;
+    tr.style.display = show ? '' : 'none';
+  });
+}
+function resetG() {
+  ['gSearch','gOs'].forEach(id => { const e = document.getElementById(id); if (e) e.value=''; });
+  document.querySelectorAll('#gradeTable tbody tr').forEach(tr => tr.style.display='');
+}
+['gSearch','gOs'].forEach(id => {
+  const e = document.getElementById(id);
+  if (e) e.addEventListener(id==='gSearch'?'input':'change', applyG);
+});
+let gSort = { col:-1, dir:1 };
+function sortG(col, type) {
+  const tb = document.querySelector('#gradeTable tbody');
+  const rows = [...tb.querySelectorAll('tr')].filter(r => r.dataset.search);
+  gSort.dir = gSort.col===col ? -gSort.dir : 1; gSort.col = col;
+  const key = (tr) => {
+    const c = tr.children[col]; if (!c) return type==='num'?-1:'';
+    if (type==='num') { const v = c.getAttribute('data-v'); return v!=null ? parseFloat(v) : parseFloat((c.textContent||'').replace(/[^0-9.\-]/g,''))||-1; }
+    return (c.textContent||'').trim().toLowerCase();
+  };
+  rows.sort((a,b)=>{ const ka=key(a),kb=key(b); if(ka<kb)return -gSort.dir; if(ka>kb)return gSort.dir; return 0; });
+  rows.forEach(r=>tb.appendChild(r));
+}
+</script>
+
+<%- include('../_footer') %>

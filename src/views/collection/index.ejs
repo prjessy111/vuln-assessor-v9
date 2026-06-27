@@ -1,0 +1,830 @@
+<%- include('../_header', { title: '수집 관리', activeMenu: 'collection' }) %>
+<% const deployJobs = scriptDeployJobs || []; %>
+<style>
+  .progress-panel { margin-top:10px;padding:10px 12px;background:#f8fafc;border:1px solid #dfe6e9;border-radius:6px; }
+  .progress-row { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px; }
+  .progress-title { font-weight:600;color:#2d3436; }
+  .progress-percent { font-variant-numeric:tabular-nums;color:#0984e3;font-weight:700; }
+  .progress-track { height:10px;background:#e9eef3;border-radius:999px;overflow:hidden; }
+  .progress-fill { height:100%;width:0%;background:#0984e3;transition:width .25s ease; }
+  .progress-message { margin-top:6px;color:#636e72; }
+  .progress-mini { width:120px;height:8px;background:#e9eef3;border-radius:999px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px; }
+  .progress-mini > span { display:block;height:100%;background:#0984e3; }
+</style>
+
+<div class="page-header">
+  <h1>🔄 자동 수집 관리</h1>
+  <div class="header-actions">
+    <a href="/collection/history" class="btn">📋 수집 이력</a>
+    <label style="font-size:0.9rem;">🤖 LLM:
+      <select id="llmSelect" style="padding:5px 8px;border:1px solid #ccc;border-radius:6px;">
+        <option value="internal">사내 LLM (무료·80%)</option>
+        <option value="haiku">Claude Haiku (92%·$)</option>
+        <option value="sonnet">Claude Sonnet ($$)</option>
+      </select>
+    </label>
+    <button class="btn primary" onclick="runAll('secums')" style="background:#27ae60;border-color:#27ae60;">SecuMS 전체 진단</button>
+    <button class="btn primary" onclick="runAll('script')" style="background:#6c5ce7;border-color:#6c5ce7;">Script 전체 진단</button>
+    <button id="retryFailedBtn" class="btn" onclick="retryFailed()" style="display:none;background:#e67e22;border-color:#e67e22;color:#fff;">🔁 실패 재점검</button>
+    <button class="btn" onclick="cancelBatch()" style="background:#c0392b;border-color:#c0392b;color:#fff;">⏹ 진단 중지</button>
+    <button class="btn" onclick="location.reload()">🔁 새로고침</button>
+  </div>
+</div>
+
+<p class="muted small" style="margin:0.5rem 0 1rem;">
+  검증 정합성을 위해 SecuMS raw DB 진단과 Script XML 진단을 별도 assessment로 저장합니다.
+</p>
+<div id="collectionProgress" style="display:none;"></div>
+
+<div style="display:flex;gap:8px;margin:0 0 12px;">
+  <button type="button" class="btn primary collection-tab-btn" data-tab="secums" style="background:#27ae60;border-color:#27ae60;">SecuMS 진단</button>
+  <button type="button" class="btn collection-tab-btn" data-tab="script-diagnosis">Script 진단</button>
+  <button type="button" class="btn collection-tab-btn" data-tab="script">Script 업로드</button>
+  <button type="button" class="btn collection-tab-btn" data-tab="deploy">Script 배포</button>
+</div>
+
+<div id="tab-script" class="collection-tab" style="display:none;">
+<div class="section-box">
+  <h3>Script XML 업로드</h3>
+  <p class="muted small">
+    SecuMS Script XML을 수동 업로드합니다. 저장 위치는 <code>data/uploads/YYYY-MM-DD/hostname_script_YYYYMMDD.xml</code> 입니다.
+  </p>
+  <form id="scriptUploadForm" enctype="multipart/form-data" style="display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;align-items:end;">
+    <label>
+      <span class="small muted">서버 선택</span>
+      <select name="server_id" id="scriptServerSelect">
+        <option value="">직접 입력</option>
+        <% csvServers.forEach(s => { %>
+          <option value="<%= s.server_id || s.ip %>" data-hostname="<%= s.hostname %>">
+            <%= s.hostname %> (<%= s.ip %>)
+          </option>
+        <% }) %>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">호스트명</span>
+      <input type="text" name="hostname" id="scriptHostname" placeholder="예: jessy62" required>
+    </label>
+    <label>
+      <span class="small muted">진단 엔진</span>
+      <select name="engine">
+        <option value="ai_llm">AI 후 LLM</option>
+        <option value="ai">AI(mock)</option>
+        <option value="llm">LLM</option>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">Script XML</span>
+      <input type="file" name="scriptfile" accept=".xml" required>
+    </label>
+    <label style="grid-column:1 / span 2;">
+      <input type="checkbox" name="run_immediately" checked>
+      업로드 후 Script 소스로 바로 진단
+    </label>
+    <div style="grid-column:3 / span 2;text-align:right;">
+      <button type="submit" class="btn primary" style="background:#6c5ce7;border-color:#6c5ce7;">Script 업로드</button>
+    </div>
+  </form>
+  <div id="scriptUploadResult" class="muted small" style="margin-top:10px;"></div>
+</div>
+</div>
+
+<div id="tab-deploy" class="collection-tab" style="display:none;">
+<div class="section-box">
+  <h3>Script 배포</h3>
+  <div style="display:flex;gap:18px;margin-bottom:12px;padding:8px 10px;background:#f5f6fa;border-radius:6px;">
+    <label style="display:flex;align-items:center;gap:6px;font-weight:600;">
+      <input type="radio" name="deploy_kind" value="standard" checked> 표준 점검 자동 배포 (OS별 자동 · 여러 대)
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;">
+      <input type="radio" name="deploy_kind" value="custom"> 커스텀 스크립트 업로드 (단일 서버)
+    </label>
+  </div>
+  <form id="scriptDeployForm" enctype="multipart/form-data" style="display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;align-items:end;">
+    <div style="grid-column:1 / span 4;">
+      <span class="small muted">서버 선택 (표준=여러 대 체크 가능 / 커스텀=한 대만)</span>
+      <div id="deployServerList" style="display:flex;flex-wrap:wrap;gap:6px 16px;max-height:130px;overflow:auto;border:1px solid #dfe6e9;border-radius:6px;padding:8px;margin-top:4px;">
+        <% if (!csvServers.length) { %>
+          <span class="muted small">servers.csv 가 비어 있습니다. 커스텀 모드에서 호스트명을 직접 입력하세요.</span>
+        <% } %>
+        <% if (csvServers.length) { %>
+          <label class="std-only" style="display:flex;align-items:center;gap:4px;font-weight:600;">
+            <input type="checkbox" id="deploySelectAll"> 전체
+          </label>
+        <% } %>
+        <% csvServers.forEach(s => { %>
+          <label style="display:flex;align-items:center;gap:4px;">
+            <input type="checkbox" class="deploy-check" name="deploy_server_ids" value="<%= s.server_id || s.ip %>" data-hostname="<%= s.hostname %>" data-os="<%= s.os || s.os_type || '' %>">
+            <%= s.hostname %> <span class="muted small">(<%= s.ip %> · <%= s.os || s.os_type || '?' %>)</span>
+          </label>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- 공통 -->
+    <label>
+      <span class="small muted">진단 엔진</span>
+      <select name="engine">
+        <option value="ai_llm">AI 후 LLM</option>
+        <option value="ai">AI(mock)</option>
+        <option value="llm">LLM</option>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">실행 방식</span>
+      <select name="deploy_mode">
+        <option value="direct">직접 실행 (Linux SSH / Windows WinRM)</option>
+        <option value="agent">Agent 대기열</option>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">작업 단계</span>
+      <select name="script_action" id="deployActionSelect">
+        <option value="deploy_run_diagnose">3. 배포 + 실행 + 진단</option>
+        <option value="deploy_run">2. 배포 + 실행</option>
+        <option value="deploy_only">1. 배포만</option>
+      </select>
+    </label>
+
+    <!-- 표준 모드 전용 -->
+    <label class="std-only">
+      <span class="small muted">점검 강도</span>
+      <select name="scan_mode">
+        <option value="full">전체 점검 (권장 · 핫픽스/systeminfo 포함)</option>
+        <option value="fast">빠른 점검 (일부 생략 → 보류 증가)</option>
+      </select>
+    </label>
+    <p class="std-only muted small" style="grid-column:1 / span 4;margin:0;">
+      서버 OS에 맞춰 <code>fsi_win_ai.ps1</code>(Windows) / <code>fsi_unix_ai.sh</code>(Linux)를 자동 선택하고, 인증은 <code>servers.csv</code>의 서버별 계정을 사용합니다. 파일 업로드·일회성 인증은 필요 없습니다.
+    </p>
+
+    <!-- 커스텀(단일) 모드 전용 -->
+    <label class="custom-only" style="grid-column:1 / span 2;">
+      <span class="small muted">호스트명 (직접 입력 — 체크 안 했을 때)</span>
+      <input type="text" name="hostname" id="deployHostname" placeholder="예: jessy62">
+    </label>
+    <label class="custom-only">
+      <span class="small muted">원격 사용자(일회성)</span>
+      <input type="text" name="remote_username" id="deployRemoteUsername" placeholder="servers.csv 값 사용">
+    </label>
+    <label class="custom-only">
+      <span class="small muted">원격 비밀번호(일회성)</span>
+      <input type="password" name="remote_password" autocomplete="off" placeholder="비워두면 등록값 사용">
+    </label>
+    <label class="custom-only">
+      <span class="small muted">SSH/WinRM 포트</span>
+      <input type="number" name="remote_port" id="deployRemotePort" min="1" max="65535" placeholder="비우면 UNIX 22 / Windows 5985">
+    </label>
+    <label class="custom-only">
+      <span class="small muted">SSH 키 경로(UNIX 선택)</span>
+      <input type="text" name="remote_ssh_key_path" placeholder="예: C:\keys\id_rsa">
+    </label>
+    <label class="custom-only">
+      <span class="small muted">실행 인자</span>
+      <input type="text" name="script_args" placeholder="-Fast 또는 -Full">
+    </label>
+    <label class="custom-only">
+      <span class="small muted">ZIP 실행 파일</span>
+      <input type="text" name="package_script" placeholder="예: fsi_win_ai.ps1">
+    </label>
+    <label class="custom-only">
+      <span class="small muted">결과 XML 패턴</span>
+      <input type="text" name="result_glob" value="*.xml">
+    </label>
+    <label class="custom-only">
+      <span class="small muted">배포 Script</span>
+      <input type="file" name="deploy_script" accept=".sh,.bash,.ps1,.bat,.cmd,.py,.pl,.xml,.zip">
+    </label>
+
+    <!-- 공통: 작업 폴더(비우면 OS별 기본값) -->
+    <label style="grid-column:1 / span 2;">
+      <span class="small muted">원격 작업 폴더 (비우면 OS별 기본값)</span>
+      <input type="text" name="remote_work_dir" placeholder="예: C:\Windows\Temp 또는 /tmp">
+    </label>
+
+    <div style="grid-column:1 / span 4;text-align:right;">
+      <button type="submit" class="btn primary" style="background:#0984e3;border-color:#0984e3;">선택 단계 실행</button>
+    </div>
+  </form>
+  <p class="muted small" style="margin-top:8px;"><code>1. 배포만</code>은 파일 전송 후 실행하지 않습니다. 표준 모드는 OS별 표준 점검 스크립트를 자동 사용하므로 Windows/Linux 서버를 섞어 선택해도 각자 맞는 스크립트로 배포됩니다.</p>
+  <div id="scriptDeployResult" class="muted small" style="margin-top:10px;"></div>
+</div>
+
+<h2 style="margin-top:1.5rem;">최근 Script 배포 작업 (<%= deployJobs.length %>개)</h2>
+<% if (deployJobs.length === 0) { %>
+  <p class="muted">등록된 Script 배포 작업이 없습니다.</p>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>상태</th><th>진행률</th><th>호스트</th><th>Script</th><th>결과</th><th>진단</th><th>등록일</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% deployJobs.forEach(j => { %>
+        <tr>
+          <td><span class="badge"><%= j.status %></span></td>
+          <td class="small">
+            <% const pct = Math.max(0, Math.min(100, Number(j.progress_percent || 0))); %>
+            <span class="progress-mini"><span style="width:<%= pct %>%;"></span></span><%= pct %>%
+            <% if (j.progress_message || j.agent_message) { %>
+              <br><span class="muted"><%= j.progress_message || j.agent_message %></span>
+            <% } %>
+          </td>
+          <td><strong><%= j.hostname %></strong><br><span class="small muted"><%= j.ip || '' %></span></td>
+          <td class="small"><%= j.original_name || j.script_file %><br><code><%= j.job_id %></code></td>
+          <td class="small"><%= j.result_file || '-' %></td>
+          <td>
+            <% if (j.assessment_id) { %>
+              <a href="/diagnosis/<%= j.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">#<%= j.assessment_id %></a>
+            <% } else { %>
+              <span class="muted small"><%= j.diagnose_error || '-' %></span>
+            <% } %>
+          </td>
+          <td class="small"><%= j.created_at || '-' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+</div>
+
+<div id="tab-secums" class="collection-tab">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;">
+  <h2 style="margin:0;">📋 등록된 서버 (<%= csvServers.length %>개)</h2>
+  <button type="button" class="btn primary" onclick="runSelected('secums')" style="background:#27ae60;border-color:#27ae60;">✓ 선택 진단 (SecuMS)</button>
+</div>
+<% if (csvServers.length === 0) { %>
+  <p class="muted" style="padding:1rem;background:#fffbe6;border-left:3px solid #f1c40f;">
+    ⚠ <code>servers.csv</code> 파일이 없거나 비어 있습니다.<br>
+    프로젝트 루트(<code>vuln-assessor-v9/</code>)에 <code>servers.csv</code> 파일을 만들어 주세요.<br>
+    형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
+  </p>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:32px;"><input type="checkbox" class="diag-all" data-tab="tab-secums"></th>
+        <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
+        <th style="width:160px;">SecuMS 실행</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% csvServers.forEach(s => { %>
+        <tr>
+          <td><input type="checkbox" class="diag-check" data-tab="tab-secums" value="<%= s.server_id || s.ip %>"></td>
+          <td><strong><%= s.hostname %></strong></td>
+          <td class="mono small"><%= s.ip %></td>
+          <td><%= s.os %></td>
+          <td class="small"><%= s.username %></td>
+          <td class="small"><%= s.asset_no %></td>
+          <td>
+            <button class="btn-sm primary" onclick="fetchAndRun('<%= s.ip %>', '<%= s.hostname %>', 'secums')" style="background:#27ae60;">SecuMS 진단</button>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+</div>
+
+<div id="tab-script-diagnosis" class="collection-tab" style="display:none;">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;">
+  <h2 style="margin:0;">📋 등록된 서버 (<%= csvServers.length %>개)</h2>
+  <button type="button" class="btn primary" onclick="runSelected('script')" style="background:#6c5ce7;border-color:#6c5ce7;">✓ 선택 진단 (Script)</button>
+</div>
+<% if (csvServers.length === 0) { %>
+  <p class="muted" style="padding:1rem;background:#fffbe6;border-left:3px solid #f1c40f;">
+    ⚠ <code>servers.csv</code> 파일이 없거나 비어 있습니다.<br>
+    프로젝트 루트(<code>vuln-assessor-v9/</code>)에 <code>servers.csv</code> 파일을 만들어 주세요.<br>
+    형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
+  </p>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:32px;"><input type="checkbox" class="diag-all" data-tab="tab-script-diagnosis"></th>
+        <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
+        <th style="width:160px;">Script 실행</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% csvServers.forEach(s => { %>
+        <tr>
+          <td><input type="checkbox" class="diag-check" data-tab="tab-script-diagnosis" value="<%= s.server_id || s.ip %>"></td>
+          <td><strong><%= s.hostname %></strong></td>
+          <td class="mono small"><%= s.ip %></td>
+          <td><%= s.os %></td>
+          <td class="small"><%= s.username %></td>
+          <td class="small"><%= s.asset_no %></td>
+          <td>
+            <button class="btn-sm primary" onclick="fetchAndRun('<%= s.ip %>', '<%= s.hostname %>', 'script')" style="background:#6c5ce7;">Script 진단</button>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+</div>
+
+<script>
+function clampProgress(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function createProgress(target, title) {
+  const el = typeof target === 'string' ? document.getElementById(target) : target;
+  if (!el) return null;
+  el.style.display = '';
+  el.innerHTML =
+    '<div class="progress-panel">' +
+      '<div class="progress-row">' +
+        '<span class="progress-title">' + title + '</span>' +
+        '<span class="progress-percent">0%</span>' +
+      '</div>' +
+      '<div class="progress-track"><div class="progress-fill"></div></div>' +
+      '<div class="progress-message small">준비 중</div>' +
+    '</div>';
+  return el.querySelector('.progress-panel');
+}
+
+function setProgress(panel, percent, message) {
+  if (!panel) return;
+  const pct = clampProgress(percent);
+  const fill = panel.querySelector('.progress-fill');
+  const pctEl = panel.querySelector('.progress-percent');
+  const msgEl = panel.querySelector('.progress-message');
+  if (fill) fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (msgEl && message) msgEl.textContent = message;
+}
+
+function selectedLlm() {
+  var el = document.getElementById('llmSelect');
+  return el ? el.value : 'internal';
+}
+var _lastFailed = null; // { source, ids:[ip...] }
+function trackFailed(source, results) {
+  var failed = (results || []).filter(function(r){ return r.fetch_status === 'failed' || r.diagnose_status === 'failed'; });
+  var btn = document.getElementById('retryFailedBtn');
+  if (failed.length) {
+    _lastFailed = { source: source, ids: failed.map(function(r){ return String(r.ip || r.hostname); }) };
+    if (btn) { btn.style.display = ''; btn.textContent = '🔁 실패 ' + failed.length + '대 재점검'; }
+  } else {
+    _lastFailed = null;
+    if (btn) btn.style.display = 'none';
+  }
+}
+async function retryFailed() {
+  if (!_lastFailed || !_lastFailed.ids.length) { alert('재점검할 실패 서버가 없습니다.'); return; }
+  if (!confirm(_lastFailed.ids.length + '대 실패 서버를 [' + diagnosisSourceLabel(_lastFailed.source) + ']로 재점검합니다.\n' + _lastFailed.ids.join(', ') + '\n진행할까요?')) return;
+  var progress = startSoftProgress('collectionProgress', '실패 ' + _lastFailed.ids.length + '대 재점검', 5, 95);
+  var startedAt = new Date();
+  try {
+    var res = await fetch('/scheduler/run-all', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: _lastFailed.source, server_ids: _lastFailed.ids, llm: selectedLlm() }),
+    });
+    var data = await res.json();
+    if (data.status === 'completed' || data.status === 'cancelled') {
+      var endedAt = new Date();
+      progress.done('재점검 완료');
+      var s = data.summary;
+      alert('🔁 재점검 완료\n성공 ' + s.success + ' · 수집만 ' + s.fetched_only + ' · 실패 ' + s.failed + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results));
+      trackFailed(_lastFailed.source, data.results);
+      location.reload();
+    } else {
+      progress.fail(data.error || '재점검 실패');
+      alert('❌ 재점검 실패\n\n' + (data.error || '?'));
+    }
+  } catch (e) { progress.fail(e.message); alert('네트워크 오류: ' + e.message); }
+}
+function fmtElapsed(t0) {
+  const s = Math.max(0, Math.floor((Date.now() - t0) / 1000));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function fmtClock(d) {
+  d = d || new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' +
+         String(d.getMinutes()).padStart(2, '0') + ':' +
+         String(d.getSeconds()).padStart(2, '0');
+}
+function fmtDuration(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return (h ? h + '시간 ' : '') + (h || m ? m + '분 ' : '') + sec + '초';
+}
+function timingLines(startedAt, endedAt) {
+  return '\n⏱ ' + fmtClock(startedAt) + ' → ' + fmtClock(endedAt) + ' (' + fmtDuration(endedAt - startedAt) + ')';
+}
+function serverLines(results) {
+  if (!Array.isArray(results) || !results.length) return '';
+  // 실패/수집만을 위에, 성공을 아래에 (중요한 것 먼저)
+  var ordered = results.slice().sort(function(a, b) {
+    var ra = (a.diagnose_status === 'success') ? 1 : 0;
+    var rb = (b.diagnose_status === 'success') ? 1 : 0;
+    return ra - rb;
+  });
+  return '\n' + ordered.map(function(r) {
+    var ok = r.diagnose_status === 'success';
+    var fetchedOnly = r.fetch_status === 'success' && r.diagnose_status === 'skipped';
+    var icon = ok ? '✅' : (fetchedOnly ? '📥' : '❌');
+    var s = r.summary || {};
+    var total = (s.total != null ? s.total : s.total_count);
+    var cnt = (ok && total != null)
+      ? ' · 총' + total + '항목(취약' + (s.vuln != null ? s.vuln : (s.vuln_count||0)) + '/양호' + (s.safe != null ? s.safe : (s.safe_count||0)) + '/N/A' + (s.na != null ? s.na : (s.na_count||0)) + ')'
+      : '';
+    var label = ok ? ('성공' + (r.assessment_id ? ' #' + r.assessment_id : '') + cnt)
+                   : (fetchedOnly ? '수집만' : '실패');
+    var reason = (!ok && !fetchedOnly && r.error) ? ' — ' + r.error : '';
+    return icon + ' ' + (r.hostname || r.ip || '?') + ' · ' + label + reason;
+  }).join('\n');
+}
+function startSoftProgress(target, title, start, maxBeforeDone) {
+  const panel = createProgress(target, title);
+  let pct = clampProgress(start || 8);
+  const max = clampProgress(maxBeforeDone || 92);
+  const t0 = Date.now();
+  let lastMsg = '요청 전송 중';
+  function render() { setProgress(panel, pct, lastMsg + ' · 경과 ' + fmtElapsed(t0)); }
+  render();
+  const timer = setInterval(function() {
+    if (pct < max) {
+      pct = Math.min(max, pct + Math.max(1, Math.round((max - pct) * 0.08)));
+    } else {
+      lastMsg = '진단 중 (LLM 정밀 판정 — 수 분 소요)';
+    }
+    render();
+  }, 1000);
+  return {
+    panel,
+    set: function(nextPct, message) {
+      pct = clampProgress(nextPct);
+      if (message) lastMsg = message;
+      render();
+    },
+    done: function(message) {
+      clearInterval(timer);
+      setProgress(panel, 100, (message || '완료') + ' · 총 소요 ' + fmtElapsed(t0));
+    },
+    fail: function(message) {
+      clearInterval(timer);
+      setProgress(panel, 100, (message || '실패') + ' · 경과 ' + fmtElapsed(t0));
+      const fill = panel && panel.querySelector('.progress-fill');
+      if (fill) fill.style.background = '#d63031';
+    },
+    stop: function() {
+      clearInterval(timer);
+    },
+  };
+}
+
+function isTerminalDeployStatus(status) {
+  return ['completed', 'diagnosed', 'failed', 'diagnosis_failed'].includes(String(status || ''));
+}
+
+async function pollDeployProgress(jobId, progress) {
+  for (let i = 0; i < 120; i += 1) {
+    const res = await fetch('/collection/script-deploy/' + encodeURIComponent(jobId) + '/status');
+    const data = await res.json();
+    if (!res.ok || data.status !== 'success') throw new Error(data.error || '진행 상태 조회 실패');
+    progress.set(data.progress_percent, data.progress_message || data.job_status);
+    if (isTerminalDeployStatus(data.job_status)) return data;
+    await new Promise(function(resolve) { setTimeout(resolve, 2000); });
+  }
+  return null;
+}
+
+document.querySelectorAll('.collection-tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const tab = this.getAttribute('data-tab');
+    document.querySelectorAll('.collection-tab').forEach(function(panel) {
+      panel.style.display = panel.id === 'tab-' + tab ? '' : 'none';
+    });
+    document.querySelectorAll('.collection-tab-btn').forEach(function(b) {
+      b.classList.remove('primary');
+      b.style.background = '';
+      b.style.borderColor = '';
+    });
+    this.classList.add('primary');
+    if (tab === 'secums') {
+      this.style.background = '#27ae60';
+      this.style.borderColor = '#27ae60';
+    } else if (tab === 'script-diagnosis') {
+      this.style.background = '#6c5ce7';
+      this.style.borderColor = '#6c5ce7';
+    } else if (tab === 'deploy') {
+      this.style.background = '#0984e3';
+      this.style.borderColor = '#0984e3';
+    }
+  });
+});
+
+const scriptServerSelect = document.getElementById('scriptServerSelect');
+if (scriptServerSelect) {
+  scriptServerSelect.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const hostname = opt ? opt.getAttribute('data-hostname') : '';
+    if (hostname) document.getElementById('scriptHostname').value = hostname;
+  });
+}
+
+// 배포 탭: 전체 선택 체크박스
+const deploySelectAll = document.getElementById('deploySelectAll');
+if (deploySelectAll) {
+  deploySelectAll.addEventListener('change', function() {
+    if (deployKind() !== 'standard') return; // 커스텀(단일)에선 전체선택 무시
+    document.querySelectorAll('.deploy-check').forEach(function(c) { c.checked = deploySelectAll.checked; });
+  });
+}
+
+// 배포 탭: 표준/커스텀 모드 토글
+function deployKind() {
+  const r = document.querySelector('input[name="deploy_kind"]:checked');
+  return r ? r.value : 'standard';
+}
+function applyDeployKind() {
+  const kind = deployKind();
+  const std = kind === 'standard';
+  document.querySelectorAll('#tab-deploy .std-only').forEach(function(el) { el.style.display = std ? '' : 'none'; });
+  document.querySelectorAll('#tab-deploy .custom-only').forEach(function(el) { el.style.display = std ? 'none' : ''; });
+  // 커스텀(단일): 체크는 한 대만 유지
+  if (!std) {
+    const checked = document.querySelectorAll('.deploy-check:checked');
+    for (let i = 1; i < checked.length; i += 1) checked[i].checked = false;
+    if (deploySelectAll) deploySelectAll.checked = false;
+  }
+}
+document.querySelectorAll('input[name="deploy_kind"]').forEach(function(r) {
+  r.addEventListener('change', applyDeployKind);
+});
+document.querySelectorAll('.deploy-check').forEach(function(c) {
+  c.addEventListener('change', function() {
+    if (deployKind() === 'custom' && this.checked) {
+      document.querySelectorAll('.deploy-check').forEach(function(o) { if (o !== c) o.checked = false; });
+    }
+  });
+});
+applyDeployKind();
+
+// 진단 탭(SecuMS/Script): 표 머리글 전체 선택 체크박스
+document.querySelectorAll('.diag-all').forEach(function(master) {
+  master.addEventListener('change', function() {
+    const tabId = this.getAttribute('data-tab');
+    document.querySelectorAll('#' + tabId + ' .diag-check').forEach(function(c) { c.checked = master.checked; });
+  });
+});
+
+const scriptUploadForm = document.getElementById('scriptUploadForm');
+if (scriptUploadForm) {
+  scriptUploadForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const resultBox = document.getElementById('scriptUploadResult');
+    const btn = this.querySelector('button[type="submit"]');
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '업로드 중...';
+    resultBox.textContent = '';
+    const progress = startSoftProgress(resultBox, 'Script 업로드 및 진단', 8, 92);
+    try {
+      const res = await fetch('/collection/script-upload', {
+        method: 'POST',
+        body: new FormData(this),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') {
+        throw new Error(data.error || '업로드 실패');
+      }
+      progress.done('업로드 및 진단 완료');
+      let msg = '완료: ' + data.saved_path;
+      if (data.assessment_id) {
+        msg += ' / 진단 ID #' + data.assessment_id;
+        alert('Script XML 업로드 및 진단 완료\n\n' + (data.message || '') + '\n저장: ' + data.saved_path);
+        location.href = '/diagnosis/' + data.assessment_id + '/ai';
+      } else {
+        alert('Script XML 업로드 완료\n\n저장: ' + data.saved_path);
+      }
+      resultBox.textContent = msg;
+    } catch (err) {
+      progress.fail(err.message);
+      resultBox.textContent = '오류: ' + err.message;
+      alert('Script 업로드 실패: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  });
+}
+
+const scriptDeployForm = document.getElementById('scriptDeployForm');
+if (scriptDeployForm) {
+  scriptDeployForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const resultBox = document.getElementById('scriptDeployResult');
+    const btn = this.querySelector('button[type="submit"]');
+    const orig = btn.textContent;
+
+    const kind = deployKind();
+    const checks = Array.prototype.slice.call(this.querySelectorAll('.deploy-check:checked'));
+    let targets;
+    const standard = kind === 'standard';
+
+    if (standard) {
+      // 표준: 체크한 서버들 → OS별 표준 스크립트 자동, csv 인증
+      if (!checks.length) { alert('서버를 한 대 이상 선택하세요.'); return; }
+      targets = checks.map(function(c) { return { id: c.value, hostname: c.getAttribute('data-hostname') || '' }; });
+      if (targets.length > 1 && !confirm(targets.length + '대 서버에 OS별 표준 점검 스크립트를 순차 배포/실행합니다.\n진행할까요?')) return;
+    } else {
+      // 커스텀: 단일 서버 + 업로드 파일 필수
+      if (!this.querySelector('input[name="deploy_script"]').files.length) { alert('커스텀 모드는 배포 Script 파일이 필요합니다.'); return; }
+      if (checks.length > 1) { alert('커스텀 모드는 한 대만 선택할 수 있습니다.'); return; }
+      if (checks.length === 1) {
+        targets = [{ id: checks[0].value, hostname: checks[0].getAttribute('data-hostname') || '' }];
+      } else {
+        const manualHost = (document.getElementById('deployHostname').value || '').trim();
+        if (!manualHost) { alert('서버를 한 대 선택하거나 호스트명을 직접 입력하세요.'); return; }
+        targets = [{ id: '', hostname: manualHost }];
+      }
+    }
+
+    btn.disabled = true;
+    resultBox.innerHTML = '';
+    const summary = [];
+    let lastAssessmentId = null;
+    for (let i = 0; i < targets.length; i += 1) {
+      const t = targets[i];
+      const tag = t.hostname || t.id;
+      btn.textContent = '진행 ' + (i + 1) + '/' + targets.length + '...';
+      const progress = startSoftProgress(resultBox, '[' + tag + '] 배포/실행/진단 (' + (i + 1) + '/' + targets.length + ')', 8, 92);
+      try {
+        const fd = new FormData(scriptDeployForm);
+        fd.delete('deploy_server_ids');
+        fd.set('server_id', t.id);
+        fd.set('hostname', t.hostname);
+        if (standard) {
+          // OS별 표준 스크립트 자동 + csv 인증: 파일·일회성 인증·커스텀 인자 제거
+          fd.delete('deploy_script');
+          fd.delete('remote_username');
+          fd.delete('remote_password');
+          fd.delete('remote_ssh_key_path');
+          fd.delete('remote_port');
+          fd.delete('script_args');
+          fd.delete('package_script');
+          fd.delete('result_glob');
+          fd.set('use_standard_script', '1');
+        } else {
+          fd.delete('scan_mode');
+        }
+        const res = await fetch('/collection/script-deploy', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok || data.status !== 'success') throw new Error(data.error || '배포 등록 실패');
+        if (data.job_id && !isTerminalDeployStatus(data.deploy_status || data.job_status)) {
+          progress.stop();
+          const latest = await pollDeployProgress(data.job_id, progress);
+          if (latest && latest.assessment_id) data.assessment_id = latest.assessment_id;
+        }
+        progress.done('완료');
+        lastAssessmentId = data.assessment_id || lastAssessmentId;
+        summary.push('✅ ' + tag + (data.assessment_id ? ' → 진단 #' + data.assessment_id : ' (' + (data.deploy_status || '등록') + ')'));
+      } catch (err) {
+        progress.fail(err.message);
+        summary.push('❌ ' + tag + ' : ' + err.message);
+      }
+    }
+    resultBox.innerHTML = summary.join('<br>');
+    btn.disabled = false;
+    btn.textContent = orig;
+    alert('Script 배포 완료 (' + targets.length + '대)\n\n' + summary.join('\n'));
+    if (targets.length === 1 && lastAssessmentId) {
+      location.href = '/diagnosis/' + lastAssessmentId + '/ai';
+    } else {
+      location.reload();
+    }
+  });
+}
+
+function diagnosisSourceLabel(source) {
+  return source === 'script' ? 'Script XML' : 'SecuMS raw DB';
+}
+
+async function cancelBatch() {
+  if (!confirm('진행 중인 진단 배치를 중지할까요?\n(진행 중인 항목까지만 마치고 멈춥니다)')) return;
+  try {
+    const res = await fetch('/scheduler/cancel', { method: 'POST' });
+    const data = await res.json();
+    alert(data.message || '중지 요청됨 — 곧 멈춥니다.');
+  } catch (e) {
+    alert('중지 요청 실패: ' + e.message);
+  }
+}
+
+async function fetchAndRun(serverId, hostname, source) {
+  source = source || 'secums';
+  const label = diagnosisSourceLabel(source);
+  if (!confirm('[' + hostname + '] ' + label + ' 수집 후 AI/LLM 진단을 실행합니다.\n진행할까요?')) return;
+  const btns = document.querySelectorAll('button[onclick*="fetchAndRun"]');
+  btns.forEach(function(b) { b.disabled = true; });
+  const progress = startSoftProgress('collectionProgress', '[' + hostname + '] ' + label + ' 진단', 8, 92);
+  const startedAt = new Date();
+  try {
+    const res = await fetch('/diagnosis/fetch-and-run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server_id: serverId, source: source, llm: selectedLlm() }),
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      const endedAt = new Date();
+      progress.done(label + ' 진단 완료');
+      const s = data.summary || {};
+      alert('✅ [' + data.hostname + '] ' + label + ' 완료\n취약 ' + s.vuln + ' · 양호 ' + s.safe + ' · 정보 ' + (s.info || 0) + '\n일치율 ' + s.agreement_rate + '% · 검증실패 ' + (s.validation_failure_rate || 0) + '%' + timingLines(startedAt, endedAt));
+      location.href = '/diagnosis/' + data.assessment_id + '/ai';
+    } else {
+      progress.fail('처리 실패');
+      const reason = data.fetch_status === 'failed' ? '수집 실패: ' + data.fetch_error :
+                     data.diagnose_status === 'failed' ? '진단 실패: ' + data.diagnose_error :
+                     data.error || '알 수 없는 오류';
+      alert('❌ [' + (data.hostname || hostname) + '] 처리 실패\n\n' + reason);
+    }
+  } catch (e) {
+    progress.fail(e.message);
+    alert('네트워크 오류: ' + e.message);
+  } finally {
+    btns.forEach(function(b) { b.disabled = false; });
+  }
+}
+
+async function runAll(source) {
+  source = source || 'secums';
+  const label = diagnosisSourceLabel(source);
+  if (!confirm('servers.csv 의 모든 서버를 순차로 [' + label + ' 수집 + 진단] 합니다.\n시간이 걸릴 수 있습니다. 진행할까요?')) return;
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 실행 중... (페이지를 떠나지 마세요)';
+  const progress = startSoftProgress('collectionProgress', '전체 서버 ' + label + ' 진단', 5, 95);
+  const startedAt = new Date();
+  try {
+    const res = await fetch('/scheduler/run-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: source, llm: selectedLlm() }),
+    });
+    const data = await res.json();
+    if (data.status === 'completed') {
+      const endedAt = new Date();
+      progress.done('전체 서버 처리 완료');
+      const s = data.summary;
+      let msg = '✅ 일괄 처리 완료\n전체 ' + s.total + ' · 성공 ' + s.success + ' · 수집만 ' + s.fetched_only + ' · 실패 ' + s.failed + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results);
+      trackFailed(source, data.results);
+      alert(msg + (s.failed ? '\n\n실패 ' + s.failed + '대는 [🔁 실패 재점검] 버튼으로 다시 돌릴 수 있습니다.' : ''));
+      if (!s.failed) location.href = '/collection/history';
+    } else {
+      progress.fail(data.error || '처리 실패');
+      alert('❌ 일괄 처리 실패\n\n' + (data.error || '?'));
+    }
+  } catch (e) {
+    progress.fail(e.message);
+    alert('네트워크 오류: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+async function runSelected(source) {
+  source = source || 'secums';
+  const tabId = source === 'secums' ? 'tab-secums' : 'tab-script-diagnosis';
+  const label = diagnosisSourceLabel(source);
+  const ids = Array.prototype.slice.call(document.querySelectorAll('#' + tabId + ' .diag-check:checked')).map(function(c) { return c.value; });
+  if (!ids.length) { alert('서버를 한 대 이상 선택하세요.'); return; }
+  if (!confirm(ids.length + '대 서버를 [' + label + ' 수집 + 진단] 합니다.\n진행할까요?')) return;
+  const progress = startSoftProgress('collectionProgress', '선택 ' + ids.length + '대 ' + label + ' 진단', 5, 95);
+  const startedAt = new Date();
+  try {
+    const res = await fetch('/scheduler/run-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: source, server_ids: ids, llm: selectedLlm() }),
+    });
+    const data = await res.json();
+    if (data.status === 'completed') {
+      const endedAt = new Date();
+      progress.done('선택 서버 처리 완료');
+      const s = data.summary;
+      alert('✅ 선택 진단 완료 (' + ids.length + '대)\n전체 ' + s.total + ' · 성공 ' + s.success + ' · 수집만 ' + s.fetched_only + ' · 실패 ' + s.failed + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results));
+      location.href = '/collection/history';
+    } else {
+      progress.fail(data.error || '처리 실패');
+      alert('❌ 선택 진단 실패\n\n' + (data.error || '?'));
+    }
+  } catch (e) {
+    progress.fail(e.message);
+    alert('네트워크 오류: ' + e.message);
+  }
+}
+</script>
+
+<%- include('../_footer') %>

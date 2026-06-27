@@ -1,0 +1,68 @@
+<%- include('../_header', { title: '서버별 점검 이력 — ' + server.hostname, activeMenu: 'security-grade' }) %>
+<style>
+  .srv-info { display:flex; gap:0; border:1px solid #e3e8ef; border-radius:8px; overflow:hidden; margin:12px 0 18px; }
+  .srv-info .cell { flex:1; padding:14px 18px; border-right:1px solid #eef1f5; }
+  .srv-info .cell:last-child { border-right:0; }
+  .srv-info .lbl { font-size:11px; color:#7a8493; } .srv-info .val { font-size:15px; font-weight:700; margin-top:2px; }
+  .pct-bar { position:relative; background:#eef1f5; border-radius:4px; height:8px; min-width:80px; overflow:hidden; margin-top:3px; }
+  .pct-fill { height:100%; background:#2ecc71; } .pct-fill.warn{background:#f39c12;} .pct-fill.bad{background:#e74c3c;}
+  .vmark{color:#c0392b;font-weight:700;} .smark{color:#1aa260;}
+</style>
+
+<div class="page-header">
+  <h1>서버별 점검 이력</h1>
+  <div class="header-actions">
+    <a href="/security-grade" class="btn">← 목록</a>
+  </div>
+</div>
+
+<!-- 서버 정보 -->
+<div class="srv-info">
+  <div class="cell"><div class="lbl">호스트명</div><div class="val">🖥 <%= server.hostname %></div></div>
+  <div class="cell"><div class="lbl">IP</div><div class="val"><%= server.ip_address || '-' %></div></div>
+  <div class="cell"><div class="lbl">OS</div><div class="val"><%= (server.os_type||'-').toUpperCase() %></div></div>
+  <div class="cell"><div class="lbl">운영자</div><div class="val"><%= server.ssh_user || 'admin' %></div></div>
+  <div class="cell"><div class="lbl">통신방식</div><div class="val">Agentless</div></div>
+</div>
+
+<!-- 점검 이력 -->
+<div class="section-box">
+  <h3>점검 이력 <span class="muted small" style="font-weight:normal;">— 진단 시각 최신순 · 준수율 = 양호 ÷ 전체</span></h3>
+  <div class="table-scroll" style="overflow-x:auto;">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>진단 시각</th><th>유형</th><th>소스</th><th>소요시간</th>
+        <th>전체</th><th>취약</th><th>양호</th><th>판정불가</th>
+        <th>준수율 (양호/전체)</th><th>결과</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(r => { var cls = r.grade_pct==null?'':(r.grade_pct>=80?'':(r.grade_pct>=50?'warn':'bad')); %>
+        <tr>
+          <td class="mono small"><%= r.started_at ? String(r.started_at).slice(0,16) : '-' %></td>
+          <td><%= r.diagnose_type === 'llm' ? '🤖 LLM' : (r.diagnose_type === 'ai' ? '🤖 AI' : (r.diagnose_type||'-')) %></td>
+          <td class="small"><%= r.source_type === 'script' ? 'Script' : (r.source_type === 'secums' ? 'SecuMS raw' : (r.source_type||'-')) %></td>
+          <td class="small"><%= r.elapsed_ms ? fmtMs(r.elapsed_ms) : '-' %></td>
+          <td><%= r.total %></td>
+          <td class="vmark"><%= r.vuln %></td>
+          <td class="smark"><%= r.safe %></td>
+          <td><%= r.na %></td>
+          <td>
+            <% if (r.total) { %>
+              <strong><%= r.safe %> / <%= r.total %></strong> <span class="muted small">(<%= r.grade_pct %>%)</span>
+              <div class="pct-bar"><div class="pct-fill <%= cls %>" style="width:<%= r.grade_pct %>%"></div></div>
+            <% } else { %><span class="muted">-</span><% } %>
+          </td>
+          <td>
+            <% if (r.assessment_id) { %><a href="/diagnosis/<%= r.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">결과</a><% } else { %>-<% } %>
+          </td>
+        </tr>
+      <% }); %>
+      <% if (!rows.length) { %><tr><td colspan="10" class="empty">진단 이력이 없습니다</td></tr><% } %>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<%- include('../_footer') %>

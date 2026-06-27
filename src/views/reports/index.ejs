@@ -1,0 +1,101 @@
+<%- include('../_header', { title: '리포트', activeMenu: 'reports' }) %>
+
+<div class="page-header">
+  <h1>리포트</h1>
+  <p class="muted small">
+    진단이 성공한 결과에 대한 리포트를 확인합니다. 한 진단당 두 가지 양식
+    (<strong>리포트1</strong>, <strong>리포트2</strong>)을 제공합니다.
+  </p>
+</div>
+
+<% if (!diagnoses.length) { %>
+  <div class="section-box">
+    <p class="muted">아직 성공한 진단이 없습니다. <a href="/diagnosis">진단 관리</a>에서 진단을 먼저 실행하세요.</p>
+  </div>
+<% } else { %>
+  <div class="kpi-grid kpi-3col">
+    <div class="kpi-card">
+      <div class="kpi-label">최근 진단</div>
+      <div class="kpi-num"><%= diagnoses.length %></div>
+      <div class="kpi-sub">표시 가능한 리포트 수</div>
+    </div>
+    <div class="kpi-card kpi-fail">
+      <div class="kpi-label">취약 합계</div>
+      <div class="kpi-num" style="color:#c0392b;">
+        <%= diagnoses.reduce((s, d) => s + (d.vuln_count || 0), 0) %>
+      </div>
+      <div class="kpi-sub">최근 <%= diagnoses.length %>건 합산</div>
+    </div>
+    <div class="kpi-card kpi-success">
+      <div class="kpi-label">양호 합계</div>
+      <div class="kpi-num" style="color:#27ae60;">
+        <%= diagnoses.reduce((s, d) => s + (d.safe_count || 0), 0) %>
+      </div>
+      <div class="kpi-sub">최근 <%= diagnoses.length %>건 합산</div>
+    </div>
+  </div>
+
+  <div class="section-box">
+    <h3>진단별 리포트 (최근 <%= diagnoses.length %>건)</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>진단 ID</th>
+          <th>서버</th>
+          <th>진단 시각</th>
+          <th>유형</th>
+          <th>요약</th>
+          <th>리포트</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% diagnoses.forEach(d => { %>
+          <tr>
+            <td class="mono"><strong>#<%= d.assessment_id %></strong></td>
+            <td>
+              <%= d.hostname || d.server_name || '-' %>
+              <% if (d.asset_no) { %>
+                <div class="muted small"><%= d.asset_no %></div>
+              <% } %>
+            </td>
+            <td class="mono small"><%= d.executed_at %></td>
+            <td>
+              <% if (d.source_type === 'script') { %>
+                <span style="color:#6c5ce7;font-weight:700;">📄 Script</span>
+              <% } else { %>
+                <span style="color:#27ae60;font-weight:700;">🗄️ SecuMS raw</span>
+              <% } %>
+              <div class="muted small">
+                <% if (d.diagnose_type === 'llm') { %>
+                  <span style="color:#0984e3;">🧠 LLM 판정 (최종)</span>
+                <% } else if (d.diagnose_type === 'ai') { %>
+                  <span style="color:#999;">🤖 mock (LLM 미사용 기준선)</span>
+                <% } else { %>룰셋<% } %>
+              </div>
+            </td>
+            <td>
+              <span style="color:#c0392b;font-weight:600;">취약 <%= d.vuln_count || 0 %></span>
+              <span class="muted">/</span>
+              <span style="color:#27ae60;">양호 <%= d.safe_count || 0 %></span>
+              <% if (d.na_count) { %>
+                <span class="muted">/ N/A <%= d.na_count %></span>
+              <% } %>
+            </td>
+            <td>
+              <a href="/reports/<%= d.assessment_id %>/fsi" class="btn-sm primary">리포트1</a>
+              <a href="/reports/<%= d.assessment_id %>/samsung" class="btn-sm">리포트2</a>
+              <a href="/reports/<%= d.assessment_id %>/fsi/vuln" class="btn-sm" style="background:#c0392b;color:#fff;">🚨 취약점1</a>
+              <a href="/reports/<%= d.assessment_id %>/samsung/vuln" class="btn-sm" style="background:#c0392b;color:#fff;">🚨 취약점2</a>
+              <a href="/reports/<%= d.assessment_id %>/threeway" class="btn-sm" style="background:#0984e3;color:#fff;">🔀 3-way 정합성</a>
+              <% if (d.diagnose_type === 'ai') { %>
+                <a href="/diagnosis/<%= d.assessment_id %>/ai" class="btn-sm" style="background:#6c5ce7;color:#fff;">🤖 AI 결과</a>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<%- include('../_footer') %>

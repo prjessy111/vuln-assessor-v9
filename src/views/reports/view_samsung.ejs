@@ -1,0 +1,96 @@
+<%- include('../_header', { title: '리포트2', activeMenu: 'reports' }) %>
+
+<div class="report-header">
+  <h1>진단 리포트 #<%= session.assessment_id %> (리포트2)</h1>
+  <div class="report-actions">
+    <a href="/reports/<%= session.assessment_id %>/samsung/vuln" class="btn" style="background:#c0392b;color:#fff;">🚨 취약점만 보기</a>
+    <a href="/reports/<%= session.assessment_id %>/fsi" class="btn">리포트1로</a>
+    <a href="/reports/<%= session.assessment_id %>/samsung/xlsx" class="btn primary">XLSX 다운로드</a>
+    <a href="/history?server_id=<%= session.server_id %>" class="btn">이력으로</a>
+  </div>
+</div>
+
+<table class="meta-table">
+  <tr><th>서버</th><td><%= session.server_name %> (<%= session.hostname %>)</td>
+      <th>OS</th><td><%= session.os_type %> <%= session.os_version ? `(${session.os_version})` : '' %></td></tr>
+  <tr><th>진단일시</th><td><%= session.executed_at %></td>
+      <th>실행자</th><td><%= session.executed_by || '-' %></td></tr>
+  <tr><th>정책명</th><td><%= session.policy_name %></td>
+      <th>소요시간</th><td><%= fmtMs(session.elapsed_ms) %></td></tr>
+  <tr><th>어댑터</th><td><%= session.adapter || '-' %></td>
+      <th>LLM 엔진</th><td><%= session.llm_engine || '-' %></td></tr>
+  <tr><th>Raw 파일</th><td colspan="3"><%= session.raw_file_name %>
+      <span class="muted small">(SHA-256: <%= session.raw_file_hash.slice(0,32) %>...)</span></td></tr>
+</table>
+
+<div class="summary-cards">
+  <div class="summary-card total"><div>전체</div><div class="num"><%= session.total_count %></div></div>
+  <div class="summary-card vuln"><div>취약</div><div class="num"><%= session.vuln_count %></div></div>
+  <div class="summary-card safe"><div>양호</div><div class="num"><%= session.safe_count %></div></div>
+  <div class="summary-card na"><div>점검불가</div><div class="num"><%= session.na_count %></div></div>
+</div>
+
+<div class="eval-method-summary">
+  평가 방법 분포:
+  <span class="method-badge simple">즉시 판정(SQL): <%= session.simple_count || 0 %>건</span>
+  <span class="method-badge llm">AI 판정(LLM): <%= session.llm_count || 0 %>건</span>
+</div>
+
+<% Object.keys(grouped).forEach(group => { %>
+  <h2>정책그룹: <%= group %>
+    <span class="cat-stat">
+      <%
+        const c = grouped[group];
+        const v = c.filter(r => r.status === '취약').length;
+        const s = c.filter(r => r.status === '양호').length;
+        const n = c.filter(r => r.status === '점검불가').length;
+      %>
+      (취약 <%= v %> / 양호 <%= s %> / N/A <%= n %>)
+    </span>
+  </h2>
+
+  <% grouped[group].forEach(r => { %>
+    <table class="policy-item-table status-<%= r.status === '취약' ? 'vuln' : r.status === '양호' ? 'safe' : 'na' %>">
+      <colgroup>
+        <col style="width:140px"><col>
+      </colgroup>
+      <tr class="item-header">
+        <th colspan="2">
+          <span class="rule-id"><%= r.rule_id %></span>
+          <span class="item-title"><%= r.title %></span>
+          <span class="badges-right">
+            <span class="sev sev-<%= r.severity %>">중요도 <%= r.severity %></span>
+            <span class="method-badge <%= r.eval_method === 'simple' ? 'simple' : r.eval_method === 'llm' ? 'llm' : 'na' %>">
+              <%= r.eval_method === 'simple' ? 'SQL' : r.eval_method === 'llm' ? 'AI' : 'N/A' %>
+            </span>
+            <span class="badge b-<%= r.status === '취약' ? 'vuln' : r.status === '양호' ? 'safe' : 'na' %>">
+              <%= r.status %>
+            </span>
+          </span>
+        </th>
+      </tr>
+      <tr><th>항목내용</th><td class="long-text"><%= r.description || '-' %></td></tr>
+      <tr><th>확인방법</th><td class="long-text mono"><%= r.check_method || '-' %></td></tr>
+      <tr><th>점검기준</th><td class="long-text"><%= r.check_criteria || '-' %></td></tr>
+      <tr><th>진단 결과</th><td class="result-cell">
+        <strong><%= r.reason %></strong>
+        <% if (r.evidence) { %>
+          <div class="evidence">증거: <code><%= r.evidence %></code></div>
+        <% } %>
+      </td></tr>
+      <tr><th>조치방법</th><td class="long-text"><%= r.recommend || '-' %></td></tr>
+      <% if (r.related_cves && r.related_cves.length) { %>
+        <tr><th>관련 CVE</th><td>
+          <% r.related_cves.forEach(cve => { %>
+            <span class="cve-tag cvss-<%= cve.severity_class %>">
+              <a href="https://nvd.nist.gov/vuln/detail/<%= cve.id %>" target="_blank"><%= cve.id %></a>
+              <span class="cvss-score">CVSS <%= cve.cvss %></span>
+            </span>
+          <% }); %>
+        </td></tr>
+      <% } %>
+    </table>
+  <% }); %>
+<% }); %>
+
+<%- include('../_footer') %>

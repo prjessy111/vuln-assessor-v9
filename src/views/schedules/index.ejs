@@ -1,0 +1,245 @@
+<%- include('../_header', { title: '예약 진단', activeMenu: 'schedules' }) %>
+
+<div class="page-header">
+  <h1>예약 진단</h1>
+  <div class="header-actions">
+    <a href="/diagnosis" class="btn">← 진단 관리</a>
+    <a href="/schedules/new" class="btn primary">+ 새 예약</a>
+  </div>
+</div>
+
+<div class="kpi-grid kpi-4col">
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">활성 스케줄</div>
+    <div class="kpi-num"><%= kpi.activeSchedules %></div>
+    <div class="kpi-sub">전체 <%= kpi.totalSchedules %>개 중</div>
+  </div>
+  <div class="kpi-card kpi-running">
+    <div class="kpi-label">오늘 실행 예정</div>
+    <div class="kpi-num"><%= kpi.todayPending %></div>
+    <div class="kpi-sub">다음 실행: <%= kpi.nextRunAt %></div>
+  </div>
+  <div class="kpi-card kpi-avg">
+    <div class="kpi-label">최근 24h 실행</div>
+    <div class="kpi-num"><%= kpi.runs24h %></div>
+    <div class="kpi-sub">성공률 <%= kpi.successRate %>%</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">알림 발송</div>
+    <div class="kpi-num"><%= kpi.notifications %></div>
+    <div class="kpi-sub">최근 7일</div>
+  </div>
+</div>
+
+<!-- 스케줄 목록 -->
+<div class="section-box">
+  <h3>등록된 스케줄</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>활성</th>
+        <th>이름</th>
+        <th>실행 주기 (cron)</th>
+        <th>대상 서버</th>
+        <th>룰셋</th>
+        <th>마지막 실행</th>
+        <th>마지막 상태</th>
+        <th>다음 실행</th>
+        <th>알림</th>
+        <th>액션</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% schedules.forEach(s => { %>
+        <tr class="<%= !s.enabled ? 'rule-disabled' : '' %>">
+          <td>
+            <label class="toggle">
+              <input type="checkbox" <%= s.enabled ? 'checked' : '' %> onchange="toggleSchedule(<%= s.schedule_id %>, this)">
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td>
+            <strong><%= s.name %></strong>
+            <div class="muted small"><%= s.description %></div>
+          </td>
+          <td>
+            <code class="cron-display"><%= s.cron_expr %></code>
+            <div class="muted small"><%= s.cron_humanized %></div>
+          </td>
+          <td class="small">
+            <% if (s.server_scope === 'all') { %>
+              <span class="scope-badge scope-all">전체 (<%= s.target_count %>대)</span>
+            <% } else if (s.server_scope === 'group') { %>
+              <span class="scope-badge scope-group"><%= s.server_group %> (<%= s.target_count %>대)</span>
+            <% } else { %>
+              <span class="scope-badge scope-list">개별 <%= s.target_count %>대</span>
+            <% } %>
+          </td>
+          <td class="mono small"><%= s.ruleset_ver %></td>
+          <td class="mono small"><%= s.last_run_at || '-' %></td>
+          <td>
+            <% if (s.last_status === '성공') { %>
+              <span class="status-badge st-success">✓ <%= s.last_success %>/<%= s.last_total %></span>
+            <% } else if (s.last_status === '실패') { %>
+              <span class="status-badge st-failed">✗ 실패</span>
+            <% } else if (s.last_status === '부분실패') { %>
+              <span class="status-badge st-warning">⚠ <%= s.last_success %>/<%= s.last_total %></span>
+            <% } else if (s.last_status === '실행중') { %>
+              <span class="status-badge st-running">▶ 실행중</span>
+            <% } else { %>
+              <span class="muted">-</span>
+            <% } %>
+          </td>
+          <td class="mono small"><%= s.next_run_at %></td>
+          <td>
+            <% if (s.notify_on_vuln) { %><span class="notif-badge">🔔 취약</span><% } %>
+            <% if (s.notify_on_failure) { %><span class="notif-badge">🔔 실패</span><% } %>
+          </td>
+          <td>
+            <button class="btn-sm primary" onclick="runNow(<%= s.schedule_id %>, '<%= s.name.replace(/'/g, "\\'") %>')">즉시 실행</button>
+            <a href="/schedules/<%= s.schedule_id %>/edit" class="btn-sm">편집</a>
+            <button class="btn-sm" onclick="deleteSchedule(<%= s.schedule_id %>)">삭제</button>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<!-- 실행 캘린더 -->
+<div class="section-box">
+  <h3>이번 주 실행 캘린더</h3>
+  <div class="schedule-calendar">
+    <div class="cal-header">
+      <% days.forEach(d => { %>
+        <div class="cal-day-header <%= d.is_today ? 'today' : '' %>">
+          <div class="day-name"><%= d.day_name %></div>
+          <div class="day-date"><%= d.date %></div>
+        </div>
+      <% }); %>
+    </div>
+    <div class="cal-body">
+      <% days.forEach(d => { %>
+        <div class="cal-day-body">
+          <% d.events.forEach(e => { %>
+            <div class="cal-event status-<%= e.status %>" title="<%= e.name %> at <%= e.time %>">
+              <div class="event-time"><%= e.time %></div>
+              <div class="event-name"><%= e.name %></div>
+              <div class="event-target"><%= e.target %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</div>
+
+<!-- 최근 실행 이력 -->
+<div class="section-box">
+  <h3>최근 실행 이력</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>실행 #</th>
+        <th>스케줄</th>
+        <th>시작 시각</th>
+        <th>소요 시간</th>
+        <th>트리거</th>
+        <th>상태</th>
+        <th>결과</th>
+        <th>액션</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% runs.forEach(r => { %>
+        <tr class="row-<%= r.status === '성공' ? 'success' : r.status === '실패' ? 'failed' : 'running' %>">
+          <td class="mono small">#<%= String(r.run_id).slice(-6) %></td>
+          <td><%= r.schedule_name %></td>
+          <td class="mono small"><%= r.started_at %></td>
+          <td><%= r.elapsed_ms ? fmtMs(r.elapsed_ms) : '-' %></td>
+          <td>
+            <span class="trigger-badge tr-<%= r.triggered_by %>">
+              <%= r.triggered_by === 'cron' ? '⏰ 자동' :
+                  r.triggered_by === 'manual' ? '👆 수동' : '🔄 재시도' %>
+            </span>
+          </td>
+          <td>
+            <% if (r.status === '성공') { %>
+              <span class="status-badge st-success">✓ 성공</span>
+            <% } else if (r.status === '실패') { %>
+              <span class="status-badge st-failed">✗ 실패</span>
+            <% } else if (r.status === '부분실패') { %>
+              <span class="status-badge st-warning">⚠ 부분실패</span>
+            <% } else { %>
+              <span class="status-badge st-running">▶ 실행중</span>
+            <% } %>
+          </td>
+          <td class="small">
+            <% if (r.total_servers) { %>
+              성공 <span class="b-safe"><%= r.success_count %></span> /
+              실패 <span class="b-vuln"><%= r.failed_count %></span> /
+              전체 <%= r.total_servers %>
+            <% } else { %>-<% } %>
+          </td>
+          <td>
+            <a href="/schedules/runs/<%= r.run_id %>" class="btn-sm">상세 로그</a>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function toggleSchedule(id, el) {
+  fetch('/schedules/' + id + '/toggle', { method: 'POST' })
+    .then(r => r.json())
+    .then(j => {
+      if (j.status !== 'success') {
+        alert('실패: ' + (j.error || '오류'));
+        el.checked = !el.checked;
+      } else {
+        // 다음 실행 시각이 바뀔 수 있으니 새로고침
+        location.reload();
+      }
+    })
+    .catch(e => { alert(e); el.checked = !el.checked; });
+}
+
+function runNow(id, name) {
+  if (!confirm('"' + name + '" 예약을 지금 즉시 실행할까요?')) return;
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '실행 중...';
+  fetch('/schedules/' + id + '/run-now', { method: 'POST' })
+    .then(r => r.json())
+    .then(j => {
+      if (j.status === 'success') {
+        alert(j.message || '실행 완료');
+        location.reload();
+      } else {
+        alert('실패: ' + (j.error || '오류'));
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    })
+    .catch(e => {
+      alert(e);
+      btn.disabled = false;
+      btn.textContent = orig;
+    });
+}
+
+function deleteSchedule(id) {
+  if (!confirm('이 예약을 삭제할까요? (실행 이력은 유지됩니다)')) return;
+  fetch('/schedules/' + id + '/delete', { method: 'POST' })
+    .then(r => r.json())
+    .then(j => {
+      if (j.status === 'success') location.reload();
+      else alert('실패: ' + (j.error || '오류'));
+    });
+}
+</script>
+
+<%- include('../_footer') %>

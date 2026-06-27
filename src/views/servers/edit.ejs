@@ -1,0 +1,131 @@
+<%- include('../_header', { title: server ? '서버 수정' : '서버 등록' }) %>
+
+<h1><%= server ? `서버 수정 #${server.server_id}` : '서버 등록' %></h1>
+
+<form method="post" action="<%= server ? `/servers/${server.server_id}/update` : '/servers' %>" class="form-block">
+  <h3>기본 정보</h3>
+  <div class="form-row">
+    <label>표시명 <span class="req">*</span></label>
+    <input name="name" value="<%= server ? server.name : '' %>" required>
+  </div>
+  <div class="form-row">
+    <label>호스트명 또는 IP <span class="req">*</span></label>
+    <input name="hostname" value="<%= server ? server.hostname : '' %>" required>
+  </div>
+  <div class="form-row">
+    <label>OS <span class="req">*</span></label>
+    <select name="os_type" required>
+      <option value="linux"   <%= server && server.os_type==='linux'  ?'selected':'' %>>Linux</option>
+      <option value="windows" <%= server && server.os_type==='windows'?'selected':'' %>>Windows</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>설명</label>
+    <input name="description" value="<%= server ? (server.description||'') : '' %>">
+  </div>
+
+  <h3>SSH 접속 정보 (raw 자동 수집용)</h3>
+  <div class="form-row">
+    <label>SSH 포트</label>
+    <input name="ssh_port" type="number" value="<%= server ? (server.ssh_port||22) : 22 %>" min="1" max="65535">
+  </div>
+  <div class="form-row">
+    <label>사용자명</label>
+    <input name="ssh_user" value="<%= server ? (server.ssh_user||'') : 'vulncollect' %>"
+           placeholder="vulncollect">
+  </div>
+  <div class="form-row">
+    <label>인증 방식</label>
+    <label class="radio-inline">
+      <input type="radio" name="ssh_auth_type" value="key"
+             <%= (!server || server.ssh_auth_type==='key') ? 'checked' : '' %>
+             onchange="toggleAuthFields()"> SSH 키 (권장)
+    </label>
+    <label class="radio-inline">
+      <input type="radio" name="ssh_auth_type" value="password"
+             <%= server && server.ssh_auth_type==='password' ? 'checked' : '' %>
+             onchange="toggleAuthFields()"> 비밀번호
+    </label>
+  </div>
+  <div class="form-row" id="row_key">
+    <label>SSH 키 파일 경로</label>
+    <input name="ssh_key_path" value="<%= server ? (server.ssh_key_path||'') : '' %>"
+           placeholder="/etc/vuln-assessor/keys/secums_id_ed25519">
+    <div class="muted small">진단 PC 측 키 파일 경로. 권한 600 권장.</div>
+  </div>
+  <div class="form-row" id="row_pw">
+    <label>비밀번호</label>
+    <input name="ssh_password" type="password" placeholder="<%= server && server.ssh_password_enc ? '********(저장됨, 변경 시 입력)' : '비밀번호 입력' %>">
+    <div class="muted small">AES-256-GCM 으로 암호화되어 저장됩니다.</div>
+  </div>
+
+  <h3>Raw 데이터 경로</h3>
+  <div class="form-row">
+    <label>원격 raw 파일 경로</label>
+    <input name="remote_raw_path"
+           value="<%= server ? (server.remote_raw_path||'/var/lib/secums/data.db') : '/var/lib/secums/data.db' %>"
+           placeholder="/var/lib/secums/data.db">
+  </div>
+  <div class="form-row">
+    <label>
+      <input type="checkbox" name="use_sudo" value="1"
+             <%= (!server || server.use_sudo) ? 'checked' : '' %>>
+      sudo 사용 (raw 파일이 root 소유인 경우 체크)
+    </label>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary"><%= server ? '저장' : '등록' %></button>
+    <% if (server) { %>
+      <button type="button" class="btn" onclick="testConn(<%= server.server_id %>)">연결 테스트</button>
+    <% } %>
+    <a href="/servers" class="btn">취소</a>
+  </div>
+</form>
+
+<% if (server) { %>
+<div id="test_result" style="display:none" class="test-result">
+  <h3>연결 테스트 결과</h3>
+  <div id="test_steps"></div>
+</div>
+
+<script>
+function toggleAuthFields() {
+  const type = document.querySelector('input[name="ssh_auth_type"]:checked').value;
+  document.getElementById('row_key').style.display = type === 'key' ? '' : 'none';
+  document.getElementById('row_pw').style.display  = type === 'password' ? '' : 'none';
+}
+toggleAuthFields();
+
+async function testConn(id) {
+  const box = document.getElementById('test_result');
+  const steps = document.getElementById('test_steps');
+  box.style.display = 'block';
+  steps.innerHTML = '<div class="muted">테스트 중...</div>';
+
+  try {
+    const res = await fetch(`/servers/${id}/test-connection`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    let html = `<div class="test-overall ${data.overall==='성공'?'ok':'fail'}">전체 결과: ${data.overall}</div>`;
+    html += '<table class="data-table"><thead><tr><th>단계</th><th>결과</th><th>메시지</th></tr></thead><tbody>';
+    for (const s of data.steps) {
+      const cls = s.status === 'ok' ? 'ok' : s.status === 'skip' ? 'skip' : 'fail';
+      const mark = s.status === 'ok' ? '✅' : s.status === 'skip' ? '⚪' : '❌';
+      html += `<tr class="test-step ${cls}"><td>${s.name}</td><td>${mark}</td><td><code>${escapeHtml(s.message)}</code></td></tr>`;
+    }
+    html += '</tbody></table>';
+    steps.innerHTML = html;
+  } catch (e) {
+    steps.innerHTML = `<div class="error-msg">테스트 실패: ${e.message}</div>`;
+  }
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+<% } %>
+
+<%- include('../_footer') %>

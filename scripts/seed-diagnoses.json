@@ -1,0 +1,11 @@
+[
+  {"assessment_id": 2034, "server_name": "jessy62", "hostname": "jessy62", "asset_no": "SVR-2026-0042",
+   "ruleset_ver": "v2.0", "executed_at": "2026-05-23 06:30:00", "elapsed_ms": 341,
+   "status": "success", "total_count": 14, "vuln_count": 5, "safe_count": 8, "na_count": 1,
+   "executed_by": "operator1"},
+  {"assessment_id": 2032, "server_name": "linux-prod-02", "hostname": "prod02.internal", "asset_no": "SVR-2026-0043",
+   "ruleset_ver": "v2.0", "executed_at": "2026-05-23 04:48:12", "elapsed_ms": 2840,
+   "status": "failed", "error_phase": "Raw 수집 단계",
+   "error_message": "SSH connection timeout (15s)",
+   "executed_by": "scheduler"}
+]

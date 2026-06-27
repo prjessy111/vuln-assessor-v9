@@ -1,0 +1,850 @@
+{
+  "generated_at": "2026-06-15",
+  "source": "리포트1.xlsx",
+  "os": {
+    "windows": {
+      "SRV-001": {
+        "title": "SRV-001_안전한 네트워크 모니터링 서비스 사용",
+        "확인방법": "[SNMPv2]\n* Windows SNMP 서비스 속성창에서 실행 상태 및 Community string 확인\n  - 제어판 → 관리도구 → 서비스 →  SNMP 서비스 → 속성 \n  - 보안 탭에서 Community string이 기본값(public, private)을 사용하지 않고 비밀번호 복잡도(영문자, 숫자가 포함 10자리 이상 또는 영문자, 숫자, 특수문자 포함 8자리 이상)를 만족하는지 확인 \n\n[WMI]\n* Windows WMI 서비스 속성창에서 실행 상태 확인\n  - 제어판 → 관리도구 → 서비스 →  Windows Management Instrumentation → 속성 \n\n* DCOM 보안 설정 확인 \n  - 실행(Windows+r) → dcomcnfg → 구성 요소 서비스 → 컴퓨터 → 속성 \n  - 기본 속성 탭에서 기본 인증 수준이 \"패킷 개인정보(Packet Privacy)\" 속성으로 설정 되어 있는지 확인 \n    - 기본 속성 탭에서 기본 가장 수준이 \"식별(Identify)\" 등 클라이언트의 권한을 사용할 수 없는 속성으로 설정 되어 있는지 확인 \n\n* 로컬 보안 설정 확인 \n  - 실행(Windows+r) → gpedit.msc → 로컬 컴퓨터 정책 → 컴퓨터 구성 → Windows 설정 → 보안 설정 → 로컬 정책 → 보안 옵션 → 네트워크 보안: LAN Manager 인증 수준 \n  - 로컬 보안 설정 탭에서 \"NTLMv2 응답만 보내기 및 LM 및 NTLM은 거부\" 등 NTLMv2를 사용하도록 설정되어 있는지 확인",
+        "기준": "양호 - 보안설정이 적용된 네트워크 모니터링 서비스를 사용하는 경우\n\n취약 - 보안설정이 적용되지 않은 네트워크 모니터링 서비스를 사용하는 경우",
+        "조치법": "[Windows 공통]\n<Community 이름(Public) 변경>\n1. 시작 → 관리도구 → 서비스 → SNMP Service → 속성 → 보안\n\n2. 읽기 전용 커뮤니티 이름 public/private 아닌 이름 설정\n\n3. 읽기, 쓰기 커뮤니티 이름 public/private 아닌 이름 설정\n\n<불필요 시 해당 서비스 제거>\n1. 시작 → 관리도구 → 서비스 → SNMP Service → 속성 [일반] 탭에서 \"시작 유형\"을 \"사용 안 함\"으로 설정한 후, SNMP 서비스 중지.\n\n<Windows SNMP 서비스 속성창에서 버전 정보 확인>\n1. 제어판 → 관리도구 → 서비스 →  SNMP 서비스 → 속성\n\n<DCOM 보안 설정 확인>\n1. 기본 속성 탭에서 기본 인증 수준의 값을 \"패킷 개인정보(Packet Privacy)\"로 설정\n - HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Ole\\LegacyAuthenticationLevel = 6\n\n2. 기본 속성 탭에서 기본 가장 수준의 값을 'ID(Identify)', '가장', '대리인' 등 으로 설정\n - HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Ole\\LegacyImpersonationLevel = 2\n\n* DCOM 설정 수정 시, 컴퓨터의 모든 응용 프로그램에 영향을 주며, \n  이에 따라 일부 응용 프로그램이 올바르게 작동하지 않을 수 있으므로\n  담당자와 협의 후 조치 진행.\n\n<로컬 보안 설정 확인> \n1. NTLMv2를 사용하도록 설정\n - HKEY_LOCAL_MACHINE\\SYSTEM\\C"
+      },
+      "SRV-003": {
+        "title": "SRV-003_네트워크 모니터링 서비스 접근통제 설정 적절성",
+        "확인방법": "[SNMP 사용 시]\n1. 시작 → 실행 → services.msc → SNMP Service → 속성 → 보안 탭에서 다음 호스트로부터 SNMP 패킷 받아들이기 설정 확인\n\n2. HKLM\\SYSTEM\\CurrentControlSet\\Services\\SNMP\\Parameters\\PermittedManagers 설정값 확인\n (설정된 특정 호스트 존재할 시 양호, 미존재 시 취약) \n\n[WMI 사용 시] \n1. Windows 방화벽에서 WMI 서비스 포트(기본 TCP 135번 포트)에 대한 인바운드 규칙을 추가하고, WMI 모니터링 서버의 IP 주소만 허용하는지 확인\n\n* WMI 방화벽 설정 조회\ncmd → netsh advfirewall firewall show rule name=\"WMI(Windows Management Instrumentation)(WMI-In)\"",
+        "기준": "양호 - 네트워크 모니터링 서비스의 접근 통제가 적절히 이루어 지고 있는 경우\n\n취약 - 네트워크 모니터링 서비스의 접근 통제가 적절히 이루어 지고 있지 않은 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 서비스 → SNMP Service → 속성 → 보안\n\n2. \"인증 트랩 보내기\" 및 \"다음 호스트로부터 SNMP 패킷 받아들이기\" 선택\n\n3. SNMP 호스트 등록\n\n[WMI 사용 시]\n1. Windows Defender 방화벽 → 고급설정 → 인바운드 규칙 → WMI(Windows Management Instrumentation)(WMI-In) 사용' → '예' 설정\n\n2. RemoteIP : '모두' → 특정 IP만 설정"
+      },
+      "SRV-004": {
+        "title": "SRV-004_불필요한 SMTP 서비스 비활성화",
+        "확인방법": "25번 포트에 SMTP 서비스가 동작 중인지 확인\n\n* [Windows 공통]\n시작 → 관리도구 → 서비스 → SMTP(Simple Mail Transfer Protocol) → 상태 확인",
+        "기준": "양호 - SMTP 서비스가 동작 중이지 않거나, 업무상 사용 중인 경우\n\n취약 - 불필요한 SMTP 서비스가 동작 중인 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 서비스 → SMTP(Simple Mail Transfer Protocol) → 속성 [일반] 탭에서 \"시작 유형\"을 \"사용 안 함\"으로 설정한 후, SMTP 서비스 중지."
+      },
+      "SRV-013": {
+        "title": "SRV-013_Anonymous 계정의 FTP 서비스 접속 제한 여부",
+        "확인방법": "[ IIS - FTP ]\n1. FTP 설정 확인 (IIS 설정)\n - IIS 6.0 이하 : AllowAnonymous=True 여부 확인 (metabase.xml)\n\n - IIS 7.0 이상 : anonymousAuthentication enabled=\"true\" 여부 확인 (applicationHost.config)\n\n2. 접근이 가능한 경우 실제 FTP 접속 시도 (ftp -A 0.0.0.0)\n\n* [Windows 공통]\n시작 → 관리도구 → 인터넷 정보서비스(IIS) 관리 → 컴퓨터 이름 → 사이트 → FTP 사이트명 → FTP인증 → 익명인증에서 확인",
+        "기준": "양호 - FTP 서비스 미사용 또는 Anonymous 설정이 비활성화된 경우\n\n취약 - Anonymous FTP 설정이 활성화 되어있는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 인터넷 정보서비스(IIS) 관리 → 컴퓨터 이름 → 사이트 → FTP 사이트명 → FTP인증 → 익명인증 사용 안 함"
+      },
+      "SRV-018": {
+        "title": "SRV-018_불필요한 하드디스크 기본 공유 비활성화",
+        "확인방법": "[레지스트리 확인 방법]\n시작 → 실행(검색) → regedit → HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\lanmanserver\\parameters\\AutoShareServer 키 값이 0으로 설정되어 있는지 확인\n\n* [Windows 공통]\n시작 → 관리도구 → 컴퓨터 관리 → 공유 폴더 → 공유에서 확인",
+        "기준": "양호 - Windows 2003 이상이면 양호, Windows 2003 미만은 기본 공유가 존재하지 않으면서 서버의 경우 AutoShareServer 키 값이 0일 경우, NT의 경우 AutoShareWks 값이 0일 경우 양호\n\n취약 - Windows 2003 미만이면서 아래의 조건 중 해당사항이 있는 경우\n1. 기본 공유가 존재함\n2. 서버의 경우 AutoShareServer 키 값이 없거나 0이 아닐 경우, NT의 경우 AutoShareWks 값이 없거나 0이 아닐 경우\n\n취약 항목 1, 2번 중 하나라도 해당할 시 취약",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 컴퓨터 관리 → 공유 폴터 → 공유 → 기본공유 선택 → 공유 중지\n* \"net share 고유이름 /delete\"로 공유한 폴더를 공유해제\n\n2. 시작 → 실행(검색) → regedit → 아래 레지스트리 값을 0으로 수정(키 값이 없을 경우 새로 생성 DWORD)\n\"HKLM\\SYSTEM\\CurrentControlSet\\Service\\lanmanserver\\parameters\\AutoShareServer\""
+      },
+      "SRV-020": {
+        "title": "SRV-020_공유 기능에 대한 접근통제 설정 적절성",
+        "확인방법": "1. net share 명령어를 통해 공유 중인 폴더 확인\n\n2. 공유 폴더들의 접근 권한 중 Everyone 권한 부여 여부 확인\n\n* [Windows 공통]\n시작 → 관리도구 → 컴퓨터 관리 → 공유 폴더 → 공유 → 사용 권한에서 확인",
+        "기준": "양호 - 공유폴더가 없거나, 공유 폴더의 접근 권한에 Everyone이 없는 등 접근 통제가 되어 있을 경우\n\n취약 - 공유폴더에 Everyone 권한이 존재하는 등 접근 통제가 되어 있지 않을 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 컴퓨터 관리 → 공유 폴더 → 공유에서 일반 공유 폴더 확인\n\n2. 사용 권한에서 Everyone 으로 된 공유를 제거하고 접근이 필요한 계정의 적절한 권한을 추가"
+      },
+      "SRV-021": {
+        "title": "SRV-021_FTP 서비스 접근통제 설정 적절성",
+        "확인방법": "1. [iisconfig 파일의 설정으로 확인]\n- metabase.xml, applicationhost.config 파일을 참조하여 ipsecurity 항목 적용 여부 확인\n\n2. 직접 확인하는 방법\n - [Windows 2003 이하]\n시작 → 실행 → inetmgr → 디렉터리 보안 탭을 확인하여 TCP/IP 제한이 수행되고 있는지 확인\n\n - [Windows 2008]\n시작 → 실행 → inetmgr → FTP IPv4 주소 및 도메인 제한에 허용 항목 및 거부 항목이 설정되어 있는지 확인\n\n* [Windows 공통]\n1. 시작 → 실행(검색) → inetmgr 실행\n\n2. IIS 관리자 → 확인할 사이트 선택 → \"FTP IPv4 주소 및 도메인 제한\" 선택\n\n3. 오른쪽 \"작업\" 항목 중 \"기능 설정 편집\" 선택\n\n4. \"지정되지 않는 클라이언트에 대한 액세스\"의 설정 확인",
+        "기준": "양호 - 특정 IP 주소에서만 FTP 서버에 접속하도록 접근제어 설정을 적용한 경우\n\n취약 - 특정 IP 주소에서만 FTP 서버에 접속하도록 접근제어 설정을 적용하지 않은 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행 → inetmgr 실행\n\n2. IIS 관리자 → 확인할 사이트 선택 → \"FTP IPv4 주소 및 도메인 제한\" 선택\n\n3. 오른쪽 \"작업\" 항목 중 \"기능 설정 편집\" 선택\n\n4. \"지정되지 않는 클라이언트에 대한 액세스\"의 설정을 \"거부\"로 변경"
+      },
+      "SRV-022": {
+        "title": "SRV-022_계정의 비밀번호 미설정, 빈 암호 사용 관리 여부",
+        "확인방법": "[레지스트리 확인 방법]\nHKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Lsa\\LimitBlankPasswordUse 값 확인 \n(1일 경우 양호, 0일 경우 취약)\n - 계정별 로그인 확인 및 담당자 확인을 통해 비밀번호 미설정 계정 확인\n - 패스워드 크랙 점검 결과 확인\n\n* [Windows 공통]\n시작 → 관리도구 → 로컬 보안 정책 → 로컬정책 → 보안 옵션 → '콘솔 로그온 시 로컬 계정에서 빈 암호 사용 제한' 에서 확인",
+        "기준": "양호 - 계정들의 비밀번호가 모두 설정되어 있고, \"콘솔 로그온 시 로컬 계정에서 빈 암호 사용 제한\" 정책이 \"사용\"인 경우\n\n취약 - 비밀번호가 설정되지 않은 계정이 존재하거나, \"콘솔 로그온 시 로컬 계정에서 빈 암호 사용 제한\" 정책이 \"사용 안 함\"인 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 보안 옵션\n\n2. \"콘솔 로그온 시 로컬 계정에서 빈 암호 사용 제한\" 정책을 \"사용\" 으로 설정"
+      },
+      "SRV-023": {
+        "title": "SRV-023_원격 터미널 서비스의 암호화 설정 적절성",
+        "확인방법": "[레지스트리 확인 방법]\n1. HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\\MinEncryptionLevel 확인 (2 이상일 경우 양호)\n2. HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services\" (Windows 2012 이상 : 2 이상일 경우 양호)\n\n* [Windows 공통]\n시작 → 실행 → gpedit.msc → 컴퓨터 구성 → 관리 템플릿 → Windows 구성 요소 → 터미널 서비스 → 원격 데스크톱 세션 호스트 → 보안 → '클라이언트 연결 암호화 수준 설정' 에서 확인",
+        "기준": "양호 - 원격 터미널 서비스를 사용하지 않거나 사용 시 암호화 수준을 \"클라이언트와 호환 가능(중간)\" 이상으로 설정한 경우\n\n취약 - 원격 터미널 서비스를 사용하고 암호화 수준을 \"낮음\" 으로 설정한 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 검색 → gpedit.msc → 컴퓨터 구성 → 관리 템플릿 → Windows 구성 요소 → 터미널 서비스 → 원격 데스크톱 세션 호스트 → 보안 → '클라이언트 연결 암호화 수준 설정 에서 \"사용\" 및 \"클라이언트 호환 가능 설정\"\n\n* 터미널 서비스가 필요한 경우 추가 보완 대책\n1. 관리자 이외의 일반 사용자의 터미널 서비스 접속을 허용하지 않음\n\n2. 방화벽에서 터미널 서비스 포트(3389)의 사용을 관리자 컴퓨터의 IP로 제한"
+      },
+      "SRV-024": {
+        "title": "SRV-024_취약한 Telnet 인증 방식 사용 제한 여부",
+        "확인방법": "tlntadmn config 명령 결과에서 인증 방법 부분에 Password 지원 여부 확인\n\n* [Windows 공통]\n시작 → 실행 → cmd → tlntadmn config → 인증 메커니즘에서 확인",
+        "기준": "양호 - Telnet 서비스가 실행 중이 아니거나 인증 방법 중 NTLM만 허용할 경우\n\n취약 - Telnet 서비스가 실행되고 있으며 인증 방법 중 password 방식을 지원할 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행 → cmd → tlntadmn config\n\n2. tlntadmn config sec = +NTLM-passwd (passwd 인증 방식을 제외하고 NTLM 인증 방식만 사용)\n\n3. 불필요 시 해당 서비스 제거\n 시작 → 실행 → services.msc → Telnet → 속성 [일반] 탭에서 \"시작 유형\"을 \"사용 안 함\"으로 설정한 후 Telnet 서비스 중지"
+      },
+      "SRV-027": {
+        "title": "SRV-027_서비스 접근 IP 및 포트 제한 여부",
+        "확인방법": "* [Windows 공통]\n윈도우즈 운영체제의 자체 방화벽 또는 3rd-Party 방화벽 제품을 사용중인지 확인\n\n1. 시작 → 실행(검색) → firewall.cpl → [Windows Defender 방화벽 설정 또는 해제] 클릭 → Windows 방화벽 \"사용\" 설정 확인\n2. 3rd-Party 방화벽 제품 확인",
+        "기준": "양호 - 방화벽 제품 또는 Windows 방화벽을 사용한 접근통제를 수행하는 경우\n\n취약 - 방화벽 제품 또는 Windows 방화벽을 사용한 접근통제를 수행하지 않는 경우",
+        "조치법": "[Windows 공통]\n업무 영향도를 고려하여 윈도우즈 운영체제의 자체 방화벽 또는 3rd-Party 방화벽 제품을 사용할 것을 권고\n아래와 같은 과정을 통해 윈도우즈 운영체제의 자체 방화벽 사용 \n\n[Windows 공통]\n1. 시작 → 실행(검색) → firewall.cpl → Windows 방화벽 설정 또는 해제 → 방화벽 사용 설정\n \n2. 3rd-Party 방화벽 제품 사용"
+      },
+      "SRV-028": {
+        "title": "SRV-028_원격 터미널 접속 타임아웃 설정 여부",
+        "확인방법": "[레지스트리 확인 방법]\n1. HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\\MaxIdleTime 확인 (값이 설정되어 있을 경우 양호)\n2. HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services 에서 MaxIdleTime 확인 (Windows 2012 이상 : 설정 되어 있을 경우 양호)\n\n* [Windows 공통]\n1. 시작 → 실행 → gpedit.msc → 컴퓨터 구성 → 관리 템플릿 → Windows 구성 요소 → 원격 데스크톱 서비스 → 원격 데스크톱 세션 호스트 → 세션 시간 제한 → '활성 원격 데스크톱 서비스 세션에 대한 시간 제한 설정' 에서 확인\n\n1-2. '시간 제한에 도달하면 세션 종료' → 편집 → '사용'에 체크 에서 확인",
+        "기준": "양호 - 세션 타임아웃 값이 900초 이하(15분)로 설정 되어 있을 경우\n\n취약 - 세션 타임아웃 값이 900초 이하(15분)로 설정 되어 있지 않을 경우 \n\n(아래 내용 중 해당사항이 있는 경우)\n1) 내부 규정에 세션 종료 시간이 명시되어 있을 경우\n - 세션 타임아웃이 내부 규정에 명시된 세션 종료 시간보다 초과 설정 시 \"취약\"으로 판단\n2) 내부 규정에 세션 종료시간이 명시되어 있지 않을 경우\n - 세션 타임아웃이 15분 초과 설정 시 \"취약\"으로 판단",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행 → gpedit.msc → 컴퓨터 구성 → 관리 템플릿 → Windows 구성 요소 → 원격 데스크톱 서비스(터미널 서비스) → 원격 데스크톱 세션 호스트>세션 시간 제한\n\n2-1. '활성 상태지만 유휴 터미널 서비스 세션에 시간 제한 설정' → 편집 → '사용'에 체크 후 유휴 세션 제한에 시간 설정 → 적용 → 확인\n\n2-2. '시간 제한에 도달하면 세션 종료' → 편집 → '사용'에 체크 → 적용 → 확인"
+      },
+      "SRV-029": {
+        "title": "SRV-029_SMB 세션 중단 관리 설정 여부",
+        "확인방법": "[레지스트리 확인 방법]\nHKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\LanManServer\\Parameters /v EnableForcedLogOff 확인 (1일 경우 양호)\n\n* [Windows 공통]\n시작 → 관리도구 → 로컬 보안 정책 → 보안옵션에서 확인",
+        "기준": "양호 - \"로그온 시간이 만료되면 강제로 로그오프\" 정책을 \"사용\"으로 설정된 경우\n\n취약 - \"로그온 시간이 만료되면 강제로 로그오프\" 정책이 \"사용 안 함\"으로 설정된 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 보안 옵션\n\n2. \"로그온 시간이 만료되면 클라이언트 연결 끊기\" 정책 \"사용\" 설정\n   \"세션 연결을 중단하기 전에 필요한 유휴 시간\" 정책 \"15분\" 설정"
+      },
+      "SRV-031": {
+        "title": "SRV-031_계정 목록 및 네트워크 공유 이름 노출 방지 여부",
+        "확인방법": "[레지스트리 확인 방법]\nHKLM\\SYSTEM\\CurrentControlSet\\Control\\LSA 레지스트리에서 확인\n(Windows 2000 : 2일때 양호, Windows 2003이상 : 1일때 양호)\n\n[직접 확인하는 방법]\nsecpol.msc → 로컬 정책 → 보안 옵션에서 확인\n\n* [Windows 공통]\n시작 → 관리도구 → 로컬 보안 정책 → 로컬정책 → 보안옵션 → 'SAM 계정과 공유의 익명 열거 허용 안 함', 'SAM 계정의 익명 열거 허용 안 함', 'Everyone 사용 권한을 익명 사용자에게 적용'에서 확인",
+        "기준": "양호 - SAM 계정과 공유의 익명 열거 허용 설정 관련 레지스트리 값이 적절하게 설정되어 있을 경우\n\n취약        \n[Windows 2000]\nHKEY\\_LOCAL\\_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\LSA\\RestrictAnonymous값이 (DWORD : 2)가 아닐 경우\n\n[Windows 2003 이상]\nHKEY\\_LOCAL\\_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\LSA\\RestrictAnonymous값이 (DWORD : 1)이 아닐 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬정책 → 보안옵션\n\n2. \"SAM 계정과 공유의 익명 열거 허용 안 함\", \"SAM 계정의 익명 열거 허용 안 함\" 에 각각 \"사용\" 을 선택\n\n3. \"Everyone 사용 권한을 익명 사용자에게 적용\" 을 \"사용 안 함\" 선택\n\n - 방화벽과 라우터에서 135~139(TCP, UDP)포트의 차단을 통해 외부로부터의 위협을 차단하도록 함.\n - 원천적으로 봉쇄.\n네트워크 및 전화 접속 연결 → 로컬영역 → 등록정보 → 고급 → 고급설정 → Microsoft 네트워크파일 및 프린트 공유를 해제 해야 함."
+      },
+      "SRV-034": {
+        "title": "SRV-034_불필요한 서비스 비활성화",
+        "확인방법": "[Windows 공통]\n1. 시작 → 실행 → ncpa.cpl → 로컬 영역 연결 → 속성 → TCP/IPv4 → 속성 → 고급 → [WINS] → NetBIOS 설정에서 확인 \n\n2. 시작 → 관리도구 → 서비스 → 해당 서비스 확인 \n - Alerter(서버에서 클라이언트로 경고 메시지를 보냄)\n - Clipbook(서버 내 Clipbook을 다른 클라이언트와 공유)\n - Messenger(net send 명령어를 이용하여 클라이언트에 메시지 보냄)\n - Simple TCP/IP Services(Echo, Discard, Character Generator, Daytime, Quote of the Day\n\n3. WebDAV 확인\n1) 시작 → 실행 → inetmgr 실행\n2) IIS 관리자 → 확인할 사이트 선택 → 기능 목록 중 \"WebDAV 제작 규칙\" 선택\n3) 오른쪽 \"작업\" 목록에 WebDAV 사용 여부 확인\n\n4. RDS(Remote Data Services) 확인\n1) 시작 → 실행 → inetmgr → 웹사이트에서 '/msadc' 가상 디렉토리 확인\n2) 다음 레지스트리 키 확인\n - HKEY_LOCAL_MACHINE \\SYSTEM \\CurrentControlSet \\Services \\W3SVC\\Parameters\\ADCLaunch \\RDSServer.DataFactory\n - HKEY_LOCAL_MACHINE \\SYSTEM \\CurrentControlSet \\Services \\W3SVC\\Parameters \\ADCLaunch \\AdvancedDataFactory\n - HKEY_LOCAL_MACHINE \\SYSTEM \\CurrentControlSet \\Services \\W3SVC\\Parameters \\ADCLaunch \\VbBusObj.VbBusObjCls",
+        "기준": "양호 - 아래의 항목 중 해당 사항이 없는 경우\n\n취약 - 아래의 항목 중 해당하는 조건이 있는 경우\n\n1. NetBIOS 인터페이스가 불필요하게 활성화됨 (Windows 2000 이하의 환경에서 AD를 사용하는 경우는 예외)\n2. Alerter, Clipbook, Messenger, Simple TCP/IP Services(Echo, Discard, Character Generator, Daytime, Quote of the Day) 서비스가 불필요하게 활성화됨\n3. 불필요하게 WebDAV 서비스가 활성화됨\n4. 불필요하게 RDS(Remote Data Services) 서비스가 활성화됨",
+        "조치법": "[Windows 공통]\n1. Netbios 설정\n시작 → 실행 → ncpa.cpl → 로컬 영역 연결 → 속성 → TCP/IPv4 → 속성 → 탭 → 고급 → [WINS] → NetBIOS 설정 → 'NetBIOS over TCP/IP 사용 안 함' 체크\n\n2. 불필요한 서비스 설정\n시작 → 관리도구 → 서비스 → \"해당 서비스\" 선택 → 속성 → 시작 유형 → 사용 안 함, 시작 상태 → 중지 설정\n* 불필요한 서비스 : Alerter, Clipbook, Messenger,Simple TCP/IP Services\n\n3. WebDAV 설정\n1) 시작 → 관리도구 → 인터넷 정보 서비스(IIS) 관리 → 확인할 사이트 선택 → 기능 목록 중 \"WebDAV 제작 규칙\" 선택 \n2) 오른쪽 \"작업\" 목록에 WebDAV 사용 하지 않음으로 변경\n\n4. RDS(Remote Data Services) 제거\n1) 웹 사이트로부터 \"/msadc\" 가상 디렉터리 제거\n시작 → 실행 → inetmgr → 웹 사이트 선택 후 오른쪽 디렉터리에서 msadc 제거\n2) 다음의 레지스트리 키/디렉터리 제거\n- HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\W3SVC\\Parameters\\ADCLaunch\\RDSServer.DataFactory\n- HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\W3SVC\\Parameters\\ADCLaunch\\AdvancedDataFactory\n- HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentCo"
+      },
+      "SRV-037": {
+        "title": "SRV-037_취약한 FTP 서비스 비활성화",
+        "확인방법": "다음 명령들의 결과 확인\n - sc query MSFTPSVC\n - sc query FTPSVC\n - netstat -an | findstr :21\n\n[직접 확인하는 방법]\n시작 → 실행 → services.msc → FTP Publishing Service / Microsoft FTP Service 확인\nhttp://www.iis.net/learn/publish/using-the-ftp-service/creating-a-new-ftp-site-in-iis-7",
+        "기준": "양호 - FTP 서비스가 비활성화 되어 있는 경우\n\n취약 - FTP 서비스가 활성화 되어 있는 경우\n\n(단, 업무상 필요하여 FTPS를 활용하는 등 통신 암호화를 위한 별도의 보안수단이 적용된 경우는 양호)",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 서비스 → Microsoft FTP Service → 속성 → 정지/사용안 함"
+      },
+      "SRV-063": {
+        "title": "SRV-063_DNS Recursive Query 제한 설정 여부",
+        "확인방법": "* 다음 레지스트리 값을 확인하여 Recursion 활성화 여부 점검\nHKLM\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters /v NoRecursion\n\n* [Windows 공통]\n1. 시작 → 관리도구 → DNS 관리자 → DNS 서버 → 우클릭 → 속성 → 고급 → \"재귀를 사용 안 함(전달자도 사용 안 함)\" 확인\n\n2. 레지스트리에서 확인\n시작 → 실행(검색) → regedit → HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters\\NoRecursion",
+        "기준": "양호 - Recursive Query를 제한하는 레지스트리 값이 1일 경우. 또는 신뢰된 호스트가 등록되어 있을 경우 (또는 방화벽 등으로 질의 가능한 호스트를 통제하고 있을 경우)\n\n취약 - Recursive Query를 제한하는 레지스트리 값이 존재하지 않거나, 1이 아니면서 신뢰된 호스트를 별도로 등록하지 않은 경우",
+        "조치법": "[Windows 공통]\n1.  시작 → 관리도구 → DNS 관리자 → DNS 서버 → 우클릭 → 속성 → 고급 → \"재귀를 사용 안 함(전달자도 사용 안 함)\" 설정\n    DNS 서버 재 시작\n\n2. 시작 → 실행(검색) → regedit →  HKLM\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters\n   편집 메뉴에서 값 추가를 누른 후 다음 레지스트리 값을 추가\n      값 이름 : NoRecursion\n      데이터 형식 : REG_DWORD\n      값 데이터 : 1\n   DNS 서버 재 시작"
+      },
+      "SRV-066": {
+        "title": "SRV-066_DNS Zone Transfer 제한 설정 적절성",
+        "확인방법": "* 명령어로 확인 (레지스트리)\nreg query \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\DNS Server\\Zones\" /s\n정의된 각 zone의 SecureSecondaries 레지스트리 설정 값 점검\n\n[직접 확인하는 방법]\n시작 → 실행 → DNSMGMT.MSC → 각 조회영역 → 해당 영역 → 속성 → 영역전송 에서 확인\n\n[Windows 공통]\n* DNS 관리자에서 확인\n시작 → 프로그램 → 관리도구 → DNS → 각 조회영역 → 해당 영역 → 속성 → 영역전송에서 확인",
+        "기준": "양호\n - 아래 기준에 해당 될 경우\n1. DNS 서비스를 사용 하지 않을 경우\n2. DNS 서비스 영역 전송이 허용되지 않는 경우\n3. DNS 서비스 영역 전송이 특정 서버로 설정되어 있을 경우\n   레지스트리 값이 2, 3 인 경우는 양호, 1인 경우에는 확인 필요\n\n취약 - 위 3개 기준 중 해당 되는 항목이 하나도 없을 경우\n\n* 참고 레지스트리 값 별 설정 상태\n  영역 전송 아무 서버로나 : 0\n  이름 서버 탭에 나열된 서버로만 : 1\n  다음 서버로만 : 2\n  영역전송 허용이 꺼져있는 경우 : 3",
+        "조치법": "[Windows 공통]\n시작 → 관리도구 → DNS → 각 조회영역 → 해당 영역 → 속성 → 영역전송에서 \"영역 전송 허용\"을 제한하거나 특정서버로만 영역 전송이 이루어지도록 등록"
+      },
+      "SRV-069": {
+        "title": "SRV-069_비밀번호 관리정책 설정 적절성",
+        "확인방법": "[Windows 공통]\n1. 시작 → 실행(검색) → secpol.msc → 계정 정책 → 암호 정책 확인\n\n2. 도메인 컨트롤러인 경우 비밀번호 보안 정책 설정 \n - 관리도구에서 Active Directory 사용자 및 컴퓨터 실행 \n - Active Directory 사용자 및 컴퓨터 창의 왼쪽 트리에서 도메인을 오른쪽 클릭하여 등록정보를 열고 그룹 정책 탭을 클릭 \n - Default Domain Policy를 선택하고 편집 클릭 \n - 컴퓨터 구성 → Windows 설정 → 보안 설정 → 계정 정책 → 암호 정책을 선택 \n\n* secedit /EXPORT /CFG securitypolicy 결과에서 다음 값들 확인\n - MaximumPasswordAge : 패스워드 유효 기간(단위 : 일) (0~999 설정 가능)\n - MinimumPasswordLength : 패스워드 최소 길이 (0~14 설정 가능)\n - PasswordComplexity : 패스워드 복잡도 강제화 (계정명과 이름 미포함 여부, [소문자,대문자,숫자,특수문자,유니코드] 중 3종류 이상 포함)",
+        "기준": "양호 - 비밀번호 관련 정책들이 설정되어 있을 경우\n\n취약 - 비밀번호 관련 정책들이 설정되어 있지 않을 경우\n\n※ 정책 기준 : 영문 숫자 특수문자 2개 조합 시 10자리 이상, 3개 조합 시 8자리 이상, 패스워드 변경 기간 90일 이하",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → secpol.msc → 계정 정책 → 암호 정책 다음과 같이 설정\n - 암호는 복잡성을 만족해야 함 : 사용\n - 최근 암호 기억                    : 12개\n - 최대 암호 사용 기간             : 90일\n - 최소 암호 길이                    : 8문자\n - 최소 암호 사용 기간             : 1일\n\n2. 도메인 컨트롤러인 경우 비밀번호 보안 정책 설정 \n - 관리도구에서 Active Directory 사용자 및 컴퓨터 실행 \n - Active Directory 사용자 및 컴퓨터 창의 왼쪽 트리에서 도메인을 오른쪽 클릭하여 등록정보를 열고 그룹 정책 탭을 클릭 \n - Default Domain Policy를 선택하고 편집 클릭 \n - 컴퓨터 구성 → Windows 설정 → 보안 설정 → 계정 정책 → 암호 정책을 선택 \n - 다음 항목에 대해 설정\n    암호는 복잡성을 만족해야 함 : 사용\n    최근 암호 기억                    : 12개\n    최대 암호 사용 기간             : 90일\n    최소 암호 길이                    : 8문자\n    최소 암호 사용 기간             : 1일\n\n* 최대 암호 사용기간을 설정했을 경우 사용자에게 암호 만료 전에 알려줄 기간을 설정할 수 있음  \n* 로컬정책 - 보안 옵션 실행 후 \"암호 만료 전에 사용자에게 암호를 변경하도록 프롬프트\" 항목 설정"
+      },
+      "SRV-070": {
+        "title": "SRV-070_취약한 패스워드 저장 방식 사용 제한 여부",
+        "확인방법": "* secedit /EXPORT /CFG securitypolicy | Find /I \"ClearTextPassword\" 명령 결과 확인\n\n[직접 확인하는 방법]\n시작 → 실행 → secpol.msc → 계정 정책 → 암호 정책에서 확인",
+        "기준": "양호 -  '해독 가능한 암호화를 사용하여 암호 저장' 정책 사용 안 함, ClearTextPassword=0 일 때\n\n취약 -  '해독 가능한 암호화를 사용하여 암호 저장' 정책 사용, ClearTextPassword=1 일 때",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → SECPOL.MSC → 계정 정책 → 암호 정책 → \"해독 가능한 암호화를 사용하여 암호 저장\" 을 \"사용 안 함\" 으로 설정"
+      },
+      "SRV-072": {
+        "title": "SRV-072_기본 관리자 계정명(Administrator) 변경 여부",
+        "확인방법": "* net localgroup Administrators 명령 결과 확인\n* net user Administrator 명령 결과 확인\n\n[직접 확인하는 방법]\n - 제어판의 관리도구에서 컴퓨터 관리 실행 (도메인 콘트롤러의 경우 관리도구에서 Active Directory 사용자 및 컴퓨터 실행)\n - 시스템 도구 확장  - 로컬 사용자 및 그룹 확장  - 사용자 선택\n - 계정명이 Administrator인 계정이 존재하는지 확인\n\n* [Windows 공통]\n시작 → 실행(검색) → secpol.msc → 로컬 정책 → 보안 옵션 → \"계정 : Administrator 계정 이름 바꾸기\" 에서 확인",
+        "기준": "양호 - 관리자 권한의 Administrator인 계정명이 존재하지 않을 경우\n\n취약 - 관리자 권한의 Administrator인 계정명이 존재할 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 보안 옵션 → \"계정 : Administrator 계정 이름 바꾸기\" 에서 변경"
+      },
+      "SRV-073": {
+        "title": "SRV-073_관리자 그룹에 불필요한 사용자 제거",
+        "확인방법": "* net localgroup Administrators 명령 결과 확인\n\n[직접 확인하는 방법]\n - 아래와 같은 과정을 통해 해당 다수의 관리자 계정이 있는지 파악\n - [시작] 버튼 클릭 후 [제어판] 클릭 \n - [사용자 계정] 클릭 후 다수의 관리자 계정 확인\n\n* [Windows 공통]\n시작 → 실행(검색) → lusrmgr.msc → 그룹 → Administrators → 속성에서 확인",
+        "기준": "양호 - Administrator 그룹에 불필요한 관리자 계정이 없을 경우\n\n취약 - Administrator 그룹에 불필요한 관리자 계정이 있을 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → lusrmgr.msc → 그룹 → Administrators → 속성\n불필요한 구성원 제거 후 그룹 변경"
+      },
+      "SRV-074": {
+        "title": "SRV-074_불필요하거나 관리되지 않는 계정 제거",
+        "확인방법": "* 계정별 비밀번호 변경일자 및 로그인 기록 확인\n시작 → 검색 → cmd → net user 사용하여 확인\n\n* 한글 윈도우\n - 비밀번호 변경일자 : \"net user 사용자명 | findstr 마지막\"\n - 로그온 기록 : \"net user 사용자명 | findstr 최근 | findstr 로그온\"\n\n* 영어 윈도우\n - 비밀번호 변경일자 : \"net user 사용자명 | findstr Password\"\n - 로그온 기록 : \"net user 사용자명 | findstr Last | findstr logon\"",
+        "기준": "양호 - 분기별 1회 이상 로그인 한 기록이 있고, 비밀번호를 변경하고 있는 경우\n\n취약 - 분기별 1회 이상 로그인 한 기록이 없거나, 비밀번호를 변경하지 않은 경우\n\n※ 업무상 사용 여부 확인 필요",
+        "조치법": "[Windows 공통]\n1. 사용자 비밀번호는 최소 8자 이상에 영어+숫자+특수 문자를 혼합하여 설정 \n - 내부 규정에 따라 주기적으로 비밀번호를 교체 \n - 이전에 사용했던 비밀번호는 사용할수 없게 설정 \n\n2. 비밀번호 변경 방법 \n 시작 → 실행(검색) → lusrmgr.msc → 계정 → 해당 계정 선택 후 암호 설정"
+      },
+      "SRV-075": {
+        "title": "SRV-075_비밀번호 복잡도 설정",
+        "확인방법": "[Windows 공통]\n - 비밀번호 없이 로그인 가능한 계정이 있는지 확인\n - 패스워드 크랙 시도",
+        "기준": "양호 - 시스템의 모든 계정이 비밀번호 복잡도를 만족하는 경우\n\n취약 - 비밀번호가 미설정되었거나, 복잡도를 만족하지 않는 계정이 존재하는 경우\n\n※ 복잡도 : 영문 숫자 특수문자 2개 조합 시 10자리 이상, 3개 조합 시 8자리 이상 (계정명, 기관명이 포함된 경우 취약)",
+        "조치법": "[Windows 공통]\n1. 사용자 비밀번호는 최소 8자 이상에 영어+숫자+특수 문자를 혼합하여 설정 \n - 내부 규정에 따라 주기적으로 비밀번호를 교체 \n - 이전에 사용했던 비밀번호는 사용할수 없게 설정 \n\n2. 비밀번호 변경 방법 \n 시작 → 실행(검색) → lusrmgr.msc → 계정 → 해당 계정 선택 후 암호 설정"
+      },
+      "SRV-078": {
+        "title": "SRV-078_불필요한 Guest 계정 비활성화",
+        "확인방법": "* net user guest 명령 결과 확인\n\n[직접 확인하는 방법]\n[시작] 버튼 클릭 → [제어판] 클릭 → [사용자 계정] 클릭 → Guest 계정이 비활성화되어 있는지 확인\n\n* [Windows 공통]\n시작 → 실행(검색) → lusrmgr.msc → 사용자 → Guest 계정 → 일반 → 계정 사용 안 함 확인",
+        "기준": "양호 - Guest 계정이 비활성화되어 있는 경우\n\n취약 - Guest 계정이 활성화되어 있는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → lusrmgr.msc → 사용자 → Guest 계정 → 일반 → \"계정 사용 안 함\" 설정"
+      },
+      "SRV-079": {
+        "title": "SRV-079_익명 사용자에게 부적절한 권한(Everyone) 제거",
+        "확인방법": "[Windows 공통]\n1. 시작 → 제어판 관리도구 → 로컬 보안 정책 → 보안 옵션 → \"Everyone 사용 권한을 익명 사용자에게 적용\" 항목 설정 확인\n\n2. HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Lsa\" /v everyoneincludesanonymous\" 설정 값 확인 (0일 경우 양호)",
+        "기준": "양호 - \"Everyone 사용 권한을 익명 사용자에게 적용\" 정책이 \"사용 안 함\" 으로 설정된 경우\n\n취약 - \"Everyone 사용 권한을 익명 사용자에게 적용\" 정책이 \"사용\" 으로 설정된 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 보안 옵션\n\n2. \"네트워크 액세스 : Everyone 사용 권한을 익명 사용자에게 적용\" 정책이 \"사용 안 함\" 으로 설정"
+      },
+      "SRV-080": {
+        "title": "SRV-080_일반 사용자의 프린터 드라이버 설치 제한 여부",
+        "확인방법": "1. addprintdrivers의 값이 1이면 양호, 0이면 취약\nreg query \"HKLM\\System\\CurrentControlSet\\Control\\Print\\Providers\\LanMan Print Services\\Servers\"\n\n* [Windows 공통]\n시작 → 관리도구 → 로컬 보안 정책 → 보안옵션 → '사용자가 프린터 드라이버를 설치할 수 없게 함' 에서 확인",
+        "기준": "양호 - \"사용자가 프린터 드라이버를 설치할 수 없게 함\" 정책이 \"사용\"인 경우\n\n취약 - \"사용자가 프린터 드라이버를 설치할 수 없게 함\" 정책이 \"사용 안 함\"인 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 보안 옵션\n\n2. \"장치 : 사용자가 프린터 드라이버를 설치할 수 없게 함\" 정책을 \"사용\" 으로 설정"
+      },
+      "SRV-082": {
+        "title": "SRV-082_시스템 주요 디렉터리 권한 설정 적절성",
+        "확인방법": "[명령어로 디렉터리 접근 권한 확인]\n> cacls C:\\WINDOWS\\system32\\config \n> cacls C:\\WINDOWS\\system32\\winevt\\Logs\n> cacls C:\\WINDOWS\\system32\\LogFiles\n(Users 그룹 등 불필요한 권한 부여 여부 확인)\n\n* [Windows 공통]\n - 탐색기에서 디렉터리 오른쪽 마우스 클릭 → 속성 → 보안탭 선택 → User 권한 존재여부 확인\nC:\\WINDOWS\\system32\\config\nC:\\WINDOWS\\system32\\winevt\\Logs\nC:\\WINDOWS\\system32\\LogFiles",
+        "기준": "양호 - 시스템 로그 파일 디렉터리 접근 권한에 Users 그룹과 같이 불필요한 권한이 부여되지 않은 경우\n\n취약 - 시스템 로그 파일 디렉터리 접근 권한에 Users 그룹과 같이 불필요한 권한이 부여된 경우\n\n* C:\\WINDOWS\\system32\\config, C:\\WINDOWS\\system32\\winevt\\Logs 디렉터리는 로그 및 중요 파일들이 저장되어있음",
+        "조치법": "[Windows 공통]\nC:\\Windows\\System32\\config 디렉터리의 권한을 관리자 이외의 사용자 권한을 삭제\n\n1. 시작 → 실행(검색) → explorer → C:\\Windows\\System32\\config 디렉터리 오른쪽 마우스 클릭 → 속성 → 보안탭 → User 권한 삭제"
+      },
+      "SRV-084": {
+        "title": "SRV-084_시스템 주요 파일 권한 설정 적절성",
+        "확인방법": "[명령어로 권한 확인하는 방법]\ncacls %systemroot%\\system32\\config\\SAM\n\n[직접 확인하는 방법]\n%systemroot%\\system32\\config\\SAM → 속성 → 보안에서 확인",
+        "기준": "양호 - SAM 파일 접근 권한이 Administrator, System 그룹에게만 부여된 경우\n\n취약 - SAM 파일 접근 권한이 Administrator, System 그룹 외 다른 그룹이나 사용자에게 불필요하게 부여된 경우",
+        "조치법": "[Windows 공통]\nSAM 파일 권한 확인 후 Administrator, System 그룹 외 다른 그룹에 설정된 권한 제거\n\n[Windows 2003, 2008, 2012, 2016]\n1. %systemroot%\\system32\\config\\SAM → 속성 → 보안\n\n2. Administrator, System 그룹 외 다른 사용자 및 그룹 권한 제거"
+      },
+      "SRV-090": {
+        "title": "SRV-090_불필요한 원격 레지스트리 서비스 비활성화",
+        "확인방법": "[서비스 상태 조회 명령을 통한 확인하는 방법]\n - sc query RemoteRegistry\n\n[직접 확인하는 방법]\n시작 → 실행 → services.msc → Remote Registry → 속성에서 확인\n\n※ 접근 제어 참조\nHKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\SecurePipeServers 경로에 winreg(REG_SZ) 키 추가\nwinreg 보안 → 권한에서 접근할 수 있는 사용자 및 그룹을 제한 가능",
+        "기준": "양호 - Remote Registry Service 가 중지되어 있을 경우 (Stopped)\n\n취약 - Remote Registry Service 가 불필요하게 실행 중일 경우 (Running)",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 서비스 → Remote Registry → 속성\n\n2. \"시작유형\" → 사용안 함, 서비스 상태 → 중지"
+      },
+      "SRV-092": {
+        "title": "SRV-092_사용자 홈 디렉터리 경로 및 권한 설정 적절성",
+        "확인방법": "사용자별 홈 디렉터리에 Everyone 권한 존재 여부 확인\n\n* [Windows 공통]\n%systemroot%\\사용자\\사용자 홈디렉터리 → 속성 → 보안에서 확인",
+        "기준": "양호 - 사용자 별 홈 디렉터리에 Everyone 권한이 없는 경우 (All Users, Default User 디렉터리는 점검 대상 제외)\n\n취약 - 사용자 별 홈 디렉터리에 Everyone 권한이 있는 경우",
+        "조치법": "[Windows 공통]\n1. %systemroot%\\사용자\\사용자 홈디렉터리 → 속성 → 보안\n\n2. 해당 사용자에 대한 권한 외 일반 계정 삭제"
+      },
+      "SRV-097": {
+        "title": "SRV-097_FTP 서비스 디렉터리 접근권한 설정 적절성",
+        "확인방법": "* 명령어로 FTP 홈 디렉터리의 접근 권한 점검\n$1 = reg query \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\MSFTPSVC\\Parameters\" /v \"Virtual Roots\"\ncacls $1\ncacls c:\\inetpub\\ftproot\n\n[직접 확인하는 방법]\nFTP 홈 디렉터리 → 속성 → 보안탭 → 그룹 또는 사용자 이름 → 사용 권한 확인\n\n* [Windows 공통]\n시작 → 실행(검색) → inetmgr → 사이트 → FTP 사이트 → 오른쪽 탭 작업 → 고급 설정 → \"실제 경로\" 설정된 폴더  탐색기로 열어서 보안 속성 확인",
+        "기준": "양호 - FTP 홈 디렉터리에 Everyone 권한 등 불필요한 권한이 없는 경우\n\n취약 - FTP 홈 디렉터리에 Everyone 권한 등 불필요한 권한이 있는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → inetmgr → 사이트 → FTP 사이트 → 오른쪽 탭 작업 → 고급 설정 → \"실제 경로\" 에서 FTP Root 설정된 폴더 확인\n\n2. 시작 → 실행 → explorer → FTP Root 폴더 → 우클릭 → 보안 → Everyone 사용자 제거"
+      },
+      "SRV-101": {
+        "title": "SRV-101_불필요한 예약 작업 제거",
+        "확인방법": "at 또는 schtasks 명령 결과를 통해 예약된 작업 목록 확인\n\n* [Windows 공통]\n1. 시작 → 관리도구 → 작업 스케줄러에서 확인\n\n2. 시작 → 검색 → cmd → schtasks 명령어 실행하여 확인",
+        "기준": "양호 - 예약된 작업에 불필요한 명령어나 파일이 없을 경우\n\n취약 - 예약된 작업에 불필요한 명령어나 파일이 존재하는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → '작업 스케줄러'에서 확인\n\n2. 등록된 예약 작업을 선택하여 상세내역 확인\n\n3. 불필요한 파일 존재 시 삭제"
+      },
+      "SRV-103": {
+        "title": "SRV-103_LAN Manager 인증 수준 적절성",
+        "확인방법": "[레지스트리 확인방법]\nHKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Lsa\\LmCompatibilityLevel 확인 (3 이상일 경우 양호) \n\n* Windows 2008 이상은 키가 없어도 양호, 2003 이하는 키 없으면 취약\n\n* [Windows 공통]\n시작 → 관리도구 → 로컬 보안 정책 → 보안옵션 → 'LAN Manager 인증 수준\" 정책'에서 확인",
+        "기준": "양호 - \"LAN Manager 인증 수준\" 정책에 \"NTLMv2 응답만 보냄\"이 설정되어 있는 경우\n\n취약 - \"LAN Manager 인증 수준\" 정책에 \"LM\" 및 \"NTLM\"인증이 설정되어 있는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 보안 옵션\n\n2. \"네트워크 보안 : LAN Manager 인증 수준\" 정책에 NTLMv2 응답만 보냄\" 설정"
+      },
+      "SRV-104": {
+        "title": "SRV-104_보안 채널 데이터 디지털 암호화 또는 서명 기능 설정 적절성",
+        "확인방법": "[레지스트리 확인방법]\n1. HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\Netlogon\\Parameters\\RequireSignOrSeal\n2. HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\Netlogon\\Parameters\\SealSecureChannel\n3. HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\Netlogon\\Parameters\\SignSecureChannel\n(3개의 레지스트리 값이 1이면 양호, 0인 값이 있으면 취약)\n\n* [Windows 공통]\n시작 → 관리도구 → 로컬 보안 정책 → 보안옵션에서 확인",
+        "기준": "양호 - \"도메인 구성원 : 보안 채널 데이터를 디지털 암호화 또는, 서명(항상)\" 정책이 \"사용\"으로 되어 있는 경우 또는 AD 환경이 아닌 경우\n\n취약 - \"도메인 구성원 : 보안 채널 데이터를 디지털 암호화 또는, 서명(항상)\" 정책이 \"사용 안 함\"으로 되어 있는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 보안 옵션\n\n2. 아래 3가지 정책을 모두 \"사용\" 으로 설정\n - 도메인 구성원 : 보안 채널 데이터를 디지털 암호화 또는 서명 (항상)\n - 도메인 구성원 : 보안 채널 데이터를 디지털 서명 (가능한 경우)\n - 도메인 구성원 : 보안 채널 데이터를 디지털 암호화 (가능한 경우)"
+      },
+      "SRV-105": {
+        "title": "SRV-105_불필요한 시작프로그램 제거",
+        "확인방법": "1. reg query \"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" 결과 확인\n\n2. msconfig 입력 후 시작 프로그램 목록을 분석하여 의심가는 프로그램 존재 여부 확인\n\n* [Windows 공통]\n시작 → 실행 → msconfig → 시작 프로그램 탭 → 시작프로그램 목록 확인",
+        "기준": "양호 - 시작프로그램 목록을 정기적으로 검사하고 불필요한 프로그램이 없는 경우\n\n취약 - 시작프로그램 목록을 정기적으로 검사하지 않고, 불필요한 프로그램이 존재하는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 검색(검색) → msconfig 명령어 입력\n\n2. 시작 프로그램 탭 클릭 → 시작 프로그램 목록 중 불필요하거나 의심스러운 항목 체크 표시 해제"
+      },
+      "SRV-108": {
+        "title": "SRV-108_로그에 대한 접근통제 및 관리 적절성",
+        "확인방법": "1. 레지스트리 값으로 이벤트 로그 접근 권한 확인\n - reg query \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Application\" /v RestrictGuestAccess\n - reg query \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Security\" /v RestrictGuestAccess\n - reg query \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\System\" /v RestrictGuestAccess\n\n(값이 1이면 양호, 0이면 취약)\n\n2. 감사 및 보안 로그 관리 권한\nsecedit /EXPORT /CFG securitypolicy | Find /I \"SeSecurityPrivilege\" 설정 값 확인 (Everyone 또는 User 그룹 존재 유무 확인)\n\n시작 → 실행(검색) → 로컬보안정책(secpol.msc) → 로컬 정책 → 사용자 권한 할당 → \"감사 및 보안 로그 관리\" 항목에서 권한 설정 확인\n\n3. 로그 크기 제한 값 확인\n - reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Application\" /v MaxSize\n - reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Security\" /v MaxSize\n - reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\System\" /v MaxSize\n\n4. 시작 → 실행 → eventvwr.msc → 해당 로그 → 속성 → 일반에서 확인",
+        "기준": "양호 - 이벤트 로그에 대한 접근통제와 감사 및 보안 로그 관리 권한이 적절하게 설정되어있고, 로그 파일 크기 제한이 적절한 경우\n\n취약 - 이벤트 로그에 Guest 권한으로 접근 가능하거나, 감사 및 보안 로그 관리 그룹에 Everyone 또는 User 그룹이 존재하거나, 로그 파일 크기 제한 값이 너무 작을 경우(10240KB 미만)",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → regedit → 다음 레지스트리 1(DWORD) 설정\n - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Application\\RestrictGuestAccess \n - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Security\\RestrictGuestAccess \n - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\System\\RestrictGuestAccess\n\n2. 감사 기록에 대한 접근 권한은 관리자 그룹에게만 허가\n - 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → \"감사 및 보안 로그 관리\" 항목  Everyone, Users 그룹 제거\n\n3. 시작 → 관리도구 → 이벤트 뷰어 → 해당 로그 → 속성 → 일반\n - 최대 로그 크기 → 10240\n - 최대 로그 크기에 도달할 때 : 다음보다 오래된 이벤트 덮어쓰기 → 90일"
+      },
+      "SRV-109": {
+        "title": "SRV-109_시스템 주요 이벤트 로그 설정 적절성",
+        "확인방법": "* 보안감사 관련 설정 확인\n - 명령어 : secedit /EXPORT /CFG securitypolicy\n - GUI : 실행 → secpol.msc (제어판 → 관리도구 → 로컬보안정책)\n\n* [Windows 공통]\n시작 → 실행 → secpol.msc → 로컬정책 → 감사정책 → 감사 관련 정책 설정 확인\n\n - 계정 관리 감사\n - 계정 로그온 이벤트 감사\n - 디렉터리 서비스 액세스 감사\n - 로그온 이벤트 감사\n - 시스템 이벤트 감사\n - 정책 변경 감사",
+        "기준": "양호 - 보안 감사 설정을 적절하게 적용 중일 경우\n\n취약 - 보안 감사를 수행하고 있지 않을 경우 \n\n- 감사 설정 파라미터\n * AuditAccountManage(계정 관리 감사) = 1 또는 3\n * AuditLogonEvents(로그온 이벤트 감사) = 1 또는 3\n * AuditDSAccess(디렉터리 서비스 액세스 감사) =  1 또는 3\n * AuditAccountLogon(계정 로그온 이벤트 감사) = 3\n * AuditSystemEvents(시스템 이벤트 감사) = 3\n * AuditPolicyChange(정책 변경 감사) =  1 또는 3\n\n0 : 감사 안 함\n1 : 성공만 기록\n2 : 실패만 기록\n3 : 성공과 실패 모두 기록",
+        "조치법": "[Windows 공통]\n시스템 성능이나 중요도, 정보보호 관리업무 등을 종합적으로 고려하여 설정 \n감사 기록 생성을 위한 저장 장치의 사용으로 시스템 오류가 발생할 수 있으므로 주기적으로 백업 및 삭제 수행\n\n1. 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 감사 정책\n각 항목에 대하여 아래와 같이 설정\n * AuditAccountManage(계정 관리 감사) = 1 또는 3\n * AuditLogonEvents(로그온 이벤트 감사) = 1 또는 3\n * AuditDSAccess(디렉터리 서비스 액세스 감사) =  1 또는 3\n * AuditAccountLogon(계정 로그온 이벤트 감사) = 3\n * AuditSystemEvents(시스템 이벤트 감사) = 3\n * AuditPolicyChange(정책 변경 감사) =  1 또는 3"
+      },
+      "SRV-115": {
+        "title": "SRV-115_로그의 정기적 검토 및 보고 수행 여부",
+        "확인방법": "[Windows 공통]\n로그 검토 보고서 확인/인터뷰",
+        "기준": "양호 - 로그 기록에 대해 정기적 검토, 분석, 보고서 작성 및 보고 등의 절차를 수행하고 있을 경우\n\n취약 - 로그 기록에 대해 정기적 검토가 이루어지지 않을 경우",
+        "조치법": "[Windows 공통]\n시스템 및 중요 일반 로그들에 대해 주기적으로 백업 및 검토 시행\n\n1. 이벤트 로그를 확인하기 위해서는 Windows의 이벤트 뷰어를 사용\n - 시작 → 제어판 → 관리도구 → 이벤트 뷰어\n - 응용 프로그램 로그, 보안 로그, 시스템 로그 와 같은 세가지 로그를 이벤 트에 기록\n - OS 구성에 따라 디렉터리 서비스 로그, 파일 복제 서비스 로그, DNS 서버 로그 추가\n\n2. 감사 정책을 구성을 위해 로컬보안정책 설정을 변경\n - 로컬보안정책을 이용하여 감사 정책을 구성하기 위해서는 Administrators그룹 구성원 또는 적절한 권한이 부여된 사용자로 작업\n - 시작 → 설정 → 제어판 → 관리도구 → 로컬보안정책         \n - 보안 템플릿을 이용한 감사 정책을 구성 (보안 템플릿이란 보안 구성을 표 시하는 파일로 로컬 컴퓨터 및 그룹 정책 개제를 적용 보안 분석에 사용)"
+      },
+      "SRV-116": {
+        "title": "SRV-116_“보안 감사를 수행할 수 없는 경우, 즉시 시스템 종료” 기능 비활성화",
+        "확인방법": "1. HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Lsa\\crashonauditfail 값 확인 또는\n\n2. gpedit.msc → Windows 설정 → 보안설정 → 로컬 정책 → 보안옵션 → 감사 : 보안 감사를 로그할 수 없는 경우 즉시 시스템 종료 항목 확인\n\n* [Windows 공통]\n시작 → 실행(검색) → secpol.msc → 보안 옵션 → '감사 : 보안 감사를 로그할 수 없는 경우 즉시 시스템 종료'에서 확인",
+        "기준": "양호 - crashonauditfail 레지스트리 값이 0 이거나 \"보안감사를 로그할 수 없는 경우 즉시 시스템 종료\" 항목이 \"사용 안 함\" 인 경우\n\n취약 - crashonauditfail 레지스트리 값이 0 이 아니거나 (1, 2) \"보안감사를 로그할 수 없는 경우 즉시 시스템 종료\" 항목이 \"사용\" 인 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → secpol.msc → 보안 옵션 → \"감사 : 보안 감사를 로그할 수 없는 경우 즉시 시스템 종료\" 정책 \"사용안 함\" 설정"
+      },
+      "SRV-118": {
+        "title": "SRV-118_주기적인 보안패치 및 벤더 권고사항 적용 여부",
+        "확인방법": "[패치 정보]\n - HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\CSDVersion 확인\n - wmic os get servicepackmajorversion 명령 결과 확인\n - 시작 → 실행(검색) → winver 명령 실행 후 서비스팩 버전 확인\n - wmic qfe list 명령으로 패치 목록 확인\n - 보안 패치 사이트(Microsoft Windows Server 제품별 지원)\n - https://technet.microsoft.com/ko-kr/library/bb625087.aspx",
+        "기준": "양호 - 최신 핫픽스 등 보안 패치를 적절하게 적용하고 있는 경우\n\n취약 - 최신 핫픽스 등 보안 패치를 검토하는 절차가 없고, 패치를 적용하지 않은 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행 → Winver \n\n2. Service Pack 버전 확인 후 최신 버전이 아닐 경우 'Windows Update' 사용하여 설치하거나 혹은 Microsoft 사이트(http://update.microsoft.com)에서 다운로드하여 설치\n\n* 주의\n보안 패치 및 Hot Fix의 경우는 적용 후 시스템 재 시작을 요하는 경우가 대부분이므로 관리자는 서비스에 지장이 없는 시간대에 적용을 하는 것을 권장함.\n시스템에 알맞은 Hot Fix는 수행되고 있는 OS프로그램 및 특히 개발되거나 구매한 Application 프로그램에 영향을 줄 수 있음. 따라서 패치 적용 전 Application 프로그램을 구분하고, 필요하다면 OS 벤더 또는 Application 엔지니어의 확인 하에 패치를 수행해야 함."
+      },
+      "SRV-119": {
+        "title": "SRV-119_백신 프로그램 업데이트 적용 여부",
+        "확인방법": "[Windows 공통]\n - 주기적으로 백신 업데이트를 수행하는 절차 확인\n - 설치된 백신의 엔진 버전 확인",
+        "기준": "양호 - 백신 프로그램이 주기적으로 업데이트 되고 있는 경우\n\n취약 - 백신 프로그램의 주기적으로 업데이트 되고 있지 않은 경우",
+        "조치법": "[Windows 공통]\n담당자를 통해 바이러스 백신을 설치 후, 엔진 업데이트를 설정하도록 권고\n\n1. 정기적인 업데이트를 통해 검색엔진을 최신 버전으로 유지하고, 백신사에서 발표하는 경보를 주시\n\n2. 백신 프로그램의 자동 업데이트 기능을 사용"
+      },
+      "SRV-123": {
+        "title": "SRV-123_최종 로그인 사용자 계정 노출 방지 여부",
+        "확인방법": "[Windows 공통]\n1. 메뉴를 통한 확인\n시작 → 실행(검색) → secpol.msc 실행 → 보안설정 → 로컬 정책 → 보안 옵션 → 대화형 로그온 : 마지막 사용자 이름 표시 안 함 → 설정 항목 확인\n\n2. 레지스트리를 통한 확인\nHKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\system\\DontDisplayLastUserName 레지스트리 값 확인 (1 : 양호, 0 : 취약)",
+        "기준": "양호 - 최종 사용자 이름 표시 안 함 설정이  \"사용\" 일 경우 \n\n취약 - 최종 사용자 이름 표시 안 함 설정이  \"사용 안 함\" 일 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → secpol.msc → 보안 설정 → 로컬 정책 → 보안 옵션 → \"대화형 로그온 : 마지막 사용자 이름 표시 안 함\" 확인\n\n2. 레지스트리값 변경\n시작 → 실행(검색) → regedit → HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\system\\DontDisplayLastUserName\n해당 레지스트리값을 \"1\"로 변경"
+      },
+      "SRV-125": {
+        "title": "SRV-125_화면보호기 설정 적절성",
+        "확인방법": "[레지스트리 확인방법]\n - reg query \"HKEY_CURRENT_USER\\Control Panel\\desktop\" /v ScreenSaveActive (화면보호기 설정 여부)\n - reg query \"HKEY_CURRENT_USER\\Control Panel\\desktop\" /v ScreenSaveTimeOut (자리 비움 시 화면보호기 시작 설정 시간)\n - reg query \"HKEY_CURRENT_USER\\Control Panel\\desktop\" /v ScreenSaverIsSecure (화면보호기 암호 설정 여부)\n(설정 여부는 1일 경우 양호, 제한 시간은 시간이 설정된 경우 양호)\n\n* [Windows 공통]\n시작 → 실행(검색) → regedit → HKEY_CURRENT_USER\\Control Panel\\desktop\\ScreenSaveActive 값이 1인지 여부 확인",
+        "기준": "양호 - 화면보호기 사용, 자동 시작, 암호가 설정된 경우 (해당 레지스트리 값들이 올바로 설정된 경우)\n\n취약 - 화면보호기가 미사용 중이거나, 자동으로 시작되지 않거나, 암호가 미설정된 경우 (해당 레지스트리 값들이 미설정 혹은 잘못 설정된 경우)",
+        "조치법": "[Windows 공통]\n1. 바탕화면 → 속성 → 화면보호기 → '대기 시간' 5분, '다시 시작할 때 로그온 화면 표시' 체크\n\n2. HKEY_CURRENT_USER\\Control Panel\\desktop\\ScreenSaveActive 값을 1로 변경"
+      },
+      "SRV-126": {
+        "title": "SRV-126_자동 로그온 방지 설정 여부",
+        "확인방법": "[Windows 공통]\n1. 시작 → 실행(검색) → regedit → HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\WinLogon\\AutoAdminLogon 레지스트리 값이 0으로 설정 되어 있는지 확인\n\n2. 시작 → 실행(검색) → regedit → HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\WinLogon\\DefaultPassword 레지스트리 값이 비어있는지 확인",
+        "기준": "양호 - 자동 로그온 관련 레지스트리 값 AutoAdminLogon 값이 0일 경우\n\n취약 - 자동 로그온 관련 레지스트리 값 AutoAdminLogon 값이 1일 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행 → regedit → HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\AutoAdminLogon 값을 0으로 세팅.\n\n2. HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\WinLogon\\DefaultPassword 항목이 존재한다면 삭제"
+      },
+      "SRV-127": {
+        "title": "SRV-127_로그인 실패 횟수에 따른 접속 제한 설정",
+        "확인방법": "* net accounts 명령 결과 확인\n\n[직접 확인하는 방법]\n - [WindowsNT]\n시작 → 프로그램 → 관리도구 → 도메인사용자관리자 → 정책 → 계정에서 확인\n\n - [Windows 2000, 2003, 2008, 2012]\n시작 → 실행(검색) → secpol.msc → 계정 정책 → 계정 잠금 정책에서 확인",
+        "기준": "양호 - 계정 잠금 임계값이 설정되어 있는 경우\n\n취약 - 계정 잠금 임계값이 설정되어 있지 않은 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행 → secpol.msc → 계정 정책 → 계정 잠금 정책 → 계정 잠금 임계값 → 속성 → '5' 번"
+      },
+      "SRV-128": {
+        "title": "SRV-128_NTFS 파일 시스템 사용 여부",
+        "확인방법": "[Windows 공통]\n1. 시작 → 실행(검색) → cmd → diskpart.exe → list volume 명령어로 확인\n\n2. 시작 → 실행(검색) → cmd → wmic logicaldisk 명령 실행 결과 후 FAT 파일시스템 존재 여부 확인",
+        "기준": "양호 - NTFS 파일 시스템을 사용 중인 경우\n\n취약 - FAT 파일 시스템을 사용 중인 로컬 드라이브가 존재하는 경우 (USB제외)",
+        "조치법": "[Windows 공통]\n명령어프롬프트(DOS창)에서 다음과 같이 입력.\n1. 시작 → 실행(검색) → CMD → convert 드라이브명 : /fs:ntfs\nex) convert F: /fs/ntfs라고 입력하면 F 드라이브는 NTFS 형식으로 포맷 됨"
+      },
+      "SRV-129": {
+        "title": "SRV-129_백신 프로그램 설치 여부",
+        "확인방법": "시작 → 실행(검색) → cmd → tasklist → 백신 프로그램의 설치 유무 확인\n\n* [Windows 공통]\n프로그램 설치 목록에서 백신 프로그램 설치유무 확인",
+        "기준": "양호 - 백신 프로그램이 설치되어 있는 경우\n\n취약 - 백신 프로그램이 설치되어 있지 않은 경우",
+        "조치법": "[Windows 공통]\n바이러스 탐지 소프트웨어 설치로 바이러스 감염 대비 및 감염 바이러스 치료 수행 \n바이러스 탐지 룰은 수시로 업데이트 되므로 소프트웨어에서 제공되는 자동 업데이트 기능 활성화 \n \n - V3의 경우, 바이러스 룰 자동 업데이트 기능 활성화 \n - 프로그램 실행 후 업데이트 실행 \n - 환경설정 실행 \n - 업데이트 제품 선택(Update Utility, V3Pro 2002, 엔진 파일, 패치 파일)\n\n바이러스 벤더 사이트 :\n - 안철수 연구소 : http://www.ahnlab.com\n - 하우리 : http://www.hauri.co.kr\n - Broadcom(시만텍코리아) : https://www.broadcom.com/\n - 한국트렌드마이크로 : http://www.trendmicro.co.kr/"
+      },
+      "SRV-135": {
+        "title": "SRV-135_TCP 보안 설정 여부",
+        "확인방법": "[Windows 공통]\n다음의 레지스트리 값 확인\n시작 → 실행(검색) → regedit\n - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\SynAttackProtect\n - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\TcpMaxHalfOpen\n - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\TcpMaxHalfOpenRetried\n - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\DeadGWDetectDefault\n - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netbt\\Parameters\\IPEnableRouter",
+        "기준": "양호 - DoS 방어 레지스트리 값이 아래와 같이 설정되어 있는 경우\n\n취약 - DoS 방어 레지스트리 값이 아래와 같이 설정되어 있지 않은 경우\n\n[Windows 2008 미만]\n - SynAttackProtect = 0x1 \n - TcpMaxHalfOpen = 0x500 이하\n - TcpMaxHalfOpenRetried = 0x400 이하\n - DeadGWDetectDefault = 0x1\n - IPEnableRouter = 0x0\n\n[Windows 2008 이상]\n - IPEnableRouter = 0x0",
+        "조치법": "[Windows 공통]\n아래와 같이 레지스트리 값 설정\n1. 시작 → 실행(검색) → regedit\n - HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\SynAttackProtect  1로 설정\n - HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\TcpMaxHalfOpen  500 이하 설정\n -  HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\TcpMaxHalfOpenRetried  400 이하 설정\n - HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\DeadGWDetectDefault  1로 설정\n -  HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\Netbt\\Parameters\\IPEnableRouter  0으로 설정"
+      },
+      "SRV-136": {
+        "title": "SRV-136_로그온 단계에서 \"시스템 종료\" 기능 비활성화",
+        "확인방법": "[Windows 2000, 2003, 2008, 2012]\n1. 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 보안옵션 → \"시스템 종료 : 로그온하지 않고 시스템 종료 허용\" 확인\n\n2. HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersio\\\\Policies\\System 의 ShutdownWithoutLogon 레지스트리 값 확인\n\n3. 원격 시스템에서 강제로 시스템 종료\n - 시작 → 실행 → secpol.msc → 로컬 정책 → 사용자 권한 할당 → 원격 시스템에서 강제 종료 \n - 권한이 부여된 사용자 및 그룹 확인",
+        "기준": "양호 - \"로그온하지 않고 시스템 종료 허용\" 항목이 사용 안 함이고, \"원격 시스템에서 강제로 시스템 종료\" 권한의 불필요한 부여가 없는 경우\n\n취약 - \"로그온하지 않고 시스템 종료 허용\" 항목이 사용이거나, \"원격 시스템에서 강제로 시스템 종료\" 권한의 불필요한 부여가 있는 경우",
+        "조치법": "[Windows 공통]\n - 시스템 종료 권한은 로그온 한 관리자에게만 부여\n - 시스템 종료 권한에 대한 적절한 설정과 로그온 화면에서의 시스템 종료 불허\n\n1. 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 보안옵션 → \"시스템 종료 : 로그온하지 않고 시스템 종료 허용\" \"사용 안 함\" 설정\n\n2. 시작 → 실행 → secpol.msc → 로컬 정책 → 사용자 권한 할당 → 원격 시스템에서 강제 종료 에 부여된 사용자 설정"
+      },
+      "SRV-137": {
+        "title": "SRV-137_네트워크 서비스 접근 권한 적절성",
+        "확인방법": "[Windows 공통]\n시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → \"네트워크에서 이 컴퓨터 액세스\", \"네트워크에서 이 컴퓨터 액세스 거부\" 항목 확인\n\n* 보안 정책을 명령어로 추출하여 확인하는 방법\n - secedit /EXPORT /CFG secpol.txt",
+        "기준": "양호 - 필요한 그룹만 접근 허용 되어 있을 경우\n\n취약 - 불필요한 그룹이 접근 허용 되어 있을 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → \n\"네트워크에서 이 컴퓨터 액세스 거부\" Guests 또는 일반 그룹 설정\" → \"네트워크에서 이 컴퓨터 액세스\" 일반 그룹 제거"
+      },
+      "SRV-138": {
+        "title": "SRV-138_백업 및 복구 권한 설정 적절성",
+        "확인방법": "[Windows 공통]\n시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → \"파일 및 디렉터리 백업\" 항목과 \"파일 및 디렉터리 복구\" 에서 확인\n\n* 보안 정책을 명령어로 추출하여 확인하는 방법 (SeBackupPrivilege, SeRestorePrivilege)\n - secedit /EXPORT /CFG secpol.txt",
+        "기준": "양호 - \"파일 및 디렉토리 백업\" 항목과 \"파일 및 디렉토리 복구\" 항목에 대해 그룹별 접근제어 권한 설정에 Everyone 그룹이나 Guests 그룹, Users 그룹과 같은 불필요한 그룹이 존재하지 않는 경우\n\n취약 - \"파일 및 디렉토리 백업\" 항목과 \"파일 및 디렉토리 복구\" 항목에 대해 그룹별 접근제어 권한 설정에 Everyone 그룹이나 Guests 그룹, Users 그룹과 같은 불필요한 그룹이 존재하는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → \"파일 및 디렉터리 백업\" 항목과 \"파일 및 디렉터리 복구\" 에서 Everyone, Guests, Users 제거"
+      },
+      "SRV-139": {
+        "title": "SRV-139_시스템 자원 소유권 변경 권한 설정 적절성",
+        "확인방법": "[Windows 공통]\n1. 파일 및 개체에 대한 소유권 변경 권한 설정 확인\n시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → \"파일 또는 기타 개체의 소유권 가져오기\" 에서 확인\n\n2. Everyone 그룹, Users 그룹 등 권한 확인\n\n* 보안 정책을 명령어로 추출하여 확인하는 방법 (SeTakeOwnershipPrivilege)\n - secedit /EXPORT /CFG secpol.txt",
+        "기준": "양호 - \"파일 또는 다른 개체의 소유권 가져오기\" 항목 권한에 Administrators 그룹만 존재할 경우\n\n취약 - \"파일 또는 다른 개체의 소유권 가져오기\" 항목 권한에 Everyone, Users 그룹 등 불필요한 권한이 존재할 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → \"파일 또는 기타 개체의 소유권 가져오기\" 에 Administrators 설정\n\n* 시스템 자원의 소유권 변경에 대한 제반 사항은 시스템 관리자 그룹에 의해 제어 필요"
+      },
+      "SRV-140": {
+        "title": "SRV-140_이동식 미디어 포맷 및 꺼내기 허용 정책 설정 적절성",
+        "확인방법": "[Windows 2000, 2003, 2008, 2012]\n1. 시작 → 실행 → secpol.msc → 로컬 정책 → 보안옵션 → \"이동식미디어 포맷 및 꺼내기 허용\" 항목 점검\n\n또는\n\n2. 레지스트리 점검 : HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\AllocateDASD",
+        "기준": "양호 - \"이동식 미디어 포맷 및 꺼내기 허용\" 정책이 \"Administrators\" 로 설정된 경우, 또는 해당 레지스트리 값이 0일 경우\n\n취약 - 그 외의 경우 다른 사용자 또는 그룹에 권한이 허용되었을 수 있으므로 취약",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 보안옵션 → \"이동식 미디어 포맷 및 꺼내기 허용\" 정책을 \"Administrator\" 로 설정"
+      },
+      "SRV-147": {
+        "title": "SRV-147_불필요한 네트워크 모니터링 서비스 비활성화",
+        "확인방법": "* 서비스 상태 조회 명령을 통한 확인\n - sc query SNMP\n - sc query winmgmt\n\n* 직접 확인\n - 시작 → 실행 → services.msc → SNMP → 속성에서 확인 \n - 시작 → 실행 → services.msc → Windows Management Instrumentation → 속성에서 확인",
+        "기준": "양호 - 불필요한 네트워크 모니터링 서비스를 사용하지 않는 경우\n\n취약 - 불필요한 네트워크 모니터링 서비스가 실행 중인 경우",
+        "조치법": "[Windows 공통]\n불필요 시 해당 서비스 제거\n1. 시작 → 관리도구 → 서비스 → SNMP Service → 속성에서 \"시작 유형\"을 \"사용 안 함\"으로 설정한 후, SNMP 서비스를 중지함\n\n*NMS 또는 별도의 툴에서 SNMP 서비스를 이용하여 서버를 모니터링 하는 경우, 통신하고자 하는 Server/Client에 모두 같은 Community 이름을 사용하여야 함\n(서비스 → SNMP → 등록 정보 → 종속성 참고)\n*NMS(Network Management System) : 네트워크 관리 시스템"
+      },
+      "SRV-149": {
+        "title": "SRV-149_디스크 볼륨 암호화 적용 여부",
+        "확인방법": "[Windows 공통]\n폴더 선택 → 속성 → [일반] 탭 → 고급 → 고급 특성 → \"데이터 보호를 위해 내용을 암호화\" 확인",
+        "기준": "양호 - \"데이터 보호를 위해 내용을 암호화 \"정책이 선택된 경우\n\n취약 - \"데이터 보호를 위해 내용을 암호화 \"정책이 선택되어 있지 않은 경우\n\n* 예외 : 해당 서버가 물리적으로 보호 된 장소(IDC 내, PC 시건장치 등)에 위치해 있을 경우\n           또는 하드디스크 교체 시 기존 하드디스크의 디가우징 또는 천공 등 폐기 관련 규정 수행 시",
+        "조치법": "[Windows 공통]\n1. 폴더 선택 → 속성 → [일반] 탭 → 고급 → 고급 특성 → \"데이터 보호를 위해 내용을 암호화\" 선택"
+      },
+      "SRV-150": {
+        "title": "SRV-150_로컬 로그온 허용 계정 제한 여부",
+        "확인방법": "[Windows NT, 2000, 2003, 2008]\n시작 → 실행 → secpol.msc → 로컬 정책 → 사용자 권한 할당 → '로컬 로그온 허용'에서 확인",
+        "기준": "양호 - 로컬 로그온 허용 정책에 Administrators, IUSR_만 존재하는 경우\n\n취약 - 로컬 로그온 허용 정책에 Administrators, IUSR_ 외 다른 계정 및 그룹이 불필요하게 존재하는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 사용자 권한 할당\n\n2. \"로컬 로그온 허용(또는, 로컬 로그온)\" 정책에 \"Administrators\", \"IUSR_<ComputerName> \" 외 다른 계정 및 그룹 제거"
+      },
+      "SRV-151": {
+        "title": "SRV-151_익명 SID/이름 변환 설정 제한 여부",
+        "확인방법": "[Windows 2003, 2008]\n시작 → 실행 → secpol.msc → 로컬정책 → 보안 옵션 → '네트워크 액세스 : 익명 SID/이름 변환 허용' 에서 확인\n\n* Windows Server 2000 이하 버전 해당 사항 없음",
+        "기준": "양호 - \"익명 SID/이름 변환 허용\" 정책이 \"사용 안 함\" 으로 되어 있는 경우\n\n취약 - \"익명 SID/이름 변환 허용\" 정책이 \"사용\" 으로 되어 있는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 로컬 보안 정책 → 로컬 정책 → 보안 옵션\n\n2. \"네트워크 액세스 : 익명 SID/이름 변환 허용\" 정책이 \"사용 안 함\" 으로 설정"
+      },
+      "SRV-152": {
+        "title": "SRV-152_원격터미널 접속 가능한 사용자 그룹 제한 여부",
+        "확인방법": "[Windows 2003, 2008]\n제어판 → 시스템 → 원격설정 → 원격 탭 → '원격 데스크톱-사용자 선택'에서 확인",
+        "기준": "양호 - (관리자 계정을 제외한) 원격접속이 가능한 계정을 생성하여 타 사용자의 원격접속을 제한하고, 원격접속 사용자 그룹에 불필요한 계정이 등록되어 있지 않은 경우\n\n취약 - (관리자 계정을 제외한) 원격접속이 가능한 별도의 계정이 존재하지 않는 경우",
+        "조치법": "[Windows 공통]\n1. 제어판 → 사용자 계정 → 관리자 계정 이외의 계정 생성한 후\n\n2. 제어판 → 시스템 → [원격] 탭 → [원격] 탭 메뉴에서 \"사용자가 이 컴퓨터에 원격으로 연결할 수 있음\"에 체크 → \"원격 사용자 선택\"에서 원격 사용자 지정 후 확인"
+      },
+      "SRV-158": {
+        "title": "SRV-158_불필요한 Telnet 서비스 비활성화",
+        "확인방법": "23번 포트에 TELNET 서비스가 동작 중인지 확인\n\n[Windows 공통]\n시작 → 관리도구 → 서비스 → 해당 서비스 확인",
+        "기준": "양호 - Telnet 서비스가 비활성화 되어 있는 경우\n\n취약 - Telnet 서비스가 불필요하게 활성화 되어 있는 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 서비스 → \"해당 서비스\" 선택 → 속성\n\n2. 시작 유형 → 사용 안 함, 시작 상태 → 중지 설정"
+      },
+      "SRV-163": {
+        "title": "SRV-163_시스템 사용 주의사항 출력",
+        "확인방법": "[Windows 2000, 2003, 2008, 2012]\n1. HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\WindowsNT\\CurrentVersion\\Winlogon 에서 확인 또는\n\n2. 시작 → 실행 → secpol.msc → 로컬정책 → 보안옵션에서 확인\n\n3. \"대화형 로그온 : 로그온 시도하는 사용자에 대한 메시지 제목\", \"대화형 로그온 : 로그온 시도하는 사용자에 대한 메시지 텍스트\" 확인",
+        "기준": "양호 - 로그온 경고 메시지/제목이 설정되어 있을 경우 (LegalNoticeCaption : 메시지 제목, LegalNoticeText : 메시지 내용) \n\n취약 - 로그인 경고 메시지/제목이 설정되어 있지 않을 경우 (LegalNoticeCaption : 메시지 제목, LegalNoticeText : 메시지 내용)",
+        "조치법": "[Windows 공통]\n1. 시작 → 실행 → secpol.msc → 로컬정책 → 보안옵션\n\n2. \"대화형 로그온 : 로그온 시도하는 사용자에 대한 메시지 제목\", \"대화형 로그온 : 로그온 시도하는 사용자에 대한 메시지 텍스트\" 에 적절한 내용 입력\n\nex) \n1. 로그온 시도하는 사용자에 대한 메시지 제목 : Warning!!\n\n2. 로그온 시도하는 사용자에 대한 메시지 텍스트 : This system is for the use of authorized users only."
+      },
+      "SRV-166": {
+        "title": "SRV-166_불필요한 숨김 파일 또는 디렉터리 제거",
+        "확인방법": "숨김 디렉터리 및 숨김 파일 점검\n dir c:\\ /a:h",
+        "기준": "양호 - 불필요한 숨김 파일이 존재하지 않을 경우\n\n취약 - 불필요한 숨김 파일이 존재하는 경우",
+        "조치법": "1. 숨겨진 파일 목록에서 불필요한 파일 삭제"
+      },
+      "SRV-170": {
+        "title": "SRV-170_SMTP 서비스 정보 노출 방지 여부",
+        "확인방법": "[ IIS - SMTP ]\n1. SMTP 설정 정보 확인 (IIS 설정 파일에서 ConnectResponse 속성 값에 노출되는 정보가 있는지 확인)\n\n2. SMTP 포트에 접속하여 배너 내 정보 노출 여부 확인\n\n[Windows 공통]\nSMTP 배너\n실행 → CMD → telnet localhost 25 실행하여 배너 확인",
+        "기준": "양호 - SMTP 접속 배너에 노출되는 정보가 없는 경우\n\n취약 - SMTP 접속 배너에 노출되는 정보가 있는 경우\n\n※ 정보 노출 : 서비스명 + 버전 정보가 노출되는 경우 취약",
+        "조치법": "[Windows 공통]\n사용하지 않는 경우 IIS 서비스 중지/사용 안 함, 사용 시 속성 값 수정\n\n1. 시작 → 관리도구 → IIS(인터넷 정보 서비스) 관리자\n - IIS 관리자에서 서버 개체를 우클릭 하여 선택한 다음 속성을 선택\n\n2. 메타베이스 직접 편집 허용 확인란 선택\n * Exchange System Manager에서 사용할 수 없는 매개변수를 변경하려는 경우\n   메타베이스 설정을 직접 편집 가능함\n\n3. Metabase Explorer 실행\n - 모든프로그램 → IIS Resources>Metabase Explorer → Metabase Explorer 실행\n * IIS Resource Kit 설치하면 Metabase Explorer 실행할 수 있음\n * 다운로드 사이트 : http://www.microsoft.com/en-us/download/details.aspx?id=17275\n\n4. IIS SMTP 배너 숨김 설정\n - [SMTP서버] → LM → SmtpSvc → 1 → 오른쪽 클릭 → New → String Record\n - Recore Name 에 ConnectResponse 입력\n - ConnectResponse 값에 <출력할 배너 명> 입력"
+      },
+      "SRV-171": {
+        "title": "SRV-171_FTP 서비스 정보 노출 방지 여부",
+        "확인방법": "[ IIS - FTP ]\n1. FTP 설정 파일 확인 (applicationhost.config)\n설정 파일 내 <ftpserver> 섹션에 suppressDefaultBanner=\"TRUE\" 설정이 존재하면 양호, 존재하지 않으면 취약\n\n2. FTP 포트에 직접 접근하여 배너 내 정보 노출 여부 확인\n\n[Windows 공통]\n시작 → 관리도구 → IIS 관리자 → 사이트 → '<입력한 FTP 사이트 이름> FTP 메시지'",
+        "기준": "양호 - FTP 접속 배너에 노출되는 정보가 없는 경우\n\n취약 - FTP 접속 배너에 노출되는 정보가 있는 경우\n\n※ 정보 노출 : 서비스명 + 버전 정보가 노출되는 경우 취약",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → IIS 관리자 → 사이트 → '<입력한 FTP 사이트 이름>FTP 메시지'\n\n2. 기본 배너 숨기기 체크\n\n3. IIS 서비스 재시작"
+      },
+      "SRV-172": {
+        "title": "SRV-172_불필요한 시스템 자원 공유 제거",
+        "확인방법": "1. 시작 → cmd → net share 명령어를 통해 공유 현황 확인\n\n2. 불필요해보이는 공유 확인\n\n[Windows 공통]\n시작 → 관리도구 → 컴퓨터 관리 → 공유 폴더 → 공유에서 확인",
+        "기준": "양호 - 공유폴더가 없거나, 업무상 필요한 공유만 존재할 경우\n\n취약 - 불필요한 공유가 존재할 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 컴퓨터 관리 → 공유 폴더 → 공유에서 일반 공유 폴더 확인"
+      },
+      "SRV-173": {
+        "title": "SRV-173_DNS 서비스 동적 업데이트 설정 적절성",
+        "확인방법": "* 명령어로 설정 확인\n1. DNS 설정 추출\n> dnscmd /ExportSettings\n\n2. 설정 파일 점검\n%systemroot%\\system32\\dns\\DnsSettings.txt 경로에 추출된 파일 내용 확인\n\nDNS Zone 영역 중 AllowUpdate=1 인 영역이 있으면 취약, AllowUpdate=1인 영역이 없으면 양호\n\n* 직접 확인\n1. 시작 → 실행 → DNSMGMT.MSC → 각 조회 영역 → 속성 → 일반\n\n2. 동적 업데이트 → 없음 또는 안전한 동적 업데이트로 설정되었는지 확인\n\n[Windows 공통]\n시작 → 관리도구 → 서비스 → DNS Server → 속성 → 보안에서 확인",
+        "기준": "양호 - DNS 서비스의 동적 업데이트 기능이 비활성화 되었거나, 활성화 시 적절한 접근통제를 수행하고 있을 경우\n\n취약 - DNS 서비스의 동적 업데이트 기능이 불필요하게 활성화 되어있거나, 필요에 의해 사용 중이어도 적절한 접근통제를 수행하고 있지 않을 경우",
+        "조치법": "[Windows 공통]\n일반적으로 동적 업데이트 기능이 필요 없으나 확인 필요\n\n1. 시작 → 실행 → dnsmgmt.msc → 각 조회 영역 → 해당 영역 → 속성 → 일반\n\n2. 동적 업데이트 → 없음(또는, 아니오) 선택\n\n3. 불필요 시 해당 서비스 제거\n시작 → 실행 → services.msc → DNS 서버 → 속성 [일반] 탭에서 \"시작 유형\"을 \"사용 안 함\"으로 설정한 후, DNS 서비스 중지."
+      },
+      "SRV-174": {
+        "title": "SRV-174_불필요한 DNS 서비스 비활성화",
+        "확인방법": "DNS 서비스 실행 여부 확인\n# sc query dns\n\n[Windows 공통]\n시작 → 관리도구 → 서비스 → 해당 서비스 확인",
+        "기준": "양호 - DNS 서비스가 실행 중이지 않거나, 필요에 의해 사용 중인 경우\n\n취약 - DNS 서비스가 불필요하게 실행 중인 경우",
+        "조치법": "[Windows 공통]\n1. 시작 → 관리도구 → 서비스 → \"해당 서비스\" 선택 → 속성\n\n2. 시작 유형 → 사용 안 함, 시작 상태 → 중지 설정"
+      },
+      "SRV-175": {
+        "title": "SRV-175_시간 동기화를 위한 NTP 설정",
+        "확인방법": "다음 명령을 실행하여 NTP 설정과 현재 시각 확인\n> w32tm /query /configuration\n\n> wmic OS GET LocalDateTime",
+        "기준": "양호 - NTP 서버 동기화가 설정되어 있는 경우\n\n취약 - NTP 서버 동기화가 미설정되어 있는 경우",
+        "조치법": "NTP 설정과 현재 시각 확인하여 동기화되고 있는지 확인"
+      },
+      "SRV-177": {
+        "title": "SRV-178_개인 키 사용 시 passphrase 설정 여부",
+        "확인방법": "1. 다음 명령어를 실행하여 Enter passphrase for key... 등의 추가 절차가 요구되는지 확인\n(추가 절차 없이 개인키가 바로 출력될 경우 설정되지 않은 것) \n> ssh-keygen -y -f [개인키 파일]",
+        "기준": "양호 - SSH key에 passphrase가 설정되어 있는 경우\n\n취약 - SSH key에 passphrase가 설정되어 있지 않은 경우",
+        "조치법": "기존 SSH 개인키에 Passphrase 추가\n 1. ssh-keygen -p -f <개인키_파일> 실행\n 2. 기존 passphrase → 없으면 Enter\n 3. 새 passphrase 입력\n 4. 새 passphrase 재입력"
+      },
+      "SRV-179": {
+        "title": "SRV-179_서비스 지원이 종료된(EoS) 시스템 및 장비 교체 여부",
+        "확인방법": "1. 버전/빌드 확인\n# winver 또는 # systeminfo | findstr /B /C:\"OS Name\" /C:\"OS Version\"\n\n2. Microsoft Lifecycle(제품/채널별 지원 종료일)과 대조\n\n3. 보안 업데이트 수신 여부(Windows Update/WSUS에서 최신 누적 업데이트 제공 유무), ESU/E3·LTSC 연장 지원 적용 가능성으로 실질적 지원 상태를 교차 확인",
+        "기준": "양호 - 서비스 지원이 가능한 시스템을 사용하는 경우\n\n취약 - 서비스 지원이 종료된 시스템을 별도 사후 관리 절차 없이 사용하는 경우",
+        "조치법": "1. 운영 중인 시스템 및 장비의 OS, Firmware, Software 버전을 확인\n\n2. 제조사 또는 벤더 공식 홈페이지를 통해 해당 버전의 서비스 지원 종료(EoS) 여부를 확인"
+      }
+    },
+    "linux": {
+      "SRV-001": {
+        "title": "SRV-001_안전한 네트워크 모니터링 서비스 사용",
+        "확인방법": "1. /etc/snmp/snmpd.conf 파일에서 Community String 확인\n# cat /etc/snmp/snmpd.conf,\n# cat /etc/snmp/snmpd.conf (버전에 따라 다를 수 있음)\n\n2. SNMP 프로세스 확인\n# ps -ef | grep snmp\n\n[SNMPv3] \n - 보안레벨 설정이 AuthPriv로 설정되어 있는지 확인\n# grep -e \"createUser\" /etc/snmp/snmpd.conf",
+        "기준": "양호 - 보안설정이 적용된 네트워크 모니터링 서비스를 사용하는 경우\n\n취약\n - 보안설정이 적용되지 않은 네트워크 모니터링 서비스를 사용하는 경우\n - SNMP v3 사용 가능한 환경에서 v2를 이용하는 경우",
+        "조치법": "1. vi 편집기를 이용하여 SNMP 설정파일을 연 후\n# vi /etc/snmp/snmpd.conf\n\n2. Community String 값 설정 변경 (추측하기 어려운 값으로 설정)\n(수정 전) com2sec notConfigUser default public\n(수정 후) com2sec notConfigUser default <변경 값>\n\n3. 다음 명령을 실행하여 SNMP 버전 확인\n# snmpd -v 또는 snmpget --version\n\n* AuthPriv 설정 (SNMPv3 사용 시)\n1. 설정 파일 편집\n# vi /etc/snmp/snmpd.conf\n\n2. 사용자 계정 수정\ncreateUser <username> SHA <auth_password> AES <priv_password>"
+      },
+      "SRV-003": {
+        "title": "SRV-003_네트워크 모니터링 서비스 접근통제 설정 적절성",
+        "확인방법": "* 다음 명령을 실행하여 접근 제어 확인\n# grep -E '^(agentAddress|rocommunity|rwcommunity|com2sec|group|view|access|rouser|rwuser|createUser)' /etc/snmp/snmpd.conf\n# grep -nE '^rocommunity\\s+public(\\s|$)' /etc/snmp/snmpd.conf",
+        "기준": "양호 - 네트워크 모니터링 서비스의 접근 통제가 적절히 이루어 지고 있는 경우\n\n취약 - 네트워크 모니터링 서비스의 접근 통제가 적절히 이루어 지고 있지 않은 경우",
+        "조치법": "1. SNMP 서비스 중지 (미사용 시)\n# service snmpd stop\n# chkconfig snmpd off\n\n또는 (RHEL7 이상)\n# systemctl stop snmpd\n# systemctl disable snmpd\n\n2. 기본 community(public/private) 제거\n# vi /etc/snmp/snmpd.conf\n#rocommunity public\n#rwcommunity private\n#com2sec ... public\n\n3. SNMP v1 / v2c 비활성화\n#group ... v1\n#group ... v2c\n\n4. SNMP v3 사용자 생성 (권장)\n# net-snmp-create-v3-user -ro -A AuthPass123 -a SHA -X PrivPass123 -x AES snmpuser\n\n5. 설정 반영\n# service snmpd restart\n또는\n# systemctl restart snmpd"
+      },
+      "SRV-004": {
+        "title": "SRV-004_불필요한 SMTP 서비스 비활성화",
+        "확인방법": "1. 25번 포트에 SMTP 서비스가 동작 중인지 확인\n# netstat -na | grep 25\n# ps -ef | grep sendmail",
+        "기준": "양호 - SMTP 서비스가 동작 중이지 않거나, 업무상 사용 중인 경우\n\n취약 - 불필요한 SMTP 서비스가 동작 중인 경우",
+        "조치법": "[RHEL 5, 6 버전]\n1. sendmail 데몬 중지\n# /etc/init.d/sendmail stop\n\n[RHEL 7 버전]\n1. sendmail 데몬 중지\n# systemctl stop sendmail"
+      },
+      "SRV-005": {
+        "title": "SRV-005_SMTP 서비스의 expn/vrfy 명령어 실행 제한 여부",
+        "확인방법": "[Sendmail]\n1. SMTP 포트(25번)에 접속하여 expn 과 vrfy 명령을 통해 aliases 정보와 사용자 정보를 알아낼 수 있는지 점검 또는\n\n2. /etc/mail/sendmail.cf 또는 /etc/sendmail.cf 파일에 \"noexpn\"과 \"novrfy\" 또는 \"goaway\"가 설정되어 있는지 확인\n\n[Postfix]\n1. SMTP 포트(25번)에 접속하여 vrfy 명령을 통해 aliases 정보와 사용자 정보를 알아낼 수 있는지 점검\n또는\n2. /etc/postfix/main.cf 설정에서 disable_vrfy_command = yes 가 설정되어 있는지 확인\n\n[Exim]\n1. SMTP 포트(25번)에 접속하여 vrfy 명령을 통해 aliases 정보와 사용자 정보를 알아낼 수 있는지 점검\n또는\n2. 설정 파일*에서 acl_smtp_expn 과 acl_smtp_vrfy 설정 확인\n(* /etc/exim4/exim4.conf.template 또는 /etc/exim/exim4.conf 또는 /etc/exim4/conf.d/*.conf)\n\n* acl_smtp_expn: 설정 값이 없거나, 필요한 호스트만 설정한 경우 양호\n* acl_smtp_vrfy: 설정 값이 없거나, 필요한 호스트만 설정한 경우 양호",
+        "기준": "양호 - expn, vrfy 명령어 사용을 허용하지 않고 있을 경우 (noexpn & novrfy 설정 OR goaway 설정)\n\n취약 - expn, vrfy 명령어 사용을 허용했을 경우",
+        "조치법": "[Sendmail]\n1. # vi /etc/mail/sendmail.cf\n\n2. sendmail.cf 파일에 다음 내용 추가\n   O PrivacyOptions=noexpn, novrfy, authwarnings\n\n3. Sendmail을 재실행\n[RHEL 5,6 버전]\n# /etc/init.d/sendmail restart\n\n[RHEL 7 버전]\n# systemctl restart sendmail \n\nSendmail 외 SMTP 서버  \n해당 프로그램의 매뉴얼 참조 또는 유지보수 업체를 통해 취약점을 조치\n\n[Postfix]\n1. /etc/postfix/main.cf 설정에서 disable_vrfy_command = yes 로 설정\n\n[Exim]\n1. 설정 파일*에서 acl_smtp_expn 과 acl_smtp_vrfy 설정 확인\n(* /etc/exim4/exim4.conf.template 또는 /etc/exim/exim4.conf 또는 /etc/exim4/conf.d/*.conf)\n\n* acl_smtp_expn: 설정 값이 없거나, 필요한 호스트만 설정\n* acl_smtp_vrfy: 설정 값이 없거나, 필요한 호스트만 설정"
+      },
+      "SRV-006": {
+        "title": "SRV-006_SMTP 서비스 로그 수준 설정 적절성",
+        "확인방법": "[Sendmail]\n1. sendmail.cf 설정 파일 내부의 LogLevel 설정값 확인\n2. LogLevel 설정값이 기본값 이상의 수준(9 이상)인지 확인\n\n[Postfix]\n1. syslog (/etc/syslog.conf, /etc/rsyslog.conf, /etc/rsyslog.d/ 경로) 설정 파일 확인\n2. /etc/postfix/main.cf 파일의 debug_peer_level 설정값이 기본값 이상의 수준(2 이상)인지 확인\n\n[Exim]\n1. 설정 파일 확인 (/etc/exim4/exim4.conf.template 또는 /etc/exim/exim4.conf 또는 /etc/exim4/conf.d/*.conf)\n2. log_level 설정값*이 기본값 이상의 수준(5 이상)인지 확인\n* 설정값이 없는 경우 Default 값: 5",
+        "기준": "양호 - SMTP 로그 수준 설정이 적절한 경우\n\n취약 - SMTP 로그 수준 설정이 낮은 경우",
+        "조치법": "[Sendmail]\n1. # vi /etc/mail/sendmail.cf\n\n2. LogLevel 값을 9 이상으로 설정\n   O LogLevel=9\n\n3. 다음과 같이 sendmail 실행 중지 후 재실행\n[RHEL 5,6 버전]\n# /etc/init.d/sendmail stop\n# /etc/init.d/sendmail start\n\n[RHEL 7버전]\n# systemctl restart sendmail \n\n[Postfix]\n1. # vi /etc/postfix/main.cf\n2. debug_peer_level 값을 2 이상으로 설정\n   O debug_peer_level = 2\n\n[Exim]\n1. # vi /etc/exim4/exim4.conf.template 또는 # vi /etc/exim/exim4.conf 또는 /etc/exim4/conf.d/*.conf)\n   O log_level = 5\n* 설정값이 없는 경우 Default 값: 5"
+      },
+      "SRV-007": {
+        "title": "SRV-007_SMTP 서비스 보안 패치 적용 여부",
+        "확인방법": "[Sendmail]\n* sendmail 현재 버전 확인\n#  echo \\$Z | /usr/lib/sendmail -bt -d0\nVersion 8.12.5+Sun\n\n최소 8.14.9 이상 버전인지 확인 (접근 제한 우회 취약점: CVE-2009-4565)\n* 최신 버전 확인 : http://www.sendmail.org/releases\n\n[Postfix]\n* postfix 현재 버전 확인\n# postconf -d mail_version\n\n2.5일 경우 2.5.13 이상, 2.6일 경우 2.6.10 이상, 2.7일 경우 2.7.4 이상, 2.8일 경우 2.8.3 이상의 버전인지 확인 (DoS 또는 코드 실행 취약점: CVE-2011-1720)\n* 최신 버전 확인 : https://www.postfix.org/announcements.html\n\n[Exim]\n* exim 현재 버전 확인\n# exim -bV\n\n최소 4.94.2 이상의 버전인지 확인 (코드 실행 취약점: CVE-2020-28025)\n* 최신 버전 확인: https://www.exim.org/",
+        "기준": "양호 - SMTP 서비스 버전이 최신 버전일 경우 또는 금융회사 내부 규정에 따라 패치 검토 및 패치를 수행하고 있는 경우\n\n취약 - SMTP 서비스 버전이 최신이 아닐 경우 또는 금융회사 내부 규정의 패치 관리 절차를 준수하지 않은 경우",
+        "조치법": "밴더에서 제공하는 패치 설치\n - 받아 놓은 패치 파일을 임의의 디렉터리에 넣은 후, 패치 설치\n\n설치 및 업그레이드를 위해서는 현재 사용중인 데몬 중지 필요.\n담당자와 협의하여 업그레이드 고려"
+      },
+      "SRV-008": {
+        "title": "SRV-008_SMTP 서비스의 DoS 방지 기능 설정 여부",
+        "확인방법": "[Sendmail]\nsendmail.cf 파일 내부에 아래 파라미터들이 설정된 경우 양호, 파라미터가 없거나, 주석 처리된 경우 취약\n - MaxDaemonChildren\n - ConnectionRateThrottle\n - MinFreeBlocks\n - MaxHeadersLength\n - MaxMessageSize\n\n[Postfix]\n다음과 같은 설정들이 있지만, 기본값이 있기 때문에 설정되어 있지 않아도 양호 (하지만 0으로 설정이 해제된 경우 취약)\n - message_size_limit\n - header_size_limit\n - default_process_limit\n - local_destination_concurrency_limit\n - smtpd_recipient_limit\n\n[Exim]\n다음과 같은 설정들이 있지만, 기본값이 있기 때문에 설정되어 있지 않아도 양호 (하지만 0으로 설정이 해제된 경우 취약)\n - message_size_limit\n - header_maxsize\n - queue_run_max\n - recipients_max",
+        "기준": "양호 - SMTP 서비스의 DoS 방지 관련 설정이 적용된 경우\n\n취약 - SMTP 서비스의 DoS 방지 관련 설정이 적용되지 않은 경우",
+        "조치법": "[Sendmail]\n설정파일 수정을 통한 서비스 거부 방지 설정\n1.  vi /etc/sendmail.cf 또는 /etc/mail/sendmail.cf\n\n2. 다음 값들을 설정 또는 주석처리 해제\n   O MaxDaemonChildren=12      $ 최대 child 프로세스 수  \n   O ConnectionRateThrottle=12   $ 초당 수용 가능한 클라이언트 수   \n   O MinFreeBlocks=100             $ 메일을 수용을 위한 최소 free block  \n   O MaxHeadersLength=32768    $ 최대 수용 가능 헤더 길이  \n   O MaxMessageSize=1000000    $ 최대 수용 가능 메시지 길이\n\n3. 다음과 같이 sendmail 실행 중지 후 재실행\n<RHEL 5, 6>\n# /etc/init.d/sendmail stop\n# /etc/init.d/sendmail start\n\n<RHEL 7이상>\n# systemctl restart sendmail \n\n[Postfix]\n설정파일 수정을 통한 서비스 거부 방지 설정\n1. vi /etc/postfix/main.cf\n\n2. 다음값들을 설정 또는 설정이 없을 경우 기본값으로 설정됨\n* message_size_limit\n* header_size_limit\n* default_process_limit\n* local_destination_concurrency_limit\n* smtpd_recipient_limit\n\n[Exim]\n설정파일 수정을 통한 서비스 거부 방지 설정\n1.  vi /etc/exim4/"
+      },
+      "SRV-009": {
+        "title": "SRV-009_SMTP 서비스 스팸 메일 릴레이 제한 설정 여부",
+        "확인방법": "[Sendmail]\n1. sendmail 버전 8.9 이상인 경우 양호(디폴트로 스팸 메일 릴레이 방지 설정이 되어 있음)\n\n2. 8.9 미만 버전은 스팸 메일 릴레이 제한 설정 확인\n# cat /etc/mail/sendmail.cf 설정 파일 점검\n\n[Postfix]\n설정 파일의 smtpd_recipient_restrictions 또는 smtpd_relay_restrictions 구문에서 permit으로 허용된 네트워크가 0.0.0.0과 같이 과도하게 설정된 값 확인\n\n[Exim]\n설정 파일의 acl_smtp_rcpt 정책에서 accept로 허용된 네트워크가 0.0.0.0과 같이 과도하게 설정된 값 확인",
+        "기준": "양호 - 스팸 메일 릴레이 방지 설정을 했을 경우\n\n취약 - 스팸 메일 릴레이 방지 설정을 하지 않았을 경우",
+        "조치법": "[Sendmail]\n1. Access DB 생성 - access DB의 첫번째 필드는 e-mail 주소, 도메인 네임, 네트워크 넘버 등이 올 수 있으며, 두번째 필드는 해당 주소로부터 오는 메일을 어떻게 처리할 것인가를 결정\n\n예시) \n  spam@hacker.com REJECT\n  spammail.com REJECT \n  useful.org OK \n  211.252.150 RELAY \n  211.252.151 RELAY \n   \n - spam@hacker.com의 메일사용자 및 spammail.com 도메인으로부터 오는 모든 메일은 거절 \n - useful.org 도메인으로부터 오는 모든 메일은 받아들임 \n - C-Class의 네트워크가 211.252.150, 211.252.151의 IP를 사용하는 모든 IP주소에 대하여 릴레이를 허가 \n\n2. 위와 같은 형식의 access DB를 /etc/mail/access란 이름으로 파일 시스템에 저장  \n  - access의 파일구조는 텍스트 파일이며, Sendmail이 참조(Lookup)할 수 없음\n\n3. makemap으로 Sendmail이 인식할 수 있는 DB 형태로 변환 \n  # /etc/mail/makemap dbm /etc/mail/access < /etc/mail/access \n\n4. access.dir과 access.pag라는 이름의 파일 생성(DB가 생성됨)\n  - /etc/mail/access 파일을 수정할 때마다 makemap을 사용해 새롭게 DB를 만들어 줌\n\n[Postfix]\n설정 파일의 smtpd_recipient_restrictions 또는"
+      },
+      "SRV-010": {
+        "title": "SRV-010_SMTP 서비스의 메일 queue 처리 권한 설정 적절성",
+        "확인방법": "[Sendmail]\nsendmail.cf 파일 내 PrivacyOptions 에 restrictqrun 설정 존재 여부 확인 \n - restrictqrun 설정이 있는 경우: 일반 사용자의 queue 처리가 제한됨\n - restrictqrun 설정이 없는 경우: 일반 사용자의 queue 처리가 제한되지 않음\n\n[Postfix] \npostsuper 실행 파일 권한 점검\n - others 실행 권한이 없는 경우: 메일 관리자가 아닌 일반 사용자 queue 처리 불가\n - others 실행 권한이 있는 경우: 과도한 권한 부여로 일반 사용자도 queue 처리 가능\n\n[Exim]\nexim 실행 파일 권한 점검\n - others 실행 권한이 없는 경우: 메일 관리자가 아닌 일반 사용자 queue 처리 불가\n - others 실행 권한이 있는 경우: 과도한 권한 부여로 일반 사용자도 queue 처리 가능",
+        "기준": "양호 - SMTP 서비스의 메일 queue 처리 권한을 업무 관리자에게만 부여되도록 설정된 경우\n\n취약 - SMTP 서비스의 메일 queue 처리 권한이 업무와 무관한 일반 사용자에게도 부여되도록 설정된 경우",
+        "조치법": "[Sendmail ]\nSMTP 서비스 시작시 -q 옵션을 사용할 수 없게 설정\n\n[큐 옵션 제거 방법]\n1. /etc/mail/sendmail.cf 파일에 다음 내용 추가 \n  # vi /etc/mail/sendmail.cf\n  O PrivacyOptions=noexpn, novrfy, authwarnings, restrictqrun (restrictqrun 추가)\n\n2. 다음과 같이 sendmail 실행 중지 후 재실행\n    # /etc/init.d/sendmail stop\n    # /etc/init.d/sendmail start\n\n    [RHEL 7버전]\n    # systemctl restart sendmail\n\n[Postfix] \n/usr/sbin/postsuper의 Others 실행 권한 제거\n\n[Exim]\n/usr/sbin/exim의 Others 실행 권한 제거"
+      },
+      "SRV-011": {
+        "title": "SRV-011_시스템 관리자 계정의 FTP 사용 제한 여부",
+        "확인방법": "1. ftpusers 파일 존재 확인 후, ftpusers 파일 내에 시스템 계정이 존재하는지 확인\n\n2. 실제 시스템 계정으로 ftp 접속이 거부되는지 확인\n\n - FTP 서비스 실행 확인\n# ps -ef | grep ftp\n\n - /etc/vsftpd/ftpusers 파일에 등록된 계정 확인\n# cat /etc/vsftpd/ftpusers",
+        "기준": "양호 - ftpusers 파일이 존재하고, ftpusers 파일 안에 시스템 계정(root)이 존재할 경우\n\n취약 - ftpusers 파일이 없거나, ftpusers 파일 안에 시스템 계정 미존재 혹은 주석처리 되어 있을 경우",
+        "조치법": "FTP 접속 시 root 계정으로 직접 접속 할 수 없도록 설정파일 수정\n(접속 차단 계정을 등록하는 ftpusers 파일에 root 계정 추가)\n\n1. vi 편집기를 이용하여 ftpusers 파일을 연 후 (\"/etc/vsftpd/ftpusers\")\n# vi /etc/vsftpd/ftpusers \n\n2. ftpusers 파일에 root 계정 추가 또는, 주석제거\n(수정 전) #root 또는, root 계정 미등록\n(수정 후) root"
+      },
+      "SRV-012": {
+        "title": "SRV-012_.netrc 파일 내 중요 정보 미포함 여부",
+        "확인방법": "1. .netrc 파일의 존재 유무 확인\n# find / -name .netrc\n\n2. 파일 내에 민감한 정보 존재 유무 확인\n# cat [User Home]/.netrc",
+        "기준": "양호 - .netrc 파일 내부에 아이디,패스워드 등 민감한 정보가 없는 경우\n\n취약 - .netrc 파일 내부에 아이디,패스워드 등 민감한 정보가 있는 경우",
+        "조치법": "1. .netrc 파일을 파일을 찾은 후, 불필요하게 들어있는 항목을 수정\n# find / -name .netrc\n# vi .netrc  (해당내용수정)\n\n2. .netrc 파일이 필요가 없을 경우는 삭제\n# find / -name .netrc\n# rm .netrc\n\n3. 소유자 이외의 일반 사용자가 .netrc 파일에 접근하지 못하도록 접근권한을 변경\n# find / -name .netrc\n# chmod 600 .netrc"
+      },
+      "SRV-013": {
+        "title": "SRV-013_Anonymous 계정의 FTP 서비스 접속 제한 여부",
+        "확인방법": "1. ftp 설정파일 확인\n\n2. 실제 ftp 접속 시도 (ID:anonymous / PW: )\n\n3. ftp/anonymous 계정 존재 확인\n# cat /etc/passwd\n\n4. /etc/vsftpd/vsftpd.conf 파일 다음라인 확인   \n   anonymous_enable=",
+        "기준": "양호 - FTP 서비스 미사용 또는 Anonymous 설정이 비활성화된 경우\n\n취약 - Anonymous FTP 설정이 활성화 되어있는 경우",
+        "조치법": "익명 FTP 서비스 미사용시, 익명 FTP 서비스의 실행을 중지\n\n<ProFTP 사용시> \n1. /etc/proftpd.conf 파일 오픈 \n\n2. 모든 Anonymous 섹션(와 사이 부분)을 삭제하거나 또는 주석 처리 \n\n3. Standalone 모드로 실행중인 경우 ftp 데몬 재 시작 \n\n<wu-ftp 사용시> \n1. /etc/ftpaccess 파일 오픈 \n\n2. class 설정 부분에서 anonymous 부분을 삭제 \n(수정 전) class all guest,anonymous,real  - \n(수정 후) class all guest,real  - \n    \n3. /etc/ftpusers 파일에 anonymous 추가 \n\n4. Standalone 모드로 실행중인 경우 ftp 데몬 재 시작\n\n<vsftp 사용시> \n1. /etc/vsftpd/vsftpd.conf 파일 오픈 \n\n2. anonymous_enable=NO\n\nftp/anonymous 계정 삭제\n# userdel ftp\n# userdel anonymous"
+      },
+      "SRV-014": {
+        "title": "SRV-014_NFS 접근통제 설정 적절성",
+        "확인방법": "1. NFS 서비스 실행 여부\n\n2. /etc/exports 파일 및 /etc/dfs/dfstab 파일 확인\n# cat /etc/exports\n# cat /etc/dfs/dfstab\n\n3. 설정 파일 내 share 옵션에 적절한(예시 : access, rw, ro 등) 접근 통제 설정 확인",
+        "기준": "양호 - NFS 비활성화 혹은 적절한 접근통제가 이루어지고 있을 경우\n\n취약 (아래 조건 만족 시 취약)\n - NFS 서비스 실행 중  \n - NFS 설정 파일 내에 읽기/쓰기 권한 정의 등의 적절한 접근 통제 설정이 없을 경우\n - NFS 설정 파일의 접근권한이 소유자가 root가 아니고, 권한이 644보다 높게 부여된 경우",
+        "조치법": "사용하지 않는다면 NFS 서비스 중지, 사용할 경우 NFS 설정파일에 everyone 공유\n설정 제거\n\n# vi /etc/exports\n\n예)\n/data1               -access=psd1:psd2\n# 읽기-쓰기 권한으로 data1 디렉터리를 시스템 psd1과 psd2만 접근 허용\n\n/data2      -access=psd1:psd2,ro\n# 읽기 전용 권한으로 data2 디렉터리를 시스템 psd1과 psd2에게 접근 허용\n\n/data3           -rw=psd1:psd2,access=psd3\n# 읽기-쓰기 전용 권한으로 디렉터리를 시스템 psd1과 psd2만 허용, 읽기 전용 권한으로 시스템 psd3 허용"
+      },
+      "SRV-015": {
+        "title": "SRV-015_불필요한 NFS 서비스 비활성화",
+        "확인방법": "1. nfsd 프로세스 구동 확인\n# ps -ef | grep nfsd\n\n2. rpcinfo -p 결과에 nfs 존재 여부 확인\n# rpcinfo -p\n\n3. inetd.conf 에 nfs 존재 여부 확인\n# cat /etc/xinetd.conf",
+        "기준": "양호 - nfsd 서비스가 비활성화 되어 있는 경우\n\n취약 - nfsd 서비스가 불필요하게 활성화 되어 있는 경우",
+        "조치법": "[RHEL 5,6 버전]\n1. 실행중인 서비스 중지\n(nfs 서비스 중지)\n# /etc/init.d/nfs stop\n# /etc/init.d/nfslock stop\n\n2. 시스템 재 시작시 NFS Server 가 시작되지 않도록 함.\n# chkconfig nfs off\n# chkconfig nfslock off\n\n[RHEL 7 버전]\n1. 실행중인 서비스 중지\n(nfs 서비스 중지)\n# systemctl stop nfs \n# systemctl stop nfs-lock\n\n2. 시스템 재 시작시 NFS Server 가 시작되지 않도록 함.\n# systemctl disable nfs\n# systemctl disable nfs-lock"
+      },
+      "SRV-016": {
+        "title": "SRV-016_불필요한 RPC 서비스 비활성화",
+        "확인방법": "1. 프로세스 목록에서 rpc 프로세스 구동 확인\n\n2. rpcinfo -p 명령 결과에서 RPC 서비스 설정 확인\n\n3. inetd.conf 파일에서 RPC 서비스 설정 확인\n\n - \"/etc/xinetd.d\" 디렉터리 내 서비스별 파일 비활성화 여부 확인\n# vi /etc/xinetd.d/[서비스별 파일명]\n\n - RPC 관련 프로세스 확인\n# ps -ef | grep [RPC 프로세스명]",
+        "기준": "양호 - 불필요한 RPC 서비스가 비활성화 되어 있는 경우 (업무상 사용시 예외)\n\n취약 - 불필요한 RPC 서비스가 활성화 되어 있는 경우\n\n* 중지되어야 하는 RPC 서비스 :\nrpc.cmsd, rpc.ttdbserverd, sadmind, rusersd, walld, sprayd, rstatd, rpc.nisd, rexd, rpc.pcnfsd, rpc.statd, rpc.ypupdated, rpc.rquotad, kcms_server, cachefsd, rpcbind",
+        "조치법": "일반적으로 사용하지 않는 RPC 서비스들을 /etc/xinetd.d/ 폴더에서 확인 후 설정파일 주석 처리한 후 xinetd 재구동 \n\n1. vi 편집기를 이용하여 \"/etc/xinetd.d/\" 디렉터리 내의 불필요한 RPC 서비스 파일을 연 후\n2. 아래와 같이 설정 (Disable = yes 설정)\nservice finger\n{\ndisable = yes\nsocket_type = stream\nwait = no\n- 이하 생략 -\n}\n3. xinetd 서비스 재시작\n# service xinetd restart\n\n불필요한 RPC 서비스\n - rpc.cmsd : 데이터베이스 관리 프로그램으로 Open Windows의 Calendar Manager와 CDE의 Calendar 프로그램에서 사용\n - rusersd : rusers 명령의 조회에 응답\n - rstatd : 커널에서 얻은 성능 통계 리턴\n - rpc.ttdbserverd : 시스템 장애 시 NFS에서 파일 복구를 위해 제공하는 lockd 프로그램 지원\n - kcms_server : kodak color management 관련된 api 와 라이브러리들은 데스크탑의 디지털 이미지들의 컬러 퍼포먼스를 컨트롤할 수 있는 Profile를 만들거나 관리 하기 위해 사용\n - rpc.ttdbserverd :  RPC 기반의 ToolTalk 데이터베이스 서버 프로그램\n - walld : 다른 사용자들에게 메시지 발송\n - rpc.nids : NIS+ server Daemon\n - rpc.ypupdated : Network Information Services(NIS) "
+      },
+      "SRV-021": {
+        "title": "SRV-021_FTP 서비스 접근통제 설정 적절성",
+        "확인방법": "1. FTP 접근제어 설정 점검\n# cat /etc/proftpd.conf \n# cat /usr/local/etc/proftpd.conf",
+        "기준": "양호 - 특정 IP 주소 또는 호스트에서만 FTP 서버에 접속하도록 접근제어 설정을 적용한 경우\n\n취약 - 특정 IP 주소 또는 호스트에서만 FTP 서버에 접속하도록 접근제어 설정을 적용하지 않은 경우",
+        "조치법": "FTP 접근제어 설정 확인\n# cat /etc/proftpd.conf \n# cat /usr/local/etc/proftpd.conf\n\n불필요한 접근제어 설정이 설정되어 있는지 확인"
+      },
+      "SRV-022": {
+        "title": "SRV-022_계정의 비밀번호 미설정, 빈 암호 사용 관리 여부",
+        "확인방법": "1. 패스워드 파일을 확인하여 패스워드필드가 공란인 계정 확인(공란인 경우 미 설정으로 인식됨)",
+        "기준": "양호 - 계정들의 비밀번호가 모두 설정되어 있을 경우\n\n취약 - 비밀번호가 설정되지 않은 계정이 존재할 경우",
+        "조치법": "비밀번호를 최소 8자 이상 영어+숫자+특수 문자를 혼합하여 설정\n# passwd [계정 명]\n \n비밀번호 변경주기 및 기타 설정을 정책에 맞추어서 설정\n# passwd -n 7 -x 90 \"id\" (설정 예)\n   -x : 비밀번호 최대 사용 가능 기간\n   -n : 비밀번호 최소 사용 가능 기간\n   -w : 비밀번호 사용기간 만료 경고 기간"
+      },
+      "SRV-025": {
+        "title": "SRV-025_hosts.equiv 또는 .rhosts 설정 제한 여부",
+        "확인방법": "1. /etc/hosts.equiv 파일 또는 [각 계정의 홈디렉터리]/.rhosts 파일 내에  '+' 설정이나 불필요한 계정/호스트 IP가 존재하는지 확인\n# cat /etc/hosts.equiv\n# cat [각 계정의 홈디렉터리]/.rhosts",
+        "기준": "양호 - /etc/hosts.equiv, 각 계정들의 $HOME/.rhosts 파일이 없을 경우 혹은 신뢰된 호스트들의 목록만 가지고 있을 경우\n\n취약 - /etc/hosts.equiv 또는 각 계정들의 $HOME/.rhosts 파일에 '+' 설정이나 불필요한 계정/호스트 IP가 존재할 경우",
+        "조치법": "hosts.equiv, .rhosts 파일은 보안에 매우 취약하므로, 필요하지 않을 경우 삭제 \n업무상 hosts.equiv, .rhosts 파일을 사용할 경우 +가 포함되지 않도록 하고, 실제 접근이 필요한 계정 및 호스트IP를 등록 \n\n1. hosts.equiv 파일이 필요하지 않은 경우, 삭제 및 재 생성하지 못하도록 /dev/null로 링크 생성\n\n# rm /etc/hosts.equiv \n# ln -s /dev/null /etc/hosts.equiv\n\n2. hosts.equiv 파일이 필요한 경우, 파일 안에 존재하는 '+'를 제거하고 불필요하게 들어있는 계정/호스트 IP를 삭제 \n# vi hosts.equiv\n\n3. .rhosts 파일이 필요하지 않은 경우 삭제 후 일반 사용자가 임의로 생성하지 못하도록 같은 이름의 디렉터리 생성 (반드시 root 권한으로 작업) \n# rm [경로]/.rhosts \n# mkdir [경로]/.rhosts\n# chmod 000 [경로]/.rhosts\n\n일반 사용자가 .rhosts 디렉터리를 제거하지 못하도록 디렉터리 내에 임의의 파일 생성 \n# cd [경로]/.rhosts\n# touch [임의파일명]\n# chmod 000 [임의파일명]\n\n4. .rhosts 파일이 반드시 필요한 경우, 파일 안에 존재하는 '+'를 제거하고 불필요하게 들어있는 계정/호스트 IP를 삭제 \n# find / -name .rhosts \n# vi .rhosts \n\n최소한의 권한만이 허용되도록 조치 \n# chmod 600 .rhosts"
+      },
+      "SRV-026": {
+        "title": "SRV-026_root 계정 원격 접속 제한 여부",
+        "확인방법": "<Telnet 사용 시>\n1. pts/0~pts/x 가상터미널 허용 여부 확인\n# cat /etc/securetty\n\n# cat /etc/pam.d/login\nauth required pam_securetty.so\n\n<SSH 사용 시>\n1. root 로그인 가능 여부 확인 (PermitRootLogin)\n# cat /etc/ssh/sshd_config",
+        "기준": "양호 - root 계정의 원격 접속이 허용되지 않은 경우\n\n취약\n<Telnet 사용 시>\n/etc/securetty 파일이 존재하지 않거나 파일 내에 pts/0 ~ pts/x 등 가상 터미널이 허용된 경우\n\n<SSH 사용 시>\n/etc/ssh/sshd_config 파일에 PermitRootLogin yes로 설정되어 있을 경우",
+        "조치법": "1. \"/etc/securetty\" 파일에서 pts/0 ~ pts/x 설정 제거 또는, 주석 처리\n\n[Linux 7 이하]\n2. \"/etc/pam.d/login\" 파일 수정\n(수정 전) #auth required pam_securetty.so\n(수정 후) auth required pam_securetty.so\n\n* /etc/securetty : Telnet 접속 시 root 접근 제한 설정 파일\n\n\"/etc/securetty\" 파일 내 *pts/x 관련 설정이 존재하는 경우 PAM 모듈 설정과 관계없이 root 계정 접속을 허용하므로 반드시 \"securetty\" 파일에서 pts/x 관련 설정 제거 필요\n\n<SSH>\n# vi /etc/ssh/sshd_config\nPermitRootLogin  no"
+      },
+      "SRV-027": {
+        "title": "SRV-027_서비스 접근 IP 및 포트 제한 여부",
+        "확인방법": "다음 중, 해당 사항이 있는 것만 점검\n1. 방화벽 현황\n2. 3rd-party 제품 활용 여부\n3. tcp-wrapper 설정 (/etc/hosts.allow, /etc/host.deny)\n\n# cat /etc/hosts.allow로 파일 내용 확인\n# cat /etc/hosts.deny로 파일 내용 확인\n\n[RHEL 8 이상]\n1. firewalld 방화벽 서비스 확인",
+        "기준": "양호 - 시스템 서비스로의 접근통제가 적절하게 수행되고 있을 경우 (방화벽, tcp-wrapper, 3rd-party 제품 등을 활용)\n\n취약 - 시스템 서비스로의 접근통제가 적절하게 수행되고 있지 않을 경우",
+        "조치법": "1. TCP Wrapper가 설치되어 있지 않을 경우 프로그램을 설치하고, 접근을 통제함\n\n2. /etc/hosts.allow와 /etc/host.deny 파일을 열어 아래와 같은 규칙으로 접근 권한을 부여함\n\n3. 시스템 이름이나 도메인 이름을 사용하지 않으며, IP 주소를 사용\n\n4. /etc/hosts.deny을 deny ALL 설정한 후 접속을 허용할 주소만 /etc/hosts.allow 파일에 기록\n\n# vi /etc/hosts.allow\n(예시)\n - in.telnetd : 192.168.100.100 , 192.168.100.101 #(192.168.100.100 와 192.168.100.101 IP에 대해서 telnet 접속 허용)\n - in.telnetd : 192.168.100. #(192.168.100.0 ~ 255 네트워크에 대해서 telnet 접속 허용)\n - in.ftpd : 192.168.100.100 #(192.168.100.100에 대해서 ftp 접속을 허용) \n\n# vi /etc/hosts.deny\nALL:ALL (inetd 서비스의 모든 서비스에 대해 접속 거부)\n\n[RHEL 8 이상]\n1. firewalld 서비스 시작 및 접근제어 설정\n# systemctl start firewalld"
+      },
+      "SRV-028": {
+        "title": "SRV-028_원격 터미널 접속 타임아웃 설정 여부",
+        "확인방법": "1. /etc/profile(.profile) 파일 내 TMOUT 값 확인\n\n<sh, ksh, bash 사용 시>\n# cat /etc/profile 또는\n# cat <User HOME>/.profile\nTMOUT=900\n\n<csh 사용 시>\n# cat /etc/csh.login 또는\n# cat /etc/csh.cshrc\nset autologout=15",
+        "기준": "양호 - 세션 타임아웃 값이 900초 이하(15분)로 설정 되어 있을 경우\n\n취약 - 세션 타임아웃 값이 900초 이하(15분)로 설정 되어 있지 않을 경우 \n\n(아래 내용 중 해당사항이 있는 경우)\n1) 내부 규정에 세션 종료 시간이 명시되어 있을 경우\n - 세션 타임아웃이 내부 규정에 명시된 세션 종료 시간보다 초과 설정 시 \"취약\"으로 판단\n2) 내부 규정에 세션 종료시간이 명시되어 있지 않을 경우\n - 세션 타임아웃이 15분 초과 설정 시 \"취약\"으로 판단",
+        "조치법": "900초(15분) 동안 입력이 없을 경우 접속된 Session을 끊도록 설정\n\nShell 별 환경 설정\n\n<sh(born shell), ksh(korn shell), bash(born again shell)을 사용하는 경우>\n1. vi 편집기를 이용하여 \"/etc/profile\" 파일을 연 후\n2. 아래와 같이 수정 또는, 추가\nTMOUT=900 (단위: 초)\nexport TMOUT\n\n<csh 을 사용하는 경우>\n1. vi 편집기를 이용하여 \"/etc/csh.login\" 또는, \"/etc/csh.cshrc\" 파일을 연 후\n2. 아래와 같이 수정 또는, 추가\nset autologout=15 (단위: 분)\n\n* Shell 별 환경 설정 파일\nsh : /etc/profile, $HOME/.profile\nksh : /etc/profile, $HOME/.profile, $HOME/kshrc\ncsh : /etc/csh.login, $HOME/.cshrc,$HOME/.login\nbash : /etc/profile, $HOME/.bash_profile, $HOME/.bash_login, $HOME/.profile\n\n* 홈 디렉터리에 설정된 값이 가장 늦게 적용되어 최종 설정됨\n* 모니터링 등의 목적으로 지속적으로 접속이 유지되어야 하는 경우에는 텔넷 클라이언트 프로그램에서 일정 간격으로 특정한 문자열(\\n 등)을 자동으로 전송하도록 하는 옵션을 사용하여 세션끊김을 방지"
+      },
+      "SRV-034": {
+        "title": "SRV-034_불필요한 서비스 비활성화",
+        "확인방법": "<automountd 활성화 여부 및 버전 확인>\n - automount 프로세스 실행 여부 확인\n# ps -ef | egrep 'autofs|automount'\n\n - inetd.conf 에 automount 존재 여부 확인\n# cat /etc/inetd.conf\n\n - OS 버전 또는 automountd 버전 확인",
+        "기준": "양호 - 불필요한 automountd 서비스가 비활성화된 경우\n\n취약 - 취약한 버전의 automountd 서비스가 불필요하게 활성화된 경우",
+        "조치법": "[RHEL 5,6 버전]\nautomountd 서비스를 미사용시, 서비스 실행을 중지 \n1. 현재 서비스 중지 \n# /etc/init.d/autofs stop\n       \n2. 부팅스크립트에서 automountd 제거\n# chkconfig --list autofs\n# chkconfig --level 0123456 autofs off 또는\n\n아래와 같이 파일경로 확인 후 파일명 변경\n# mv /etc/rc2.d/S28autofs /etc/rc2.d/K28autofs\n\n[RHEL 7 버전]\n1. 실행중인 서비스 중지\n# systemctl stop autofs\n\n부팅스크립트에서 Automountd 제거\n# systemctl disable autofs"
+      },
+      "SRV-035": {
+        "title": "SRV-035_취약한 서비스 비활성화",
+        "확인방법": "1. <tftp, talk, ntalk>\n# ps -ef | grep [tftp | talk]\n# grep tftp /etc/inetd.conf 명령어로 tftp 서비스 활성화 여부 확인\n# grep talk /etc/inetd.conf 명령어로 talk, ntalk 서비스 활성화 여부 확인\n\n2. <finger>\ngrep finger /etc/inetd.conf 명령어로 finger 서비스 활성화 여부 확인\n\n3. <취약한 r 계열 서비스(rexec, rlogin, rsh)>\n# ps -ef | grep <서비스 프로세스 이름>\n# grep <서비스 프로세스 이름> /etc/inetd.conf\n\n4. <DoS에 취약한 서비스 (echo, discard, daytime, chargen)>\n# ps -ef | grep <서비스 프로세스 이름>\n# grep <서비스프로세스이름> /etc/inetd.conf\n\n5. <NIS, NIS+>\n# ps -ef | grep nis\n# ps -ef | grep yp",
+        "기준": "양호 - 아래의 항목 중 해당 사항이 없는 경우\n\n취약 - 아래의 항목 중 해당하는 조건이 있는 경우\n\n1. tftp, talk, ntalk 서비스가 불필요하게 활성화된 경우\n2. finger 서비스 활성화\n3. rexec, rlogin, rsh 서비스 활성화\n4. DoS 공격에 취약한 echo, discard, daytime, chargen 서비스 활성화\n5. NIS, NIS+ 서비스 활성화\n\n※ 단, OS 백업솔루션에서 tftp를 반드시 사용해야 하는 경우 업무와 연관 유무를 고려 후 예외 처리",
+        "조치법": "1. vi 편집기를 이용하여 \"/etc/xinetd.d/\" 디렉터리 내 파일을 연 후\n\n2. 예시) 아래와 같이 설정 (Disable = yes 설정)\n\nservice <서비스프로세스이름>\n{\nsocket_type = dgram\nprotocol = udp\nwait = yes\nuser = root\nserver = /usr/sbin/\nserver_args = -s \ndisable = yes\n}\n\n3. xinetd 서비스 재시작"
+      },
+      "SRV-037": {
+        "title": "SRV-037_취약한 FTP 서비스 비활성화",
+        "확인방법": "1. FTP 서비스 구동 확인\n# ps -ef | grep ftp\n# ps -ef | grep vsftpd\n\n2. 일반 FTP 서비스 비활성화 여부 확인\n# vi /etc/xinetd.conf",
+        "기준": "양호 - FTP 서비스가 비활성화 되어 있는 경우\n\n취약 - FTP 서비스가 활성화 되어 있는 경우 \n\n(단, 업무상 필요하여 FTPS를 활용하는 등 통신 암호화를 위한 별도의 보안수단이 적용된 경우는 양호)",
+        "조치법": "[RHEL 5,6 버전]\n1. FTP 서비스 중지\n# /etc/init.d/vsftpd stop\n\n2. FTP 시작 설정 변경\n# chkconfig vsftpd off\n\n[RHEL 7 버전]\n1. FTP 서비스 중지\n# systemctl stop vsftpd.service\n\n2. FTP 시작 설정 변경\n# systemctl disable vsftpd.service"
+      },
+      "SRV-062": {
+        "title": "SRV-062_DNS 서비스 정보 노출 방지 여부",
+        "확인방법": "[BIND]\n/etc/named.conf 내부의 version 옵션 확인\n - option 내부에 version \"\" 구문과 같이 빈 문자열로 설정되어 있으면 버전 정보 노출 안 됨\n - option 내부에 version 구문에 DNS 서버의 버전 정보 등이 포함되어 있으면 정보가 노출됨",
+        "기준": "양호 - DNS 응답에 불필요한 정보가 노출되지 않는 경우\n\n취약 - DNS 응답에 서비스명과 버전 정보가 함께 노출되고 있는 경우\n\n※ 정보 노출 : 서비스명 + 버전 정보가 노출되는 경우 취약",
+        "조치법": "Bind 버전 정보를 제거\n - named.conf 파일의 option 영역에 존재하는 버전 정보를 다음과 같이 변경\n\n# vi /etc/named.conf \n     options { \n         version \"\"; \n      };"
+      },
+      "SRV-063": {
+        "title": "SRV-063_DNS Recursive Query 제한 설정 여부",
+        "확인방법": "[BIND]\n/etc/named.conf 내부의 recursion 옵션 확인\n - options { } 내부에 recursion yes 옵션이 없거나 no 로 설정된 경우는 recursive query를 허용하지 않음\n - options { } 내부에 recursion yes 로 설정된 경우에는 recursive query를 허용함",
+        "기준": "양호 - Recurisve query를 금지하고 있거나, 신뢰된 호스트만 허용하는 경우\n\n취약 - Recursive query를 접근 통제 없이 허용하고 있는 경우",
+        "조치법": "DNS Recursive Query를 비활성화 시키기 위해 /etc/named.conf의 option에 다음을 추가\n# vi /etc/named.conf\n     options {\n         recursion no;\n       };"
+      },
+      "SRV-064": {
+        "title": "SRV-064_DNS 서비스 보안 패치 적용 여부",
+        "확인방법": "[BIND]\n알려진 취약점이 없는 DNS 버전 사용여부 점검\ndig @localhost +short porttest.dns-oarc.net TXT\n\n* Bind 최신버전 다운로드 사이트 : http://www.isc.org/downloads/\n\n* 각 버전에 대한 취약점 정보 사이트\n (1) BIND 8 Vulnerability matrix : https://kb.isc.org/docs/aa-00959\n (2) BIND 9 Vulnerability matrix : https://kb.isc.org/docs/aa-00913\n\n - DNS 서비스 사용 및 BIND 버전 확인\n# ps -ef | grep named\n# /usr/sbin/named -v",
+        "기준": "양호\n - 알려진 취약점이 없는 DNS 버전을 사용하는 경우\n - dig @localhost +short porttest.dns-oarc.net TXT 명령 결과가 다음과 같은 경우\n     z.y.x.w.v.u.t.s.r.q.p.o.n.m.l.k.j.i.h.g.f.e.d.c.b.a.pt.dns-oarc.net.\n     \"IP-of-GOOD is GOOD: 26 queries in 2.0 seconds from 26 ports with std dev 17685.51\"\n\n취약\n - 패치관리에 대한 금융회사의 내부규정을 준수하지 않을 경우, 단 금융회사 내부규정에 명시되지 않은 경우 통상 1개월 이내 최신 버전으로 패치 적용할 것을 권고\n - dig @localhost +short porttest.dns-oarc.net TXT 명령 결과가 다음과 같은 경우\n     porttest.y.x.w.v.u.t.s.r.q.p.o.n.m.l.k.j.i.h.g.f.e.d.c.b.a.pt.dns-oarc.net.\n     \"해당서버IP is POOR: 26 queries in 3.6 seconds from 1 ports with std dev 0\"",
+        "조치법": "DNS 서비스를 사용하지 않을 경우 서비스 중지, 사용할 경우 패치 관리 정책을 수립하여 주기적으로 패치 적용\n\n* DNS 서비스의 경우 대부분의 버전에서 취약점이 보고되고 있기 때문에\nO/S 관리자, 서비스 개발자가 패치 적용에 따른 서비스 영향 정도를 정확히\n파악하여 주기적인 패치 적용 정책 수립 후 적용\n\n1. BIND는 거의 모든 버전이 취약한 상태로서 최신 버전으로 업데이트가 요구됨\n\n2. 다음은 구체적인 BIND 취약점들이며, 취약점 관련 버전을 사용하는 시스템에서는 버전\n업그레이드를 하여야 함\n- Inverse Query 취약점 (Buffer Overflow) : BIND 4.9.7이전 버전과 BIND 8.1.2 이전 버전\n- NXT버그 (buffer overflow) : BIND 8.2, 8.2 p1, 8.2.1버전\n- solinger버그 (Denial of Service) : BIND 8.1 이상버전\n- fdmax 버그 (Denial of Service) : BIND 8.1 이상버전\n- Remote Execution of Code(Buffer Overflow) : BIND 4.9.5 to 4.9.10, 8.1, 8.2 to 8.2.6, 8.3.0 to 8.3.3 버전\n- Multiple Denial of Service : BIND 8.3.0 - 8.3.3, 8.2 - 8.2.6 버전\n- LIBRESOLV: buffer overrun(Buffer Overflow) : BIND 4.9.2 to 4.9.10 버전\n- OpenSSL (buffer overflow) : BIND 9.1, BIND 9.2"
+      },
+      "SRV-066": {
+        "title": "SRV-066_DNS Zone Transfer 제한 설정 적절성",
+        "확인방법": "[BIND]\n/etc/named.conf 파일 내용 중 allow-transfer 설정이 되어 있는지 확인\n# ps -ef | grep named | grep -v \"grep\"\n# cat /etc/named.conf | grep 'allow-transfer'",
+        "기준": "양호 - zone transfer를 위한 서버 제한 설정이 되어 있을 경우\n\n취약 - zone transfer를 위한 서버 제한 설정이 되어 있지 않을 경우",
+        "조치법": "DNS서버를 디폴트로 설치할 경우 임의의 사용자가 Zone Transfer를 할 \n 수 있도록 설정되며, BIND-8 버전의 경우 named.conf 설정파일에서 \n Zone 데이터를 획득할 수있는 시스템을 제한할 수 있음.\n Primary Name Server에서는 다음과 같이 Zone Transfer를 허용하는 서버를 지정\n\n Options  {\n      allow-transfer{10.10.10.111; 10.10.10.112;};\n };\n\n 특정 도메인의 Zone에 대해서 제한할 경우에는 다음과 같이 설정할 수 \n 있음.\n\n Zone \"xxx.co.kr\"  {\n    Type master ;\n    File \"db.xxx.co.kr\";\n    allow-transfer{10.10.10.111; 10.10.10.112;};\n }\n\n Secondary Server에서는 다음과 같이 설정하여 Zone 데이터 유출을 \n 허용하지 않아야 함.\n\n allow-transfer{none; }"
+      },
+      "SRV-069": {
+        "title": "SRV-069_비밀번호 관리정책 설정 적절성",
+        "확인방법": "* 비밀번호의 복잡도 설정 및 기타 설정 \n\n1. DEB 기반 시스템\n(1) 패스워드 길이\n# /etc/pam.d/common-password\n설정 파일에서 다음의 라인에서 minlen=8 구문 존재 확인\npassword [success=2 default=ignore] pam_unix.so obscure sha512 minlen=8\n\n(2) 패스워드 복잡도 (sudo apt-get install libpam-pwquality 설치 필요)\n# /etc/pam.d/common-password\n설정 파일에서 다음의 라인에 lcredit, ucredit, dcredit, ocredit 값 확인(최소 소문자수, 대문자수, 숫자수, 특수문자수)\npassword requisite pam_pwquality.so retry=3 lcredit=-1 ucredit=-1 dcredit=-1 ocredit=-1\n\n(3) 패스워드 변경 정책\n$ sudo chage -l <계정 이름>\n결과 값 확인 (maximum number of days, minimum number of days)\n\n2. RPM 기반 시스템\n(1) 패스워드 길이\n# /etc/security/pwquality.conf\n설정 파일에서 minlen = 8 구문 확인 또는\n# /etc/pam.d/system-auth\n설정 파일에서 다음의 라인에 minlen 구문 확인\npassword requisite pam_pwquality.so try_first_pass retry=3 type= minlen=8 \n\n(2) 패스워드 복잡도\n# /etc/security/pwquality.conf\n설정 파일에서 lcredit, ucredit, dcredit, ocredit 값 확인 또는\n# /etc/pam.d/system-auth\n설정파일에서 다음의 라인에 설정된 파라미터 확인\npassword requisite pam_pwquality.so try_first_pass retry=3 type= minlen=8 dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1\n\n(3) 패스워드 변경 정책\n$ sudo chage -l <계정 이름>\n결과 값 확인 (maximum number of days, minimum number of days)",
+        "기준": "양호 - 비밀번호 관련 정책들이 설정되어 있을 경우\n\n취약 - 비밀번호 관련 정책들이 설정되어 있지 않을 경우\n\n※ 정책 기준 : 영문 숫자 특수문자 2개 조합 시 10자리 이상, 3개 조합 시 8자리 이상, 패스워드 변경 기간 90일 이하",
+        "조치법": "1. 패스워드 길이 설정 조치\n - RHEL7 이상:\n# sudo vi /etc/security/pwquality.conf\n → minlen = 8\n\n# sudo vi /etc/pam.d/system-auth\n → password requisite pam_pwquality.so try_first_pass retry=3 minlen=8\n\n2. 패스워드 복잡도 설정 조치\n - RHEL7 이상:\n# sudo vi /etc/security/pwquality.conf\n → lcredit = -1\n    ucredit = -1\n    dcredit = -1\n    ocredit = -1\n\n# sudo vi /etc/pam.d/system-auth\n → password requisite pam_pwquality.so try_first_pass retry=3 minlen=8 lcredit=-1 ucredit=-1 dcredit=-1 ocredit=-1\n\n3. 패스워드 변경 정책 조치\n - 사용자별 설정:\n# sudo chage -M 90 -m 1 <계정명>\n\n - 모든 사용자 일괄 적용:\n# for user in $(cut -f1 -d: /etc/passwd); do sudo chage -M 90 -m 1 $user; done"
+      },
+      "SRV-070": {
+        "title": "SRV-070_취약한 패스워드 저장 방식 사용 제한 여부",
+        "확인방법": "</etc/shadow 파일에 비밀번호가 암호화되어 있는지 확인>\n\n1. /etc/shadow 파일 존재 확인 \n# ls -l /etc/shadow\n\n2. /etc/passwd 파일 내 두 번째 필드가 \"x\" 표시되는지 확인\n# cat /etc/passwd\nroot:x:0:0:root:/root:/bin/bash\n\n</etc/login.defs 파일에서 ENCRYPT_METHOD 설정을 확인 또는 /etc/shadow의 encrypted_password 필드 확인>\n* encrypted_password 구성 : $id$salt$hashed\n$1$: MD5\n$2a$, $2y$, $2b$: Blowfish (Bcrypt)\n$5$: SHA-256\n$6$: SHA-512",
+        "기준": "양호 - shadow 패스워드를 사용하거나, 패스워드를 암호화하여 저장하는 경우\n\n취약 - shadow 패스워드를 사용하지 않고, 패스워드를 암호화하여 저장하지 않는 경우",
+        "조치법": "암호화된 패스워드를 특별한 권한이 있는 사용자들만 읽을 수 있도록 /etc/shadow 파일에 저장\n\n1. 관리 명령어를 통한 쉐도우 비밀번호 활성화 \n# pwconv\n\n2. /etc/login.defs 파일 ENCRYPT_METHOD 설정확인\n * 보안강도 112비트 미만 해시함수\n - 'SHA-1', 'HAS-160'"
+      },
+      "SRV-073": {
+        "title": "SRV-073_관리자 그룹에 불필요한 사용자 제거",
+        "확인방법": "# cat /etc/group\n  root:x:0:root\n\n# cat /etc/passwd",
+        "기준": "양호 - 관리자 그룹에 불필요한 관리자 계정이 없을 경우\n\n취약 - 관리자 그룹에 불필요한 관리자 계정이 있을 경우",
+        "조치법": "관리자 그룹에 포함된 일반 계정 그룹 변경\n\n1. /etc/passwd 파일 확인 후 root 외 GID 0인 계정의 GID 변경\n# usermod -g <변경할 GID or 그룹명> <변경할 계정명>\n\n2. vi 편집기를 이용하여 \"/etc/group\" 파일을 연 후\n\n3. root 그룹에 등록된 불필요한 계정 삭제\n(예) root 그룹에 등록된 불필요한 test 계정 삭제\n(수정 전) root:x:0:root,test\n(수정 후) root:x:0:root"
+      },
+      "SRV-074": {
+        "title": "SRV-074_불필요하거나 관리되지 않는 계정 제거",
+        "확인방법": "1. 로그인이 가능한 계정별 비밀번호 변경일자 및 로그인 기록 확인 필요\n# cat /etc/shadow 또는\n# chage -l [계정명]",
+        "기준": "양호 - 분기별 1회 이상 로그인 한 기록이 있고, 비밀번호를 변경하고 있는 경우\n\n취약 - 분기별 1회 이상 로그인 한 기록이 없거나, 비밀번호를 변경하지 않은 경우\n\n※ 업무상 사용 여부 확인 필요",
+        "조치법": "비밀번호를 최소 8자 이상 영어+숫자+특수 문자를 혼합하여 설정\n# passwd [계정 명]\n비밀번호 설정"
+      },
+      "SRV-075": {
+        "title": "SRV-075_비밀번호 복잡도 설정",
+        "확인방법": "1. 비밀번호 없이 로그인 가능한 계정이 있는지 확인\n\n2. 패스워드 크랙 시도",
+        "기준": "양호 - 시스템의 모든 계정이 비밀번호 복잡도를 만족하는 경우\n\n취약 - 비밀번호가 미설정되었거나, 복잡도를 만족하지 않는 계정이 존재하는 경우\n\n※ 복잡도 : 영문 숫자 특수문자 2개 조합 시 10자리 이상, 3개 조합 시 8자리 이상 (계정명, 기관명이 포함된 경우 취약)",
+        "조치법": "비밀번호를 최소 8자 이상 영어+숫자+특수 문자를 혼합하여 설정\n# passwd [계정 명]"
+      },
+      "SRV-081": {
+        "title": "SRV-081_Crontab 설정파일 권한 설정 적절성",
+        "확인방법": "1. /usr/bin/crontab 의 권한 확인\n# ls -alLd /usr/bin/crontab\n\n2. /var/spool/cron/crontabs/* 의 권한 확인\n# ls -l /var/spool/cron/crontabs/*\n\n3. /etc/at.allow, /etc/at.deny, /etc/cron.allow, /etc/cron.allow 파일의 소유자 및 권한 확인\n# ls -l /etc/at.allow\n# ls -l /etc/at.deny\n# ls -l /etc/cron.allow\n# ls -l /etc/cron.deny",
+        "기준": "양호\n - crontab 명령어 권한이 750 이하인 경우\n - /var/spool/cron/crontab/* 에 others 읽기 쓰기 권한이 없는 경우\n - at 접근제어 파일의 소유자가 root 이고 권한이 640 이하인 경우\n - cron.allow 와 cron.deny 파일의 소유자가 root이고 권한이 640 이하인 경우\n\n취약 - cron 서비스 관련 설정 파일들이 양호 기준보다 많은 권한이 부여된 경우",
+        "조치법": "1. others 읽기/쓰기 권한 삭제\n# chmod o-rw /var/spool/cron/crontabs/*\n\n2. /etc/at.allow, /etc/at.deny, /etc/cron.allow, /etc/cron.deny 파일의 소유자 및 권한 변경\n# chown root /etc/at.allow\n# chmod 640 /etc/at.allow\n# chown root /etc/cron.allow\n# chmod 640 /etc/cron.allow\n\n3. /usr/bin/crontab 권한 변경\n# chmod 750 /usr/bin/crontab"
+      },
+      "SRV-082": {
+        "title": "SRV-082_시스템 주요 디렉터리 권한 설정 적절성",
+        "확인방법": "1. ls 명령을 통한 주요 디렉터리의 권한 확인\n# ls -alLd /usr /bin /sbin /etc /var",
+        "기준": "양호 - 시스템 주요 디렉터리에 others 쓰기 권한이 없을 경우\n\n취약 - 시스템 주요 디렉터리에 others 쓰기 권한이 있을 경우",
+        "조치법": "주요 디렉터리 other 에 쓰기권한 제거 \n# chmod o-w {주요 디렉터리}"
+      },
+      "SRV-083": {
+        "title": "SRV-083_시스템 스타트업 스크립트 권한 설정 적절성",
+        "확인방법": "1. 스타트업 디렉터리 파일들의 권한 확인\n# ls -l {스타트업 파일}\n\n* 스타트업 스크립트 관련 파일/폴더 :\n[RHEL5,6 버전]\n  /etc/inittab\n  /etc/rc.d/init.d\n  /etc/rc.d/rc.local\n  /etc/rc.d/rc0.d\n  /etc/rc.d/rc1.d\n  /etc/rc.d/rc2.d\n  /etc/rc.d/rc3.d\n  /etc/rc.d/rc4.d\n  /etc/rc.d/rc5.d\n  /etc/rc.d/rc6.d\n \n[RHEL 7버전]\nRHEL5,6 버전 관련 파일/폴더 및\n  /etc/systemd/system",
+        "기준": "양호 - others에 쓰기 권한이 없을 경우\n\n취약 - others에 쓰기 권한이 있을 경우",
+        "조치법": "스타트업 디렉터리 파일의 others 쓰기 권한 제거\n# chmod o-w [스타트업 파일]"
+      },
+      "SRV-084": {
+        "title": "SRV-084_시스템 주요 파일 권한 설정 적절성",
+        "확인방법": "1. ls -alL <시스템 주요 파일 경로> 명령으로 파일 소유자 및 권한 확인\n# ls -alL /etc/passwd\n# ls -alL /etc/shadow\n# ls -alL /etc/hosts\n# ls -alL /etc/(x)inetd.conf\n# ls -alL /etc/syslog.conf\n# ls -alL /etc/services\n# ls -alL /etc/hosts.lpd",
+        "기준": "양호 - 시스템 주요 파일의 권한이 아래의 조건보다 낮게 부여된 경우\n\n취약 - 시스템 주요 파일의 권한이 아래의 조건보다 높게 부여된 경우\n\n- /etc/passwd 권한 : 644, 소유자 root\n- /etc/shadow 권한 : 600, 소유자 root\n- /etc/hosts 권한 : 644, 소유자 root\n- /etc/(x)inetd.conf 권한 : 600, 소유자 root\n- /etc/syslogd.conf 권한 : 644, 소유자 root\n- /etc/services 권한 :  644, 소유자 root\n- /etc/hosts.lpd 권한 : 640, 소유자 root",
+        "조치법": "1. /etc/passwd, /etc/hosts, /etc/syslog.conf, /etc/services 파일의 소유자 및 권한 변경 (소유자 root, 권한 644)\n# chown root [변경할 파일]\n# chmod 644 [변경할 파일]\n\n2. /etc/shadow, /etc/(x)inetd.conf 파일의 소유자 및 권한 변경 (소유자 root, 권한 600)\n# chown root [변경할 파일]\n# chmod 600 [변경할 파일]\n\n3. /etc/hosts.lpd 파일의 소유자 및 권한 변경 (소유자 root, 권한 640)\n# chown root [변경할 파일]\n# chmod 640 [변경할 파일]"
+      },
+      "SRV-087": {
+        "title": "SRV-087_설치된 C 컴파일러의 권한 설정 적절성",
+        "확인방법": "1. C 컴파일러(CC/GCC 등)의 others 권한 확인\n# ls -alL [C 컴파일러(cc,gcc) 경로]\n\n* cc, gcc 컴파일러 경로\n1. 기본파일 List \n  /usr/bin/cc \n  /usr/bin/gcc \n  /usr/ucb/cc \n  /usr/ccs/bin/cc\n  /opt/ansic/bin/cc \n  /usr/vac/bin/cc \n  /usr/local/bin/gcc\n\n2. # which cc gcc 명령어로 검색되는 파일\n* Symbolic Link 일 경우 원본 파일의 퍼미션 점검",
+        "기준": "양호 - 불필요한 컴파일러가 존재하지 않는 경우\n\n취약 - 불필요한 컴파일러가 존재하는 경우\n\n※ 업무상 컴파일러가 필요한 서버의 경우 others 실행 권한이 없으면 양호",
+        "조치법": "개발에 이용되는 경우 컴파일러에 대한 접근 통제 설정\n1. # vi /etc/group\n2. 컴파일러를 사용할 수 있는 그룹을 만들고 사용자를 지정\n3. chgrp {그룹명} {컴파일러경로}\n4. chmod 550 {컴파일러경로}\n\n개발에 이용되지 않는 경우 컴파일러 제거 또는 관리자 이외의 사용자에 대한 실행 권한 제거\n1. 컴파일러 실행 권한 제거\n# chmod 700 <PATH>"
+      },
+      "SRV-091": {
+        "title": "SRV-091_불필요하게 SUID, SGID bit가 설정된 파일 제거",
+        "확인방법": "1. SUID/SGID 설정된 의심스러운 파일 확인\n# find / -user root -type f \\( -perm -04000 -o -perm -02000 \\) -xdev -exec ls al {} \\;\n (주의: find 명령을 root 경로 대상으로 실행하면 파일이 많을 경우, 시스템 성능 저하가 발생할 수 있음)\n\n* SUID/SGID 불필요 파일 점검(안행부 기준 파일)\n /sbin/dump \n /usr/bin/lpq-lpd \n /usr/bin/newgrp \n /sbin/restore \n /usr/bin/lpr \n /usr/sbin/lpc \n /sbin/unix_chkpwd \n /usr/bin/lpr-lpd \n /usr/sbin/lpc-lpd \n /usr/bin/at \n /usr/bin/lprm \n /usr/sbin/traceroute \n /usr/bin/lpq \n /usr/bin/lprm-lpd",
+        "기준": "양호 - 불필요하게 SUID ,SGID가 설정된 파일이 없을 경우\n\n취약 - 불필요하게 SUID ,SGID가 설정된 파일이 있을 경우",
+        "조치법": "SETUID 비트 설정이 불필요하다고 판단되는 경우 SETUID 비트 제거\n일부 응용프로그램 설치시 SETUID 비트가 설정된 경우에는 확인 후 SETUID 비트 제거\n\n1. 제거 방법\n# chmod -s <file_name>\n\n2. 주기적인 감사 방법\n# find / -type f \\( -perm -04000 -o -perm -02000 \\) -xdev -exec ls -al {} \\;\n\n3. 반드시 사용이 필요한 경우 특정 그룹에서만 사용하도록 제한하는 방법\n일반 사용자의 Setuid 사용을 제한함 (임의의 그룹만 가능)\n# chgrp <group_name> <setuid_file_name>\n# chmod 4750 <setuid_file_name>"
+      },
+      "SRV-092": {
+        "title": "SRV-092_사용자 홈 디렉터리 경로 및 권한 설정 적절성",
+        "확인방법": "1. 사용자 계정 별 홈 디렉터리 경로 확인\n# cat /etc/passwd\n\n2. 사용자의 홈 디렉터리 소유자 및 접근 권한 확인\n# ls -al [Home 디렉터리]",
+        "기준": "양호 - 홈 디렉터리의 소유자와 실 사용자가 일치하고, 계정간 중복 홈 디렉터리가 존재하지 않고, 불필요한 others 쓰기 권한이 없는 경우\n\n취약 - 홈 디렉터리의 소유자와 실 사용자가 일치하지 않거나, 계정간 중복 홈 디렉터리가 존재하거나, 불필요한 others 쓰기 권한이 있는 경우",
+        "조치법": "홈 디렉터리의 소유자를 원래 사용자로 변경하거나, 존재하지 않는 사용자의 경우는 디렉터리를 삭제 \n\n1. 디렉터리를 원래 사용자의 소유권한으로 변경 (응용프로그램에서 사용시에는 주의 필요) \n# chown {사용자} {디렉터리}\n\n* 디렉터리 하위 모든 파일의 소유권을 변경하려면 -R 옵션 사용 \n* 심볼릭 링크 파일의 경우 원본 파일의 소유권도 바뀌게 됨 \n   (-h 옵션 동시 사용시 원본 파일은 변경되지 않음) \n\n2. 존재하지 않는 사용자의 홈 디렉터리인 경우 삭제 (응용프로그램에서 사용시에는 주의 필요) \n# rmdir {디렉터리 및 파일}\n# rm -r {디렉터리 및 파일}\n\n3. 홈디렉터리에 불필요한 Other 쓰기 권한 삭제"
+      },
+      "SRV-093": {
+        "title": "SRV-093_불필요한 world writable 파일 제거",
+        "확인방법": "1. others에 write 권한이 부여된 파일을 확인하고, 업무상 필요한 권한인지 확인\nHOMEDIR=`egrep -v 'nologin|false' /etc/passwd | awk -F\":\" '{print $6}'`\n# find $HOMEDIR -perm -2 -type f -exec ls -alL {} \\; 2>/dev/null",
+        "기준": "양호 - 불필요한 world writable 파일이 존재하지 않는 경우\n\n취약 - 불필요한 world writable 파일이 존재하는 경우",
+        "조치법": "1. world writable 파일 others에 쓰기 권한 제거\n# chmod o-w {파일명}"
+      },
+      "SRV-094": {
+        "title": "SRV-094_Crontab 참조파일 권한 설정 적절성",
+        "확인방법": "1. ls -alL crontab 참조파일 권한 확인\nex) 참조파일 : cron 파일 내 실행하는 파일",
+        "기준": "양호 - crontab 참조파일에 others 쓰기 권한이 없는 경우\n\n취약 - crontab 참조파일에 others 쓰기 권한이 있는 경우",
+        "조치법": "1. cron 설정에서 참조하는 실행 파일에 others 쓰기 권한이 부여된 경우 권한 제거\n# chmod o-w <참조파일 경로>\n\n예:\n# chmod o-w /usr/local/bin/backup.sh\n# chmod o-w /tmp/test-cron-ref.sh"
+      },
+      "SRV-095": {
+        "title": "SRV-095_존재하지 않는 소유자 및 그룹 권한을 가진 파일 또는 디렉터리 제거",
+        "확인방법": "<존재하지 않는 UID 및 GID를 가진 파일 및 디렉터리 검색>\n# find / -type f -a -nouser -exec ls -alLd {} \\;\n# find / -type f -a -nogroup -exec ls -alLd {} \\;\n\n* 사용자 홈 디렉터리 사용 용도에 따라 파일이 많을 수 있으며 파일 갯수가 많을 경우 점검 시간이 오래 걸릴 수 있음",
+        "기준": "양호 - 존재하지 않는 UID 및 GID를 가진 파일 및 디렉터리가 존재하지 않는 경우\n\n취약 - 존재하지 않는 UID 및 GID 파일 및 디렉터리가 존재하는 경우\n\n※ 단, linux user namespace 등을 적용하여 컨테이너와 호스트에서의 권한 격리를 위해 사용되는 nouser, nogroup은 예외",
+        "조치법": "디렉터리가 필요한지 확인한 후, 필요한 디렉터리일 경우 그룹을 상황에 맞게 설정(응용프로그램에서 사용시 현재상태를 유지)\n\n디렉터리 및 파일을 원래 사용자의 그룹권한으로 변경\n1. 존재하지 않는 GID를 가진 파일 검색\n# nice -n 5 find [사용자홈디렉터리] -type f -a -nouser -nogroup -exec ls -alLd {} \\;\n\n2. 해당 파일의 그룹 변경\n# chgrp 사용자명:그룹명 [디렉터리 및 파일]\n\n3. 불필요한 디렉터리 및 파일 삭제\n# rmdir [디렉터리 및 파일]\n# rm -r [디렉터리 및 파일]"
+      },
+      "SRV-096": {
+        "title": "SRV-096_사용자 환경파일의 소유자 또는 권한 설정 적절성",
+        "확인방법": "1. 사용자별 환경파일 권한 확인\n# ls -l [사용자별 환경 설정 파일]\n\n* 사용자별 환경 설정 파일 :\n ex) \".profile\", \".login\", \".kshrc\", \".cshrc\", \".bashrc\", 그 외 \"shrc\"파일",
+        "기준": "양호 - 사용자 환경 파일에 others에 부여된 권한이 없을 경우\n\n취약 - 사용자 환경 파일에 others에 읽기/쓰기/실행 권한이 부여된 경우",
+        "조치법": "사용자 쉘 관련 파일에서 others 권한제거 \n# chmod 640 [사용자별 환경 설정 파일]"
+      },
+      "SRV-108": {
+        "title": "SRV-108_로그에 대한 접근통제 및 관리 적절성",
+        "확인방법": "1. /var/log 디렉터리 내 파일들의 권한 확인",
+        "기준": "양호 - 디렉터리 내 로그 파일들의 권한이 644 이하인 경우\n\n ※ 예시 : 디렉터리 내 로그 파일들의 권한이 owner에 읽기(r), 쓰기(w), group에 읽기(r), other에 읽기(r)로 할당한 경우 (파일 권한이 644 일 때 양호)\n\n취약 - 디렉터리 내 로그 파일들을 소유자 이외의 사용자가 수정 가능한 경우\n\n ※ 예시 : 디렉터리 내 로그 파일들을 소유자 이외의 사용자가 수정이 가능한 경우(owner 외 쓰기(w) 권한 할당 시 취약)\n\n ※ /var/log/wtmp의 경우는 664 (권한 변경 불가)\n  /var/log/btmp의 경우는 660 (권한 변경 불가)\n  /var/log/lastlog의 경우는 664 (권한 변경 불가)",
+        "조치법": "파일 권한 설정 방법\n# chmod 644 [로그파일]\n# chmod 660 [로그파일]"
+      },
+      "SRV-109": {
+        "title": "SRV-109_시스템 주요 이벤트 로그 설정 적절성",
+        "확인방법": "1. /etc/syslog.conf 또는 /etc/rsyslog.conf 파일에서 로그 기록 정책 확인\n\n - syslog 데몬 서비스 확인\n# ps -ef | grep syslogd\n\n - syslog 설정 파일 확인\n# cat /etc/(r)syslog.conf",
+        "기준": "양호\n - syslog 로그 기록 정책이 내부 정책에 부합하게 설정되어 있는 경우\n - syslog 설정에서 auth 또는 authpriv 가 활성화된 경우 (su 명령 로그)\n \n취약 \n - syslog 로그 기록 정책이 내부 정책에 부합하게 설정되지 않은 경우\n - syslog 설정에서 auth 또는 authpriv 가 활성화되지 않은 경우(su 명령 로그)",
+        "조치법": "로그 기록 정책을 수립하고, 정책에 따라 syslog.conf 파일을 설정\n\n1. vi 편집기를 이용하여 \"/etc/(r)syslog.conf\" 파일을 연 후\n# vi /etc/syslog.conf\n\n2. 아래와 같이 수정 또는, 신규 삽입\n* .notice /var/adm/syslog/syslog.log\n* .alert /dev/console\n* .emerg *\n\n3. 위와 같이 설정 후 SYSLOG 데몬 재시작\n\n\n* Syslog 메시지 종류 및 우선순위:\n메시지 종류 :\nauth :  로그인 등의 인증 프로그램 유형이 발생한 메시지\nauthpriv  : 개인 인증을 요구하는 프로그램 유형이 발생한 메시지\ncron : cron, at 데몬에서 발생한 메시지\ndaemon : telnet, ftpd 등과 같은 데몬이 발생한 메시지\nkern : 커널이 발생한 메시지\nlpr : 프린터 유형의 프로그램이 발생한 메시지\nmail : 메일 시스템에서 발생한 메시지\nnews : 유즈넷 뉴스 프로그램 유형이 발생한 메시지\nsyslog : syslog 프로그램 유형이 발생한 메시지\nuser : 사용자 프로세스 관련 메시지\nuucp : 시스템이 발생한 메시지\nlocal0 : 여분으로 남겨둔 유형\n\n메시지 우선순위:\nalert : 즉각적으로 조치를 취해야 할 상황\ncrit : 급한 상황은 아니지만, 치명적인 시스템 문제 발생 시\ndebug : 프로그램 실행 시 발생되는 오류 발생 시\nemerg : 매우 위험한 상황\nerr : 에러 발생 시\ninfo : 단순한 프로그램에 대한 정보 메시지\nnotice : 에러가 아닌 알림에 관한"
+      },
+      "SRV-112": {
+        "title": "SRV-112_Cron 서비스 로깅 설정 적절성",
+        "확인방법": "1. /etc/syslog.conf 또는 /etc/rsyslog.conf 파일에서 로그 기록 정책 확인\n(cron 구문 존재 확인)",
+        "기준": "양호 - syslog 로그 기록 정책 또는 다른 로그 프로그램으로 cron 로그가 기록되는 경우 \n\n취약 - syslog 로그 기록 정책 또는 다른 로그 프로그램으로 cron 로그가 기록되지 않는 경우",
+        "조치법": "로그 기록 정책을 수립하고, 정책에 따라 syslog.conf 파일을 설정\n\n1. vi 편집기를 이용하여 \"/etc/syslog.conf\" 파일을 연 후\n# vi /etc/syslog.conf\n\n2. cron 관련한 로그 정책 설정"
+      },
+      "SRV-115": {
+        "title": "SRV-115_로그의 정기적 검토 및 보고 수행 여부",
+        "확인방법": "1. 로그 검토 보고서 확인/인터뷰",
+        "기준": "양호 - 로그 기록에 대해 정기적 검토, 분석, 보고서 작성 및 보고 등의 절차를 수행하고 있을 경우\n\n취약 - 로그 기록에 대해 정기적 검토가 이루어지지 않을 경우\n\n* Information 항목으로 /etc/(r)syslog.conf 파일에 등록된 파일들과 해당 파일의 퍼미션 출력.",
+        "조치법": "정기적인 로그 분석을 위하여 아래와 같은 절차 수립\n1. 정기적인 로그 검토 및 분석 주기 수립\n\n2. 로그 분석에 대한 결과 보고서 작성\n\n3. 로그 분석 결과보고서 보고 체계 수립"
+      },
+      "SRV-118": {
+        "title": "SRV-118_주기적인 보안패치 및 벤더 권고사항 적용 여부",
+        "확인방법": "[패치 정보]\n1. 각 linux 사이트에서 적절한 패치 정보 및 패치 획득 (레드햇(http://www.redhat.com/), wowlinux, etc )\n\n2. rpm -qa -i 명령어를 통해 설치된 패치목록 획득",
+        "기준": "양호 - 보안 패치 관리를 적절하게 수행하고 있는 경우\n\n취약 - 보안 패치를 검토하는 절차가 없고, 보안 패치를 적용하지 않은 경우\n\n* Information 항목으로 마지막 설치된 패치 정보 출력함.",
+        "조치법": "Linux는 서버에 설치된 패치 리스트의 관리가 불가능하므로 rpm 패키지 별 버그가 Fix된 최신 버전 설치가 필요함\nLinux는 오픈 되고, 커스터마이징 된 OS이므로 Linux를 구입한 벤더에 따라 rpm 패키지가 다를 수 있으며, \n아래의 사이트는 RedHat Linux에 대한 버그 Fix 관련 사이트임\n\n<Red Hat 일 경우>\nStep 1. 다음의 사이트에서 해당 버전을 찾음\nhttp://www.redhat.com/security/updates/\nhttp://www.redhat.com/security/updates/eol/ (Red Hat Linux 9 이하 버전)\n\nStep 2. 발표된 Update 중 현재 사용 중인 보안 관련 Update 찾아 해당 Update Download\n\nStep 3. Update 설치\n# rpm -Uvh <package-name>"
+      },
+      "SRV-121": {
+        "title": "SRV-121_root 계정의 PATH 환경변수 설정 적절성",
+        "확인방법": "1. PATH 변수 내부에 \"./\" 혹은 \"::\" 또는 불필요한 임의의 경로가 존재하는지 확인\n# echo $PATH",
+        "기준": "양호 - PATH 변수 내부에 \".\", \"::\" 가 존재하지 않을 경우\n\n취약 - PATH 변수 중간에 \".\" 혹은 \"::\" 또는 불필요한 임의의 경로가 존재할 경우",
+        "조치법": "1. vi 편집기를 이용하여 root 계정의 설정파일(~/.profile 과 /etc/profile)을 연 후\n# vi /etc/profile\n\n2. 아래와 같이 수정\n(수정 전) PATH=.:$PATH:$HOME/bin\n(수정 후) PATH=$PATH:$HOME/bin\n* 환경변수 파일은 OS별로 약간씩 다를 수 있음\n\n* Shell 별 환경 설정 파일\nsh : /etc/profile → $HOME/.profile\nksh : /etc/profile → $HOME/.profile\ncsh : /etc/csh.login → $HOME/.cshrc → $HOME/.login\nbash : /etc/profile → $HOME/.bash_profile → $HOME/.bash_login → $HOME/.profile \n\n* 홈 디렉터리에 설정된 값이 가장 늦게 적용되어 최종 PATH로 설정됨"
+      },
+      "SRV-122": {
+        "title": "SRV-122_umask 설정 적절성",
+        "확인방법": "1. 모든 계정의 umask 값을 확인\n\n2. 로그인 혹은 shell 변경 시, 설정 파일과 shell 스크립트로 인해 적용될 umask 값 확인. 일반적으로 다음의 파일들을 확인\n 1)/etc/security/user\n 2)/etc/profile\n 3)$HOME/.profile\n 4)$HOME/.*shrc\n\n* 현재 관리자 umask 값 확인\n# umask",
+        "기준": "양호 - 모든 계정의 umask 값과 설정 파일 등에 적용된 umask값으로 022 이상인 경우\n\n ※ 예시 : 모든 계정의 umask 값과 설정 파일 등에 적용된 umask값을 group, other에 읽기(r)만 할당 하는 경우(022, 026, 027 등)\n\n취약 - umask값이나 설정 파일 등에 적용된 umask값이 022 미만인 계정이 존재하는 경우\n\n ※ 예시 : 020 등 기타 다른 값으로 설정되어 있는 경우(000, 023, 024, 025, 032, 042, 052 등)\n - group 권한에 쓰기(w), 실행(x) 권한이 포함되어 있는 경우 \n - others 권한에 쓰기(w), 실행(x) 권한이 포함되어 있는 경우",
+        "조치법": "설정파일에 UMASK 값을 \"022\"로 설정.\n\n1. vi 편집기를 이용하여 \"/etc/profile\" 파일을 연 후\n\n2. 아래와 같이 수정 또는, 신규 삽입\numask 022\n\n* Shell 별 환경 설정 파일\nsh : /etc/profile → $HOME/.profile\nksh : /etc/profile → $HOME/.profile\ncsh : /etc/csh.login → $HOME/.cshrc → $HOME/.login\nbash : /etc/profile → $HOME/.bash_profile → $HOME/.bash_login → $HOME/.profile"
+      },
+      "SRV-127": {
+        "title": "SRV-127_로그인 실패 횟수에 따른 접속 제한 설정",
+        "확인방법": "[ 아래 파일에 다음과 같은 설정이 존재하는지 확인 ]\n - /etc/pam.d/password-auth, \n - /etc/pam.d/common-auth,\n - /etc/pam.d/system-auth, \n - /etc/security/faillock.conf \n\n(1) pam_faillock.so 활용 시\nauth     required       pam_faillock.so preauth silent audit deny=3 unlock_time=600\nauth     [default=die]  pam_faillock.so authfail audit deny=3 unlock_time=600\naccount  required       pam_faillock.so\n\n(2) pam_tally2.so 활용 시\nauth        required      pam_tally2.so deny=5 onerr=fail unlock_time=600\naccount     required      pam_tally2.so\n\n(3) pam_tally.so 활용 시\nauth        required      pam_tally.so deny=5 onerr=fail unlock_time=600\naccount     required      pam_tally.so \n\n(4) RHEL 8 경우\n/etc/security/faillock.conf 우선 적용\ndeny = 5\nunlock_time = 600",
+        "기준": "양호 - /etc/pam.d/password-auth, /etc/pam.d/common-auth, /etc/pam.d/system-auth, /etc/security/faillock.conf 파일에 계정 잠금 임계값 설정이 존재하는 경우\n\n취약 - /etc/pam.d/password-auth, /etc/pam.d/common-auth, /etc/pam.d/system-auth, /etc/security/faillock.conf 파일에 계정 잠금 임계값 설정이 존재하지 않는 경우",
+        "조치법": "* /etc/pam.d/system-auth, /etc/pam.d/common-auth, /etc/pam.d/password-auth 파일에서 pam_tally.so 또는 pam_tally2.so 또는 pam_faillock.so 라인에 다음 라인 값 설정\n\ndeny=5\n\n옵션 설명 :\ndeny=5 : 5회 입력 실패 시 패스워드 잠금\n\n* root 등 중요 계정이 잠길 경우 서비스가 안되거나 리부팅이 필요할 \n수  있으니 영향성 확인 후 적용\n\n* 사용하는 PAM 라이브러리는 Linux 버전 및 OS 32/64 Bit 별로 다를 수 있습니다."
+      },
+      "SRV-131": {
+        "title": "SRV-131_SU 명령 사용가능 그룹 제한 설정 적절성",
+        "확인방법": "[wheel 그룹을 이용하는 경우]\n1. \"wheel\" 그룹(su 명령어 사용 그룹) 및 그룹 내 구성원 존재 여부 확인\n# cat /etc/group\nwheel:x:10:root,admin\n\n2. /bin/su 권한 확인\n# ls -l /bin/su \n\n[PAM 모듈을 이용하는 경우]\n1. su 명령어 사용 그룹 설정 여부 확인\n# cat /etc/pam.d/su\nauth required pam_wheel.so debug group=wheel 또는\n\nauth required pam_wheel.so use_uid",
+        "기준": "양호 - /etc/pam.d/su 파일에 auth required pam_wheel.so use_uid 라인이 존재하는 경우\n\n취약 - /etc/pam.d/su 파일에 auth required pam_wheel.so use_uid 라인이 존재하지 않거나 주석 처리 되어 있는 경우",
+        "조치법": "1. 특정 그룹 생성 (wheel 그룹)\n# groupadd wheel\n\n2. su 명령어 그룹 변경\n# chgrp wheel /usr/bin/su\n\n3. su 명령어 사용권한 변경\n# chmod 4750 /bin/su\n\n4. wheel 그룹에 su 명령 허용 계정 등록\n# usermod -G wheel <user_name> 또는, \n직접 /etc/group 파일을 수정하여 필요한 계정 등록\nwheel:x:10: → wheel:x:10:root,admin\n\n5. /etc/pam.d/su 설정\n# vi /etc/pam.d/su\n   auth required pam_wheel.so use_uid"
+      },
+      "SRV-133": {
+        "title": "SRV-133_Cron 서비스 사용 계정 제한 설정 적절성",
+        "확인방법": "1. cron.allow , cron.deny 파일 존재 여부, 파일 내부에 계정 존재 여부 확인\n# cat /etc/cron.allow \n# cat /etc/cron.deny",
+        "기준": "양호 \n - cron.allow, cron.deny 파일 내부에 계정이 존재하는 경우\n - cron.allow, cron.deny 파일 둘 다 없는 경우(root만 cron 사용 가능)\n\n취약 - cron.allow 파일이 없고 cron.deny 파일 내부에 계정이 없는 경우\n\n* Information 항목으로 cron.allow, cron.deny 파일 내용 출력함.",
+        "조치법": "1. cron 서비스 이용 허가 \n# vi /etc/cron.allow\n이용 가능하도록 설정할 계정 입력\n\n2. cron 서비스 이용 거부 \n# vi /etc/cron.deny\n이용 불가능하도록 설정할 계정 입력\n\n * cron 서비스를 이용할 필요가 있는 계정에 대해서만 서비스 이용 허가 \n * cron.allow 파일에 등록된 계정만 crontab을 사용할 수 있음 \n * 설정 파일을 통해 수정 가능"
+      },
+      "SRV-142": {
+        "title": "SRV-142_중복 UID가 부여된 계정 제한 여부",
+        "확인방법": "1. /etc/passwd 파일을 확인하여, 동일한 UID를 가진 계정이 존재하는지 점검\n# cat /etc/passwd",
+        "기준": "양호 - 동일한 UID로 설정된 사용자 계정이 존재하지 않는 경우\n\n취약 - 동일한 UID로 설정된 사용자 계정이 존재하는 경우",
+        "조치법": "동일한 UID로 설정된 사용자 계정의 UID를 서로 다른 값으로 변경\n - usermod 명령으로 동일한 UID로 설정된 사용자 계정의 UID 변경\n# usermod -u <변경할 UID값> <user_name>"
+      },
+      "SRV-144": {
+        "title": "SRV-144_/dev 경로에 불필요한 파일 제거",
+        "확인방법": "1. /dev 경로에 존재하지 않는 device 파일 점검\n# find /dev -type f -exec ls -l {} \\;",
+        "기준": "양호 - /dev 경로에 존재하지 않는 device 파일이 없는 경우\n\n취약 - /dev 경로에 존재하지 않는 불필요한 device 파일이 있는 경우\n\n※ 단, /dev 경로 내 파일 중 mqueue, shm 파일은 시스템에서 생성 또는 삭제가 주기적으로 일어나므로 예외\n\n※ 파일 Type 일반파일 /dev 디렉터리에 존재할 경우 취약으로 판단함.",
+        "조치법": "major, minor, number를 가지지 않는 device 파일 제거\n# find /dev -type f -exec ls -l {} \\; 명령으로 확인 후\n\n* major, minor number를 가지지 않는 device일 경우 삭제\n* 단, /dev 디렉토리 내 파일 중 mqueue, shm 파일은 시스템 사용을 위해 생성 또는 삭제가 주기적으로 일어나므로 예외 가능"
+      },
+      "SRV-147": {
+        "title": "SRV-147_불필요한 네트워크 모니터링 서비스 비활성화",
+        "확인방법": "1. SNMP 서비스 확인\n# ps -ef | grep snmp",
+        "기준": "양호 - 불필요한 네트워크 모니터링 서비스를 사용하지 않는 경우\n\n취약 - 불필요한 네트워크 모니터링 서비스가 실행 중인 경우",
+        "조치법": "불필요시 서비스 중지/사용안함\n\n[RHEL 5,6 버전]\n1. 실행중인 snmp 서비스를 중지한다.\n# /etc/init.d/snmpd start\n\n2. SNMPD 시작 설정 변경\n# chkconfig snmpd off\n\n[RHEL 7버전]\n1. 실행중인 snmp 서비스를 중지한다.\n# systemctl stop snmpd\n\n2. SNMPD 시작 설정 변경\n# systemctl disable snmpd"
+      },
+      "SRV-158": {
+        "title": "SRV-158_불필요한 Telnet 서비스 비활성화",
+        "확인방법": "1. 23번 포트에 TELNET 서비스가 동작 중인지 확인\n# vi /etc/xinetd.conf",
+        "기준": "양호 - Telnet 서비스가 비활성화 되어 있는 경우\n\n취약 - Telnet 서비스가 불필요하게 활성화 되어 있는 경우",
+        "조치법": "[RHEL 5,6 버전]\nTELNET 서비스 중지\n# /etc/init.d/telnet stop\n\nTELNET 시작 설정 변경\n# chkconfig telnet off\n\n[RHEL 7 버전]\nTELNET 서비스 중지\n# systemctl stop telnet.service\n\nTELNET 시작 설정 변경\n# systemctl disable telnet.service"
+      },
+      "SRV-161": {
+        "title": "SRV-161_ftpusers 파일의 소유자 및 권한 설정 적절성",
+        "확인방법": "1. ftpusers 파일에 대한 권한 확인\n# ls -alLd /etc/ftpusers\n# ls -alLd /etc/ftpd/ftpusers\n# ls -alLd /etc/vsftpd/ftpusers",
+        "기준": "양호 - ftpusers 파일의 소유자가 root이고, 권한이 640 이하인 경우\n\n ※ 예시 : ftpusers 파일의 소유자가 root이고, 권한이 owner에 읽기(r), 쓰기(w) 권한이 할당되거나, group에 읽기(r) 권한이 할당되는 경우(예시 640 권한 할당 시 양호)\n\n취약 - ftpusers 파일의 소유자가 root가 아니거나, 권한이 640 이하가 아닌 경우\n\n ※ 예시 : ftpusers 파일의 소유자가 root가 아니거나, 권한이 group에 쓰기(w), 실행(x) 권한이 할당 되거나, other에 읽기(r), 쓰기(w), 실행(x) 권한이 할당되는 경우",
+        "조치법": "1. FTP 접근제어 파일의 소유자 및 권한 변경 (소유자 root, 권한 640 이하)\n# chmod 640 /etc/vsftpd/ftpusers /etc/vsftpd/user_list\n# chown root /etc/vsftpd/ftpusers /etc/vsftpd/user_list"
+      },
+      "SRV-163": {
+        "title": "SRV-163_시스템 사용 주의사항 출력",
+        "확인방법": "다음의 파일들에 메시지 설정 존재 여부 확인\n\n1. /etc/motd 에 시스템 사용주의사항 입력여부 확인\n# cat /etc/motd\n\n2. /etc/issue.net 파일에 로그인 경고메시지 설정여부 확인\n# cat /etc/issue.net\n\n3. /etc/ssh/sshd_config Banner 값 설정 여부 확인\n# cat /etc/ssh/sshd_config\n   Banner /etc/issue.net",
+        "기준": "양호 - /etc/issue.net, /etc/motd, /etc/ssh/sshd_config 파일 설정 등으로 시스템 사용 주의사항을 출력하는 경우\n\n취약 - /etc/issue.net, etc/motd,  /etc/ssh/sshd_config 파일 설정 등으로 시스템 사용 주의사항 미출력 시 또는 표시 문구 내에 시스템 버전 정보가 노출되는 경우",
+        "조치법": "</etc/motd 설정 방법>\n# vi /etc/motd \n경고 사항 및 주의사항 명시\n\n</etc/issue.net 설정 방법>\n# vi /etc/issue.net\n경고 사항 및 주의사항 명시\n\n</etc/ssh/sshd_config 설정 방법>\n# vi /etc/ssh/sshd_config\n# Banner none → (주석 제거) Banner [배너 파일 경로] 변경"
+      },
+      "SRV-164": {
+        "title": "SRV-164_구성원이 존재하지 않는 GID 제거",
+        "확인방법": "구성원이 존재하지 않는 그룹 확인\n1. /etc/passwd 파일과 /etc/group 파일을 비교하여 확인\n\n2. 필요한 경우 /etc/gshadow 파일도 함께 확인\n# cat /etc/passwd\n# cat /etc/group\n# cat /etc/gshadow\n\n3. /etc/group 파일에서 신규 그룹이 생성되는 GID를 중점적으로 점검\n\n ※ 그룹 삭제 시, 그룹 권한이 부여된 파일 또는 디렉토리가 존재하는지 확인 필요",
+        "기준": "양호 - 구성원이 존재하지 않는 GID가 존재하지 않는 경우\n\n취약 - 구성원이 존재하지 않는 GID가 존재하는 경우",
+        "조치법": "구성원이 존재하지 않는 그룹이 있을 경우 관리자와 검토하여 제거\n# groupdel <group_name>\n\n* 구성원이 없거나, 더 이상 사용하지 않는 그룹명 삭제"
+      },
+      "SRV-165": {
+        "title": "SRV-165_불필요하게 Shell이 부여된 계정 제거",
+        "확인방법": "1. cat /etc/passwd 파일 확인\n# cat /etc/passwd | egrep \"^daemon|^bin|^sys|^adm|^listen|^nobody|^nobody4|^noaccess|^diag|^operator|^games|^gopher\" |grep -v \"admin\"",
+        "기준": "양호 - 로그인이 필요하지 않은 계정에 /bin/false(nologin) 등이 부여된 경우\n\n취약 - 로그인이 필요하지 않은 계정에 shell이 부여된 경우\n\n※ 일반적으로 Daemon 실행을 위한 계정은 Shell이 불필요( 예: ftp, apache, www-data )",
+        "조치법": "로그인이 필요하지 않은 계정에 대해 비 로그인 쉘 부여\n1. vi 편집기를 이용하여 \"/etc/passwd\" 파일을 연 후\n\n2. 로그인 쉘 부분인 계정 맨 마지막에 비 로그인 쉘 부여 및 변경\n(수정 전) daemon:x:1:1::/:/sbin/ksh\n(수정 후) daemon:x:1:1::/:/bin/false 또는, daemon:x:1:1::/:/sbin/nologin\n\n* 비로그인쉘 : /bin/false, /usr/bin/false, /sbin/nologin"
+      },
+      "SRV-166": {
+        "title": "SRV-166_불필요한 숨김 파일 또는 디렉터리 제거",
+        "확인방법": "1. 특정 디렉터리 내 불필요한 파일 점검\n# ls -al [디렉터리명]\n\n2. 전체 숨김 디렉터리 및 숨김 파일 점검\n# find / -type f -name \".*\" (숨김 파일 점검)\n# find / -type d -name \".*\" (숨김 디렉터리 점검)",
+        "기준": "양호 - 불필요한 숨김 파일이 존재하지 않을 경우\n\n취약 - 불필요한 숨김 파일이 존재하는 경우\n\n* 검색 기준 : 주요 디렉터리(/usr, /bin, /sbin, /etc, /opt 및 User 의 홈디렉터리 검사\n* 전체 디렉터리 검사 시 점검 시간이 오래걸리거나, 시스템 부하가 발생하여 주요 디렉터리만 검색",
+        "조치법": "1. ls -al 명령어로 숨겨진 파일 존재 파악 후 불법적이거나 의심스러운 파일을 삭제함\n - 숨겨진 파일 목록에서 불필요한 파일 삭제\n - 마지막으로 변경된 시간에 따라, 최근 작업한 파일 확인 시 [-t] 플래그 사용"
+      },
+      "SRV-170": {
+        "title": "SRV-170_SMTP 서비스 정보 노출 방지 여부",
+        "확인방법": "[Sendmail]\n설정 파일(sendmail.cf) 내의 SmtpGreetingMessage 설정 값 확인\n배너 메시지 설정 값에 $v 파라미터가 설정 되어있으면 버전 정보가 출력되므로, 해당 파라미터를 제외한 설정 필요\n\n[Postfix]\n설정 파일(main.cf) 내의 smtpd_banner 설정 값 확인\n배너 메시지 설정 값에 $mail_version 파라미터가 설정 되어있으면 버전 정보가 출력되므로, 해당 파라미터를 제외한 설정 필요\n\n[Exim]\n설정 파일(exim.conf) 내의 smtp_banner 설정 값 확인\n배너 메시지 설정 값에 $version_number 파라미터가 설정 되어있으면 버전 정보가 출력되므로, 해당 파라미터를 제외한 설정 필요",
+        "기준": "양호 - SMTP 접속 배너에 노출되는 정보가 없는 경우\n\n취약 - SMTP 접속 배너에 노출되는 정보가 있는 경우\n\n※ 정보 노출 : 서비스명 + 버전 정보가 노출되는 경우 취약",
+        "조치법": "[Sendmail]\n설정 파일(sendmail.cf) 내의 SmtpGreetingMessage 설정 값 확인\n배너 메시지 설정 값에 $v 파라미터가 설정 되어있으면 버전 정보가 출력되므로, 해당 파라미터를 제외한 설정 필요\n\n[Postfix]\n설정 파일(main.cf) 내의 smtpd_banner 설정 값 확인\n배너 메시지 설정 값에 $mail_version 파라미터가 설정 되어있으면 버전 정보가 출력되므로, 해당 파라미터를 제외한 설정 필요\n\n[Exim]\n설정 파일(exim.conf) 내의 smtp_banner 설정 값 확인\n배너 메시지 설정 값에 $version_number 파라미터가 설정 되어있으면 버전 정보가 출력되므로, 해당 파라미터를 제외한 설정 필요"
+      },
+      "SRV-171": {
+        "title": "SRV-171_FTP 서비스 정보 노출 방지 여부",
+        "확인방법": "1. FTP 배너 메시지 점검\n# cat /etc/proftpd.conf \n# cat /usr/local/etc/proftpd.conf\n(ServerIdent 구문 설정 값 확인)",
+        "기준": "양호 - FTP 접속 배너에 노출되는 정보가 없는 경우\n\n취약 - FTP 접속 배너에 노출되는 정보가 있는 경우\n\n※ 정보 노출 : 서비스명 + 버전 정보가 노출되는 경우 취약",
+        "조치법": "1. FTP 배너 메시지 점검\n# cat /etc/proftpd.conf \n# cat /usr/local/etc/proftpd.conf\n(ServerIdent 구문 설정 값 확인)"
+      },
+      "SRV-173": {
+        "title": "SRV-173_DNS 서비스 동적 업데이트 설정 적절성",
+        "확인방법": "[BIND]\n/etc/named.conf 내부의 allow-update 또는 update-policy 존재 구문 확인",
+        "기준": "양호 - DNS 서비스의 동적 업데이트 기능이 비활성화 되었거나, 활성화 시 적절한 접근통제를 수행하고 있을 경우\n\n취약 - DNS 서비스의 동적 업데이트 기능이 불필요하게 활성화 되어있거나, 필요에 의해 사용 중이어도 적절한 접근통제를 수행하고 있지 않을 경우",
+        "조치법": "1. /etc/named.conf 내부의 Zone 설정에 allow-update 또는 update-policy 설정 확인\n\n zone \"abc.aus.century.com\" IN {\n    type master;\n    file \"named.abc.data\";\n    allow-update { none; };\n    update-security controlled;\n};"
+      },
+      "SRV-174": {
+        "title": "SRV-174_불필요한 DNS 서비스 비활성화",
+        "확인방법": "[BIND]\nDNS 서비스 실행 여부 확인\n# ps -ef | grep named",
+        "기준": "양호 - DNS 서비스가 실행 중이지 않거나, 필요에 의해 사용 중인 경우\n\n취약 - DNS 서비스가 불필요하게 실행 중인 경우",
+        "조치법": "1. DNS 서비스 중지 (named)"
+      },
+      "SRV-175": {
+        "title": "SRV-175_시간 동기화를 위한 NTP 설정",
+        "확인방법": "1. 다음 명령을 실행하여 NTP 설정과 현재 시각 확인\n # ntpq -pn\n # chronyc tracking\n # date \"+%Y-%m-%d %T\"",
+        "기준": "양호 - NTP 서버 동기화가 설정되어 있는 경우\n\n취약 - NTP 서버 동기화가 미설정되어 있는 경우",
+        "조치법": "1. NTP 설정과 현재 시각 확인하여 동기화되고 있는지 확인"
+      },
+      "SRV-177": {
+        "title": "SRV-177_sudo 명령어 접근 권한 설정 적절성",
+        "확인방법": "1. sudo 설치 여부 확인 후 sudoer 파일의 설정 확인\n# which sudo\n# cat /etc/sudoers\n\n2. 불필요한 사용자가 sudo 명령어 권한을 가지고 있는지 확인\n# ls -al /etc/sudoers.d/",
+        "기준": "양호 - sudo 명령어의 접근 제한이 설정되어 있는 경우\n\n취약 - sudo 명령어의 접근 제한이 설정되어 있지 않은 경우",
+        "조치법": "[/etc/sudoers]\n1. 불필요한 계정/그룹 설정을 삭제 또는 주석 처리\n# user ALL=(ALL) ALL\n# %group ALL=(ALL) ALL\n\n2. 관리자 그룹(wheel 등) 구성원 최소화\n%wheel ALL=(ALL) ALL\n\n3. wheel 그룹에 필요한 관리자 계정만 포함되도록 구성원 점검 및 정리\n# getent group wheel\n# usermod -G wheel admin_user\n※ 일반 사용자는 wheel 그룹에서 제거\n\n4. /etc/sudoers.d/ 디렉터리에 존재하는 불필요한 설정 파일 제거\n# rm -f /etc/sudoers.d/[불필요 파일]\n※ 시스템 영향성 확인 후 작업"
+      },
+      "SRV-179": {
+        "title": "SRV-179_서비스 지원이 종료된(EoS) 시스템 및 장비 교체 여부",
+        "확인방법": "1. 배포판/버전 확인\n# cat /etc/os-release 또는 #lsb_release -a\n\n2. 해당 벤더(RHEL/SLES/Ubuntu 등) Lifecycle(EOL/EUS/ESU) 표와 대조\n\n3. 보안 리포지터리 유효성(YUM/Zypper/APT 미러 제공·메타데이터 갱신)과 CVE 패치 공지 존재로 사실상 지원 여부를 확인",
+        "기준": "양호 - 서비스 지원이 가능한 시스템을 사용하는 경우\n\n취약 - 서비스 지원이 종료된 시스템을 별도 사후 관리 절차 없이 사용하는 경우",
+        "조치법": "1. 운영 중인 시스템 및 장비의 OS, Firmware, Software 버전을 확인\n\n2. 제조사 또는 벤더 공식 홈페이지를 통해 해당 버전의 서비스 지원 종료(EoS) 여부를 확인"
+      }
+    }
+  }
+}

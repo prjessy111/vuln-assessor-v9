@@ -1,0 +1,63 @@
+<%- include('../_header', { title: '진단 실행' }) %>
+
+<h1>진단 실행</h1>
+<p class="muted">아래 두 가지 방법 중 하나로 raw 파일을 지정합니다.</p>
+
+<form method="post" action="/assess/run" enctype="multipart/form-data" class="form-block">
+
+  <div class="form-row">
+    <label>대상 서버 <span class="req">*</span></label>
+    <select name="server_id" required>
+      <% servers.forEach(s => { %>
+        <option value="<%= s.server_id %>"
+          <%= String(selectedId) === String(s.server_id) ? 'selected' : '' %>>
+          <%= s.name %> (<%= s.hostname %> / <%= s.os_type %>)
+        </option>
+      <% }); %>
+    </select>
+  </div>
+
+  <h3>방법 A. 수집된 raw 파일에서 선택 (권장)</h3>
+  <% if (rawFiles.length) { %>
+    <div class="form-row">
+      <table class="data-table">
+        <thead><tr><th>선택</th><th>파일명</th><th>크기</th><th>수집일시</th></tr></thead>
+        <tbody>
+          <% rawFiles.forEach(f => { %>
+            <tr>
+              <td><input type="radio" name="raw_file_path" value="<%= f.path %>"
+                  <%= prefillRaw === f.path ? 'checked' : '' %>></td>
+              <td><code><%= f.name %></code></td>
+              <td class="small"><%= Math.round(f.size/1024) %> KB</td>
+              <td class="small"><%= f.mtime.toLocaleString('ko-KR') %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } else { %>
+    <div class="muted">수집된 raw 파일이 없습니다. <a href="/collect">Raw 수집</a> 메뉴에서 먼저 수집하세요.</div>
+  <% } %>
+
+  <h3>방법 B. 직접 업로드</h3>
+  <div class="form-row">
+    <input type="file" name="raw_file" accept=".db,.sqlite,.sqlite3">
+    <div class="muted small">SQLite 파일, 최대 50MB. 위 목록에서 선택하지 않은 경우에만 사용.</div>
+  </div>
+
+  <h3>옵션</h3>
+  <div class="form-row">
+    <label>룰셋 버전</label>
+    <input name="ruleset_ver" value="v1.0">
+  </div>
+  <div class="form-row">
+    <label>실행자</label>
+    <input name="executed_by" placeholder="이름 또는 ID (옵션)">
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary large">진단 실행</button>
+  </div>
+</form>
+
+<%- include('../_footer') %>

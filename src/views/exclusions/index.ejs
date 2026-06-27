@@ -1,0 +1,157 @@
+<%- include('../_header', { title: '제외 관리', activeMenu: 'exclusions' }) %>
+
+<div class="page-header">
+  <h1>제외 관리</h1>
+  <p class="muted small">
+    진단 자체에서 영구적으로 제외할 항목을 관리합니다.
+    <strong>예외 관리</strong>가 한시적 면제(승인 + 기간)라면, <strong>제외</strong>는
+    구조적 미해당(예: 해당 OS에 없는 데몬, 정책상 불필요한 항목)을 평가 대상에서 빼는 처리입니다.
+  </p>
+  <div class="header-actions">
+    <a href="/exclusions/new" class="btn primary">+ 제외 등록</a>
+  </div>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid kpi-4col">
+  <div class="kpi-card">
+    <div class="kpi-label">전체 제외</div>
+    <div class="kpi-num"><%= kpi.total %></div>
+    <div class="kpi-sub">등록 건수</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">활성 제외</div>
+    <div class="kpi-num" style="color:#27ae60;"><%= kpi.active %></div>
+    <div class="kpi-sub">현재 적용 중</div>
+  </div>
+  <div class="kpi-card kpi-avg">
+    <div class="kpi-label">서버 단위</div>
+    <div class="kpi-num"><%= (kpi.by_target_type && kpi.by_target_type.server) || 0 %></div>
+    <div class="kpi-sub">특정 서버 제외</div>
+  </div>
+  <div class="kpi-card kpi-avg">
+    <div class="kpi-label">룰 단위</div>
+    <div class="kpi-num"><%= (kpi.by_target_type && kpi.by_target_type.rule) || 0 %></div>
+    <div class="kpi-sub">특정 룰 전역 제외</div>
+  </div>
+</div>
+
+<!-- 필터 -->
+<div class="section-box">
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="🔍 룰ID / 서버 / 사유 / 등록자 검색" class="filter-input">
+    <select id="typeFilter" class="filter-select">
+      <option value="">전체 유형</option>
+      <option value="server">서버 단위</option>
+      <option value="rule">룰 단위</option>
+      <option value="combo">서버+룰 조합</option>
+    </select>
+    <select id="enabledFilter" class="filter-select">
+      <option value="">전체 상태</option>
+      <option value="1">활성</option>
+      <option value="0">비활성</option>
+    </select>
+  </div>
+</div>
+
+<!-- 제외 목록 -->
+<div class="section-box">
+  <h3>등록된 제외 (<%= exclusions.length %>건)</h3>
+  <% if (!exclusions.length) { %>
+    <p class="muted">등록된 제외 항목이 없습니다. <a href="/exclusions/new">제외 등록</a>.</p>
+  <% } else { %>
+    <table class="data-table" id="exclusionsTable">
+      <thead>
+        <tr>
+          <th>활성</th>
+          <th>ID</th>
+          <th>유형</th>
+          <th>대상 룰</th>
+          <th>대상 서버</th>
+          <th>사유</th>
+          <th>등록자</th>
+          <th>등록일</th>
+          <th>액션</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% exclusions.forEach(e => { %>
+          <tr data-type="<%= e.target_type || '' %>"
+              data-enabled="<%= e.enabled ? '1' : '0' %>"
+              data-search="<%= ((e.rule_id || '') + ' ' + (e.hostname || '') + ' ' + (e.reason || '') + ' ' + (e.registered_by || '')).toLowerCase() %>">
+            <td>
+              <% if (e.enabled) { %>
+                <span style="color:#27ae60;font-weight:600;">●</span>
+              <% } else { %>
+                <span style="color:#bbb;">○</span>
+              <% } %>
+            </td>
+            <td>#<%= e.exclusion_id %></td>
+            <td>
+              <% var tt = e.target_type || 'unknown'; %>
+              <% var label = { server: '서버', rule: '룰', combo: '서버+룰' }[tt] || tt; %>
+              <span class="status-badge"><%= label %></span>
+            </td>
+            <td><strong><%= e.rule_id || '-' %></strong></td>
+            <td class="small">
+              <% if (e.hostname) { %>
+                <%= e.hostname %>
+              <% } else if (e.server_id) { %>
+                #<%= e.server_id %>
+              <% } else { %>
+                <span class="muted">전체</span>
+              <% } %>
+            </td>
+            <td class="small" style="max-width:320px;">
+              <%= (e.reason || '').substring(0, 150) %><% if ((e.reason || '').length > 150) { %>...<% } %>
+            </td>
+            <td class="small"><%= e.registered_by || '-' %></td>
+            <td class="small"><%= (e.registered_at || '').slice(0, 10) %></td>
+            <td>
+              <button class="btn-sm" onclick="toggleExclusion(<%= e.exclusion_id %>)">
+                <%= e.enabled ? '비활성화' : '활성화' %>
+              </button>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<style>
+  .status-badge {
+    display:inline-block; padding:2px 8px; border-radius:3px;
+    background:#e8f0fe; color:#2c5fb8; font-size:0.85rem; font-weight:600;
+  }
+</style>
+
+<script>
+function toggleExclusion(id) {
+  if (!confirm('이 제외 항목의 활성 상태를 전환하시겠습니까?')) return;
+  fetch('/exclusions/' + id + '/toggle', { method: 'POST' })
+    .then(r => r.json())
+    .then(j => {
+      if (j.status === 'success') location.reload();
+      else alert('실패: ' + (j.error || '오류'));
+    });
+}
+
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const t = document.getElementById('typeFilter').value;
+  const en = document.getElementById('enabledFilter').value;
+  document.querySelectorAll('#exclusionsTable tbody tr').forEach(tr => {
+    const matchQ = !q || (tr.dataset.search || '').toLowerCase().includes(q);
+    const matchT = !t || tr.dataset.type === t;
+    const matchE = en === '' || tr.dataset.enabled === en;
+    tr.style.display = (matchQ && matchT && matchE) ? '' : 'none';
+  });
+}
+['searchInput', 'typeFilter', 'enabledFilter'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(id === 'searchInput' ? 'input' : 'change', applyFilters);
+});
+</script>
+
+<%- include('../_footer') %>

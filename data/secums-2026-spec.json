@@ -1,0 +1,521 @@
+{
+  "generated_at": "2026-06-14",
+  "source": "reportVul-10019_2026-06-1420260613123559.695.xlsx",
+  "os": {
+    "windows": {
+      "SRV-001": {
+        "title": "안전한 네트워크 모니터링 서비스 사용",
+        "result": "취약",
+        "checks": [
+          "LegacyAuthenticationLevel",
+          "LmCompatibilityLevel"
+        ]
+      },
+      "SRV-023": {
+        "title": "원격 터미널 서비스의 암호화 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "Policy - MinEncryptionLevel"
+        ]
+      },
+      "SRV-027": {
+        "title": "서비스 접근 IP 및 포트 제한 여부",
+        "result": "취약",
+        "checks": [
+          "STATUS"
+        ]
+      },
+      "SRV-028": {
+        "title": "원격 터미널 접속 타임아웃 설정 여부",
+        "result": "취약",
+        "checks": [
+          "Terminal Service MaxIdleTime"
+        ]
+      },
+      "SRV-031": {
+        "title": "계정 목록 및 네트워크 공유 이름 노출 방지 여부",
+        "result": "취약",
+        "checks": [
+          "restrictanonymous"
+        ]
+      },
+      "SRV-034": {
+        "title": "불필요한 서비스 비활성화",
+        "result": "취약",
+        "checks": [
+          "Intel(R) 82574L Gigabit Network Connection"
+        ]
+      },
+      "SRV-069": {
+        "title": "비밀번호 관리정책 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "MinimumPasswordAge",
+          "MinimumPasswordLength",
+          "PasswordHistorySize"
+        ]
+      },
+      "SRV-072": {
+        "title": "기본 관리자 계정명(Administrator) 변경 여부",
+        "result": "취약",
+        "checks": [
+          "Administrator"
+        ]
+      },
+      "SRV-073": {
+        "title": "관리자 그룹에 불필요한 사용자 제거",
+        "result": "취약",
+        "checks": [
+          "infra"
+        ]
+      },
+      "SRV-074": {
+        "title": "불필요하거나 관리되지 않는 계정 제거",
+        "result": "취약",
+        "checks": [
+          "Administrator"
+        ]
+      },
+      "SRV-082": {
+        "title": "시스템 주요 디렉터리 권한 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "ALL APPLICATION PACKAGES",
+          "Users",
+          "모든 제한된 응용 프로그램 패키지"
+        ]
+      },
+      "SRV-090": {
+        "title": "불필요한 원격 레지스트리 서비스 비활성화",
+        "result": "취약",
+        "checks": [
+          "RemoteRegistry"
+        ]
+      },
+      "SRV-101": {
+        "title": "불필요한 예약 작업 제거",
+        "result": "취약",
+        "checks": [
+          "\\Microsoft\\Windows\\Application Experience\\Microsoft Compatib",
+          "\\Microsoft\\Windows\\ApplicationData\\appuriverifierdaily",
+          "\\Microsoft\\Windows\\ApplicationData\\appuriverifierinstall",
+          "\\Microsoft\\Windows\\Customer Experience Improvement Program\\C",
+          "\\Microsoft\\Windows\\Data Integrity Scan\\Data Integrity Scan",
+          "\\Microsoft\\Windows\\Device Information\\Device",
+          "\\Microsoft\\Windows\\Speech\\SpeechModelDownloadTask",
+          "\\Microsoft\\Windows\\UpdateOrchestrator\\Refresh Settings",
+          "\\Microsoft\\Windows\\UpdateOrchestrator\\Schedule Scan",
+          "\\Microsoft\\Windows\\Windows Error Reporting\\QueueReporting",
+          "\\Microsoft\\Windows\\WindowsUpdate\\Automatic App Update",
+          "\\Microsoft\\Windows\\WindowsUpdate\\Scheduled Start"
+        ]
+      },
+      "SRV-103": {
+        "title": "LAN Manager 인증 수준 적절성",
+        "result": "취약",
+        "checks": [
+          "LAN Manager authentication level"
+        ]
+      },
+      "SRV-105": {
+        "title": "불필요한 시작프로그램 제거",
+        "result": "정보",
+        "checks": [
+          "None"
+        ]
+      },
+      "SRV-127": {
+        "title": "로그인 실패 횟수에 따른 접속 제한 설정",
+        "result": "취약",
+        "checks": [
+          "Account lockout threshold"
+        ]
+      },
+      "SRV-109": {
+        "title": "시스템 주요 이벤트 로그 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "AuditAccountLogon",
+          "AuditAccountManage",
+          "AuditDSAccess",
+          "AuditLogonEvents",
+          "AuditPolicyChange",
+          "AuditSystemEvents"
+        ]
+      },
+      "SRV-115": {
+        "title": "로그의 정기적 검토 및 보고 수행 여부",
+        "result": "정보",
+        "checks": [
+          "Application",
+          "Security",
+          "System"
+        ]
+      },
+      "SRV-118": {
+        "title": "주기적인 보안패치 및 벤더 권고사항 적용 여부",
+        "result": "정보",
+        "checks": [
+          "0",
+          "KB3192137",
+          "KB4054590",
+          "windows"
+        ]
+      },
+      "SRV-119": {
+        "title": "백신 프로그램 업데이트 적용 여부",
+        "result": "취약",
+        "checks": [
+          "v3update"
+        ]
+      },
+      "SRV-123": {
+        "title": "최종 로그인 사용자 계정 노출 방지 여부",
+        "result": "취약",
+        "checks": [
+          "Do not display last user name"
+        ]
+      },
+      "SRV-125": {
+        "title": "화면보호기 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "JESSY167\\Administrator",
+          "JESSY167\\infra"
+        ]
+      },
+      "SRV-137": {
+        "title": "네트워크 서비스 접근 권한 적절성",
+        "result": "취약",
+        "checks": [
+          "AllowLogon - Everyone",
+          "AllowLogon - Users",
+          "Deny Guests"
+        ]
+      },
+      "SRV-140": {
+        "title": "이동식 미디어 포맷 및 꺼내기 허용 정책 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "Allowed to format and eject removable media"
+        ]
+      },
+      "SRV-149": {
+        "title": "디스크 볼륨 암호화 적용 여부",
+        "result": "정보",
+        "checks": [
+          "Encrypting File System (EFS)"
+        ]
+      },
+      "SRV-150": {
+        "title": "로컬 로그온 허용 계정 제한 여부",
+        "result": "취약",
+        "checks": [
+          "Backup Operators",
+          "Users"
+        ]
+      },
+      "SRV-152": {
+        "title": "원격터미널 접속 가능한 사용자 그룹 제한 여부",
+        "result": "정보",
+        "checks": [
+          "None"
+        ]
+      },
+      "SRV-163": {
+        "title": "시스템 사용 주의사항 출력",
+        "result": "취약",
+        "checks": [
+          "Policy - LegalNoticeCaption",
+          "Policy - LegalNoticeText"
+        ]
+      },
+      "SRV-166": {
+        "title": "불필요한 숨김 파일 또는 디렉터리 제거",
+        "result": "취약",
+        "checks": [
+          "Hidden File"
+        ]
+      },
+      "SRV-172": {
+        "title": "불필요한 시스템 자원 공유 제거",
+        "result": "정보",
+        "checks": [
+          "None"
+        ]
+      },
+      "SRV-179": {
+        "title": "서비스 지원이 종료된(EoS) 시스템 및 장비 교체 여부",
+        "result": "정보",
+        "checks": [
+          "OS",
+          "OS VERSION"
+        ]
+      }
+    },
+    "linux": {
+      "SRV-005": {
+        "title": "SMTP 서비스의 expn/vrfy 명령어 실행 제한 여부",
+        "result": "취약",
+        "checks": [
+          "disable_vrfy_command"
+        ]
+      },
+      "SRV-010": {
+        "title": "SMTP 서비스의 메일 queue 처리 권한 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "/usr/sbin/postsuper"
+        ]
+      },
+      "SRV-011": {
+        "title": "시스템 관리자 계정의 FTP 사용 제한 여부",
+        "result": "취약",
+        "checks": [
+          "root"
+        ]
+      },
+      "SRV-021": {
+        "title": "FTP 서비스 접근통제 설정 적절성",
+        "result": "정보",
+        "checks": [
+          "cat /etc/proftpd.conf |grep -i allow",
+          "cat /etc/proftpd.conf |grep -i deny",
+          "cat /usr/local/etc/proftpd.conf |grep -i allow",
+          "cat /usr/local/etc/proftpd.conf |grep -i deny"
+        ]
+      },
+      "SRV-026": {
+        "title": "root 계정 원격 접속 제한 여부",
+        "result": "취약",
+        "checks": [
+          "/etc/pam.d/login",
+          "PermitRootLogin"
+        ]
+      },
+      "SRV-027": {
+        "title": "서비스 접근 IP 및 포트 제한 여부",
+        "result": "취약",
+        "checks": [
+          "AccessControl"
+        ]
+      },
+      "SRV-028": {
+        "title": "원격 터미널 접속 타임아웃 설정 여부",
+        "result": "취약",
+        "checks": [
+          "jessy",
+          "jessy1",
+          "jessy2",
+          "ldp1",
+          "ldp2",
+          "ldp3",
+          "root",
+          "tt",
+          "weblogic"
+        ]
+      },
+      "SRV-037": {
+        "title": "취약한 FTP 서비스 비활성화",
+        "result": "취약",
+        "checks": [
+          "ftp"
+        ]
+      },
+      "SRV-069": {
+        "title": "비밀번호 관리정책 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "PASS_MAX_DAYS",
+          "PASS_MIN_DAYS",
+          "PASS_MIN_LEN",
+          "PASS_WARN_AGE"
+        ]
+      },
+      "SRV-081": {
+        "title": "Crontab 설정파일 권한 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "/etc/at.deny",
+          "/usr/bin/crontab"
+        ]
+      },
+      "SRV-087": {
+        "title": "설치된 C 컴파일러의 권한 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "/usr/bin/cc",
+          "/usr/bin/gcc"
+        ]
+      },
+      "SRV-091": {
+        "title": "불필요하게 SUID, SGID bit가 설정된 파일 제거",
+        "result": "취약",
+        "checks": [
+          "/sbin/unix_chkpwd",
+          "/usr/bin/at",
+          "/usr/bin/newgrp",
+          "/usr/bin/pkexec"
+        ]
+      },
+      "SRV-092": {
+        "title": "사용자 홈 디렉터리 경로 및 권한 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "jessy",
+          "jessy1"
+        ]
+      },
+      "SRV-096": {
+        "title": "사용자 환경파일의 소유자 또는 권한 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "jessy",
+          "jessy2",
+          "ldp1",
+          "ldp2",
+          "ldp3",
+          "root",
+          "tt",
+          "weblogic"
+        ]
+      },
+      "SRV-108": {
+        "title": "로그에 대한 접근통제 및 관리 적절성",
+        "result": "취약",
+        "checks": [
+          "/var/log/wtmp-20201201"
+        ]
+      },
+      "SRV-115": {
+        "title": "로그의 정기적 검토 및 보고 수행 여부",
+        "result": "정보",
+        "checks": [
+          "/var/lib/rsyslog",
+          "/var/log/boot.log",
+          "/var/log/cron",
+          "/var/log/ldap.log",
+          "/var/log/messages",
+          "/var/log/secure",
+          "/var/log/spooler"
+        ]
+      },
+      "SRV-122": {
+        "title": "umask 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "jessy",
+          "jessy1",
+          "jessy2",
+          "ldp1",
+          "ldp2",
+          "ldp3",
+          "tt",
+          "weblogic"
+        ]
+      },
+      "SRV-127": {
+        "title": "로그인 실패 횟수에 따른 접속 제한 설정",
+        "result": "취약",
+        "checks": [
+          "deny",
+          "unlock_time"
+        ]
+      },
+      "SRV-131": {
+        "title": "SU 명령 사용가능 그룹 제한 설정 적절성",
+        "result": "취약",
+        "checks": [
+          "/bin/su",
+          "/usr/bin/su",
+          "pam_wheel.so"
+        ]
+      },
+      "SRV-133": {
+        "title": "Cron 서비스 사용 계정 제한 설정 적절성",
+        "result": "정보",
+        "checks": [
+          "None"
+        ]
+      },
+      "SRV-163": {
+        "title": "시스템 사용 주의사항 출력",
+        "result": "취약",
+        "checks": [
+          "/etc/motd",
+          "/etc/ssh/sshd_config"
+        ]
+      },
+      "SRV-164": {
+        "title": "구성원이 존재하지 않는 GID 제거",
+        "result": "취약",
+        "checks": [
+          "ldapuser1",
+          "ldapuser2",
+          "ldapuser3",
+          "security"
+        ]
+      },
+      "SRV-171": {
+        "title": "FTP 서비스 정보 노출 방지 여부",
+        "result": "정보",
+        "checks": [
+          "/etc/proftpd.conf",
+          "/usr/local/etc/proftpd.conf"
+        ]
+      },
+      "SRV-179": {
+        "title": "서비스 지원이 종료된(EoS) 시스템 및 장비 교체 여부",
+        "result": "정보",
+        "checks": [
+          "OS",
+          "OS VERSION"
+        ]
+      },
+      "SRV-074": {
+        "title": "불필요하거나 관리되지 않는 계정 제거",
+        "result": "취약",
+        "checks": [
+          "root",
+          "tt",
+          "jessy",
+          "jessy1",
+          "jessy2",
+          "weblogic"
+        ]
+      },
+      "SRV-095": {
+        "title": "존재하지 않는 소유자 및 그룹 권한을 가진 파일 또는 디렉터리 제거",
+        "result": "취약",
+        "checks": [
+          "spf-3.5.2-linux-x86_64-2.6.pak",
+          "report_accsctrl-3.5.2.pak",
+          "report_cmdctrl-3.5.2.pak",
+          "accsctrl-3.5.2.pak",
+          "servers-3.5.2.pak",
+          "cmdctrl-3.5.2.pak",
+          "pkgman-3.5.2.pak",
+          "report_userprov-3.5.2.pak",
+          "access-3.5.2.pak",
+          "userprov-3.5.2.pak",
+          "audit-3.5.2.pak",
+          "samngr-3.5.2-linux-x86_64-2.6.pak"
+        ]
+      },
+      "SRV-118": {
+        "title": "주기적인 보안패치 및 벤더 권고사항 적용 여부",
+        "result": "정보",
+        "checks": [
+          "version-checking commands"
+        ]
+      },
+      "SRV-175": {
+        "title": "시간 동기화를 위한 NTP 설정",
+        "result": "정보",
+        "checks": [
+          "ntpq -pn"
+        ]
+      }
+    }
+  }
+}

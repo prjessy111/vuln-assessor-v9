@@ -1,0 +1,302 @@
+﻿### windows — 우리 스크립트 98개 / 2026 기준 70개 ###
+
+SRV-001 
+   2026: SRV-001_안전한 네트워크 모니터링 서비스 사용 | [SNMPv2] * Windows SNMP 서비스 속성창에서 실행 상태 및 Community string 확인 - 제어판 → 관리도구 → 서비스 → SNMP 서비
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\services\SNMP\Parameters\ValidCommunities" -EA SilentlyContin
+SRV-002 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\PermittedManagers"
+SRV-003 
+   2026: SRV-003_네트워크 모니터링 서비스 접근통제 설정 적절성 | [SNMP 사용 시] 1. 시작 → 실행 → services.msc → SNMP Service → 속성 → 보안 탭에서 다음 호스트로부터 SNMP 패킷 받아들이기
+   우리: sc.exe query SNMP; Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\PermittedManagers
+SRV-004 
+   2026: SRV-004_불필요한 SMTP 서비스 비활성화 | 25번 포트에 SMTP 서비스가 동작 중인지 확인 * [Windows 공통] 시작 → 관리도구 → 서비스 → SMTP(Simple Mail Transfer Pro
+   우리: $netstatData | Select-String ":25"; sc.exe query SMTPSVC
+SRV-013 
+   2026: SRV-013_Anonymous 계정의 FTP 서비스 접속 제한 여부 | [ IIS - FTP ] 1. FTP 설정 확인 (IIS 설정) - IIS 6.0 이하 : AllowAnonymous=True 여부 확인 (metabase.xml
+   우리: $netstatData | Select-String ":21"; sc.exe query MSFTPSVC; sc.exe query FTPSVC
+SRV-018 
+   2026: SRV-018_불필요한 하드디스크 기본 공유 비활성화 | [레지스트리 확인 방법] 시작 → 실행(검색) → regedit → HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\Lanmanserver\Parameters" | Select AutoShareServer, A
+SRV-020 
+   2026: SRV-020_공유 기능에 대한 접근통제 설정 적절성 | 1. net share 명령어를 통해 공유 중인 폴더 확인 2. 공유 폴더들의 접근 권한 중 Everyone 권한 부여 여부 확인 * [Windows 공통] 시작
+   우리: if ($FastMode) { net share
+SRV-021 
+   2026: SRV-021_FTP 서비스 접근통제 설정 적절성 | 1. [iisconfig 파일의 설정으로 확인] - metabase.xml, applicationhost.config 파일을 참조하여 ipsecurity 항목 적
+   우리: Get-ChildItem "$env:windir\System32\inetsrv\config\applicationHost.config", "$env:windir\System32\inetsrv\meta
+SRV-022 
+   2026: SRV-022_계정의 비밀번호 미설정, 빈 암호 사용 관리 여부 | [레지스트리 확인 방법] HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\LimitBlankPasswordUs
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name LimitBlankPasswordUse | Select LimitBlankP
+SRV-023 
+   2026: SRV-023_원격 터미널 서비스의 암호화 설정 적절성 | [레지스트리 확인 방법] 1. HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinSt
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name MinEncrypt
+SRV-024 
+   2026: SRV-024_취약한 Telnet 인증 방식 사용 제한 여부 | tlntadmn config 명령 결과에서 인증 방법 부분에 Password 지원 여부 확인 * [Windows 공통] 시작 → 실행 → cmd → tlntadm
+   우리: $netstatData | Select-String ":3389"; sc.exe query TlntSvr
+SRV-027 
+   2026: SRV-027_서비스 접근 IP 및 포트 제한 여부 | * [Windows 공통] 윈도우즈 운영체제의 자체 방화벽 또는 3rd-Party 방화벽 제품을 사용중인지 확인 1. 시작 → 실행(검색) → firewall.c
+   우리: netsh advfirewall show allprofiles; netsh advfirewall firewall show rule name=all | Select-String 'Rule Name|E
+SRV-028 
+   2026: SRV-028_원격 터미널 접속 타임아웃 설정 여부 | [레지스트리 확인 방법] 1. HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinSt
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name MaxIdleTim
+SRV-029 
+   2026: SRV-029_SMB 세션 중단 관리 설정 여부 | [레지스트리 확인 방법] HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanManServer\Parameters
+   우리: Get-ItemProperty "HKLM:\System\CurrentControlSet\Services\LanManServer\Parameters" | Select EnableForcedLogOff
+SRV-031 
+   2026: SRV-031_계정 목록 및 네트워크 공유 이름 노출 방지 여부 | [레지스트리 확인 방법] HKLM\SYSTEM\CurrentControlSet\Control\LSA 레지스트리에서 확인 (Windows 2000 : 2일때 양호,
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\LSA" | Select RestrictAnonymous, RestrictAnonymousSam
+SRV-032 ➕기준외
+   2026: (기준없음) | 
+   우리: if ($FastMode) { netsh interface show interface
+SRV-034 
+   2026: SRV-034_불필요한 서비스 비활성화 | [Windows 공통] 1. 시작 → 실행 → ncpa.cpl → 로컬 영역 연결 → 속성 → TCP/IPv4 → 속성 → 고급 → [WINS] → NetBIOS
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces\Tcpip_*" -Name NetbiosOp
+SRV-037 
+   2026: SRV-037_취약한 FTP 서비스 비활성화 | 다음 명령들의 결과 확인 - sc query MSFTPSVC - sc query FTPSVC - netstat -an | findstr :21 [직접 확인하는 방
+   우리: sc.exe query MSFTPSVC; sc.exe query FTPSVC; $netstatData | Select-String ":21"
+SRV-038 ➕기준외
+   2026: (기준없음) | 
+   우리: sc.exe query IISADMIN; sc.exe query W3SVC; sc.exe query WAS; sc.exe query Webtob
+SRV-039 ➕기준외
+   2026: (기준없음) | 
+   우리: sc.exe query Webtob; Get-Process | Where-Object { $_.ProcessName -match "webtob|wsm|htl"
+SRV-041 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-Acl "C:\inetpub\scripts", "C:\inetpub\wwwroot" | Format-List Path, AccessToString
+SRV-048 ➕기준외
+   2026: (기준없음) | 
+   우리: sc.exe query IISADMIN; sc.exe query W3SVC; sc.exe query WAS; $netstatData | Select-String ":80|:443"
+SRV-049 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-ChildItem "C:\inetpub\iissamples", "C:\inetpub\wwwroot\iisstart.*", "$env:windir\Help\iisHelp", "$env:Prog
+SRV-050 ➕기준외
+   2026: (기준없음) | 
+   우리: & "$env:windir\System32\inetsrv\appcmd.exe" list config /section:handlers
+SRV-051 ➕기준외
+   2026: (기준없음) | 
+   우리: & "$env:windir\System32\inetsrv\appcmd.exe" list config /section:directoryBrowse
+SRV-052 ➕기준외
+   2026: (기준없음) | 
+   우리: & "$env:windir\System32\inetsrv\appcmd.exe" list config /section:asp
+SRV-053 ➕기준외
+   2026: (기준없음) | 
+   우리: sc.exe query WebClient; & "$env:windir\System32\inetsrv\appcmd.exe" list modules WebDAVModule; & "$env:windir\
+SRV-054 ➕기준외
+   2026: (기준없음) | 
+   우리: & "$env:windir\System32\inetsrv\appcmd.exe" list config /section:sites; & "$env:windir\System32\inetsrv\appcmd
+SRV-055 ➕기준외
+   2026: (기준없음) | 
+   우리: & "$env:windir\System32\inetsrv\appcmd.exe" list config /section:anonymousAuthentication; & "$env:windir\Syste
+SRV-056 ➕기준외
+   2026: (기준없음) | 
+   우리: reg.exe query "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols" /s; netsh http show
+SRV-057 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-Acl "C:\inetpub", "C:\inetpub\wwwroot", "C:\inetpub\scripts" | Format-List Path, AccessToString
+SRV-058 ➕기준외
+   2026: (기준없음) | 
+   우리: & "$env:windir\System32\inetsrv\appcmd.exe" list config /section:requestFiltering; & "$env:windir\System32\ine
+SRV-059 ➕기준외
+   2026: (기준없음) | 
+   우리: reg.exe query "HKLM\SYSTEM\CurrentControlSet\Services\W3SVC\Parameters" /v SSIEnableCmdDirective
+SRV-060 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-Content "$env:CATALINA_HOME\conf\tomcat-users.xml"
+SRV-063 
+   2026: SRV-063_DNS Recursive Query 제한 설정 여부 | * 다음 레지스트리 값을 확인하여 Recursion 활성화 여부 점검 HKLM\SYSTEM\CurrentControlSet\Services\DNS\Paramete
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\DNS\Parameters" -Name NoRecursion | Select NoRecursi
+SRV-066 
+   2026: SRV-066_DNS Zone Transfer 제한 설정 적절성 | * 명령어로 확인 (레지스트리) reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\DNS Server\
+   우리: sc.exe query DNS; reg.exe query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\DNS Server\Zones" /s; reg.e
+SRV-067 ➕기준외
+   2026: (기준없음) | 
+   우리: reg.exe query "HKLM\SYSTEM\CurrentControlSet\Services\W3SVC\Parameters\ADCLaunch"; Get-Content "$env:SystemRoo
+SRV-068 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-ChildItem "C:\Windows\Repair\sam", "C:\Windows\Repair\system"
+SRV-069 
+   2026: SRV-069_비밀번호 관리정책 설정 적절성 | [Windows 공통] 1. 시작 → 실행(검색) → secpol.msc → 계정 정책 → 암호 정책 확인 2. 도메인 컨트롤러인 경우 비밀번호 보안 정책 설정 
+   우리: $secData | Select-String "SeDeny|Se.*Privilege|Password|Lockout|Audit"
+SRV-070 
+   2026: SRV-070_취약한 패스워드 저장 방식 사용 제한 여부 | * secedit /EXPORT /CFG securitypolicy | Find /I "ClearTextPassword" 명령 결과 확인 [직접 확인하는 방법] 
+   우리: $secData | Select-String "ClearTextPassword"
+SRV-071 ➕기준외
+   2026: (기준없음) | 
+   우리: $secData | Select-String "ClearTextPassword"
+SRV-072 
+   2026: SRV-072_기본 관리자 계정명(Administrator) 변경 여부 | * net localgroup Administrators 명령 결과 확인 * net user Administrator 명령 결과 확인 [직접 확인하는 방법] - 
+   우리: net user Administrator; net localgroup Administrators
+SRV-073 
+   2026: SRV-073_관리자 그룹에 불필요한 사용자 제거 | * net localgroup Administrators 명령 결과 확인 [직접 확인하는 방법] - 아래와 같은 과정을 통해 해당 다수의 관리자 계정이 있는지 파
+   우리: net localgroup Administrators; Get-LocalGroupMember Administrators | Format-Table Name, ObjectClass, Principal
+SRV-074 
+   2026: SRV-074_불필요하거나 관리되지 않는 계정 제거 | * 계정별 비밀번호 변경일자 및 로그인 기록 확인 시작 → 검색 → cmd → net user 사용하여 확인 * 한글 윈도우 - 비밀번호 변경일자 : "net u
+   우리: Get-LocalUser | Format-Table Name, Enabled, PasswordRequired, PasswordLastSet, LastLogon -AutoSize
+SRV-075 
+   2026: SRV-075_비밀번호 복잡도 설정 | [Windows 공통] - 비밀번호 없이 로그인 가능한 계정이 있는지 확인 - 패스워드 크랙 시도
+   우리: $secData | Select-String "PasswordComplexity|MinimumPasswordLength|MinimumPasswordAge|MaximumPasswordAge"; net
+SRV-077 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-LocalUser | Format-Table Name, Enabled, PasswordRequired, PasswordExpires, UserMayChangePassword, LastLogo
+SRV-078 
+   2026: SRV-078_불필요한 Guest 계정 비활성화 | * net user guest 명령 결과 확인 [직접 확인하는 방법] [시작] 버튼 클릭 → [제어판] 클릭 → [사용자 계정] 클릭 → Guest 계정이 비활성
+   우리: Get-LocalUser -Name "Guest" | Format-Table Name, Enabled
+SRV-079 
+   2026: SRV-079_익명 사용자에게 부적절한 권한(Everyone) 제거 | [Windows 공통] 1. 시작 → 제어판 관리도구 → 로컬 보안 정책 → 보안 옵션 → "Everyone 사용 권한을 익명 사용자에게 적용" 항목 설정 확인 
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name everyoneincludesanonymous | Select everyon
+SRV-080 
+   2026: SRV-080_일반 사용자의 프린터 드라이버 설치 제한 여부 | 1. addprintdrivers의 값이 1이면 양호, 0이면 취약 reg query "HKLM\System\CurrentControlSet\Control\Pri
+   우리: Get-ItemProperty "HKLM:\System\CurrentControlSet\Control\Print\Providers\LanMan Print Services\Servers" -Name 
+SRV-082 
+   2026: SRV-082_시스템 주요 디렉터리 권한 설정 적절성 | [명령어로 디렉터리 접근 권한 확인] > cacls C:\WINDOWS\system32\config > cacls C:\WINDOWS\system32\winevt
+   우리: Get-Acl "C:\Windows\system32\config","C:\Windows\system32\winevt\Logs","C:\Windows\system32\LogFiles" | Format
+SRV-084 
+   2026: SRV-084_시스템 주요 파일 권한 설정 적절성 | [명령어로 권한 확인하는 방법] cacls %systemroot%\system32\config\SAM [직접 확인하는 방법] %systemroot%\system3
+   우리: Get-Acl "$env:systemroot\system32\config\SAM","$env:systemroot\system32\config\SYSTEM","$env:systemroot\system
+SRV-090 
+   2026: SRV-090_불필요한 원격 레지스트리 서비스 비활성화 | [서비스 상태 조회 명령을 통한 확인하는 방법] - sc query RemoteRegistry [직접 확인하는 방법] 시작 → 실행 → services.msc →
+   우리: sc.exe qc RemoteRegistry; sc.exe query RemoteRegistry
+SRV-092 
+   2026: SRV-092_사용자 홈 디렉터리 경로 및 권한 설정 적절성 | 사용자별 홈 디렉터리에 Everyone 권한 존재 여부 확인 * [Windows 공통] %systemroot%\사용자\사용자 홈디렉터리 → 속성 → 보안에서 확인
+   우리: Get-ChildItem "C:\Users" -Directory | ForEach-Object { Get-Acl $_.FullName | Format-List Path, AccessToString
+SRV-097 
+   2026: SRV-097_FTP 서비스 디렉터리 접근권한 설정 적절성 | * 명령어로 FTP 홈 디렉터리의 접근 권한 점검 $1 = reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Se
+   우리: sc.exe query MSFTPSVC; sc.exe query FTPSVC; & "$env:windir\System32\inetsrv\appcmd.exe" list site; Get-Acl "C:
+SRV-098 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-Acl "C:\Windows\system32\config\SAM" | Format-List Path, AccessToString
+SRV-101 ❌미수집
+   2026: SRV-101_불필요한 예약 작업 제거 | at 또는 schtasks 명령 결과를 통해 예약된 작업 목록 확인 * [Windows 공통] 1. 시작 → 관리도구 → 작업 스케줄러에서 확인 2. 시작 → 검
+   우리: (없음)
+SRV-102 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-ChildItem "C:\Users" -Directory | ForEach-Object { Get-Acl $_.FullName | Format-List Path, AccessToString
+SRV-103 
+   2026: SRV-103_LAN Manager 인증 수준 적절성 | [레지스트리 확인방법] HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\LmCompatibilityLevel 
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name LmCompatibilityLevel | Select LmCompatibil
+SRV-104 
+   2026: SRV-104_보안 채널 데이터 디지털 암호화 또는 서명 기능 설정 적절성 | [레지스트리 확인방법] 1. HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Netlogon\Parameters\R
+   우리: Get-ItemProperty "HKLM:\System\CurrentControlSet\Services\Netlogon\Parameters" | Select RequireSignOrSeal, Sea
+SRV-105 
+   2026: SRV-105_불필요한 시작프로그램 제거 | 1. reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" 결과 확인 2. m
+   우리: reg.exe query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; reg.exe query "HKCU\SOFTWARE\Microsoft\Win
+SRV-108 
+   2026: SRV-108_로그에 대한 접근통제 및 관리 적절성 | 1. 레지스트리 값으로 이벤트 로그 접근 권한 확인 - reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Serv
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\Application","HKLM:\SYSTEM\CurrentControlSe
+SRV-109 
+   2026: SRV-109_시스템 주요 이벤트 로그 설정 적절성 | * 보안감사 관련 설정 확인 - 명령어 : secedit /EXPORT /CFG securitypolicy - GUI : 실행 → secpol.msc (제어판 →
+   우리: $secData | Select-String "Audit|EventLog|Retention|MaximumLogSize"; Get-ItemProperty "HKLM:\SYSTEM\CurrentCont
+SRV-110 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-Acl "C:\Windows\system32\config" | Format-List Path, AccessToString
+SRV-111 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\*" -Name RestrictGuestAccess | Select PSChi
+SRV-113 ➕기준외
+   2026: (기준없음) | 
+   우리: $secData | Select-String "SeSecurityPrivilege"
+SRV-115 
+   2026: SRV-115_로그의 정기적 검토 및 보고 수행 여부 | [Windows 공통] 로그 검토 보고서 확인/인터뷰
+   우리: wmic useraccount get name,sid; wmic group get name,sid
+SRV-116 
+   2026: SRV-116_“보안 감사를 수행할 수 없는 경우, 즉시 시스템 종료” 기능 비활성화 | 1. HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\crashonauditfail 값 확인 또는 2. gpe
+   우리: Get-ItemProperty "HKLM:\system\currentcontrolset\control\lsa" -Name crashonauditfail | Select crashonauditfail
+SRV-118 
+   2026: SRV-118_주기적인 보안패치 및 벤더 권고사항 적용 여부 | [패치 정보] - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\CSDVersion 확인 - 
+   우리: wmic os get caption,version,servicepackmajorversion /format:list; Get-HotFix | Format-Table HotFixID, Installe
+SRV-119 
+   2026: SRV-119_백신 프로그램 업데이트 적용 여부 | [Windows 공통] - 주기적으로 백신 업데이트를 수행하는 절차 확인 - 설치된 백신의 엔진 버전 확인
+   우리: sc.exe query wuauserv; Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"; Get-Item
+SRV-123 
+   2026: SRV-123_최종 로그인 사용자 계정 노출 방지 여부 | [Windows 공통] 1. 메뉴를 통한 확인 시작 → 실행(검색) → secpol.msc 실행 → 보안설정 → 로컬 정책 → 보안 옵션 → 대화형 로그온 : 마
+   우리: Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\system" -Name DontDisplayLastUserNa
+SRV-124 ➕기준외
+   2026: (기준없음) | 
+   우리: Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\WinLogon" | Select-Object AutoAdminLogon,
+SRV-125 
+   2026: SRV-125_화면보호기 설정 적절성 | [레지스트리 확인방법] - reg query "HKEY_CURRENT_USER\Control Panel\desktop" /v ScreenSaveActive (화면
+   우리: Get-ItemProperty "HKCU:\Control Panel\desktop" | Select-Object ScreenSaveActive, ScreenSaveTimeOut, ScreenSave
+SRV-126 
+   2026: SRV-126_자동 로그온 방지 설정 여부 | [Windows 공통] 1. 시작 → 실행(검색) → regedit → HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\C
+   우리: Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select-Object AutoAdminLogon,
+SRV-127 
+   2026: SRV-127_로그인 실패 횟수에 따른 접속 제한 설정 | * net accounts 명령 결과 확인 [직접 확인하는 방법] - [WindowsNT] 시작 → 프로그램 → 관리도구 → 도메인사용자관리자 → 정책 → 계정에
+   우리: net accounts
+SRV-128 
+   2026: SRV-128_NTFS 파일 시스템 사용 여부 | [Windows 공통] 1. 시작 → 실행(검색) → cmd → diskpart.exe → list volume 명령어로 확인 2. 시작 → 실행(검색) → cm
+   우리: if ($FastMode) { [System.IO.DriveInfo]::GetDrives() | Select Name, DriveType, DriveFormat, TotalFreeSpace, Tot
+SRV-129 ❌미수집
+   2026: SRV-129_백신 프로그램 설치 여부 | 시작 → 실행(검색) → cmd → tasklist → 백신 프로그램의 설치 유무 확인 * [Windows 공통] 프로그램 설치 목록에서 백신 프로그램 설치유무 
+   우리: (없음)
+SRV-135 
+   2026: SRV-135_TCP 보안 설정 여부 | [Windows 공통] 다음의 레지스트리 값 확인 시작 → 실행(검색) → regedit - HKLM\SYSTEM\CurrentControlSet\Services
+   우리: Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" | Select SynAttackProtect, TcpMaxH
+SRV-136 
+   2026: SRV-136_로그온 단계에서 "시스템 종료" 기능 비활성화 | [Windows 2000, 2003, 2008, 2012] 1. 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 보안옵션 → "시스템 종료 : 로그
+   우리: Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\system" -Name ShutdownWithoutLogon 
+SRV-137 
+   2026: SRV-137_네트워크 서비스 접근 권한 적절성 | [Windows 공통] 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → "네트워크에서 이 컴퓨터 액세스", "네트워크에서 이 
+   우리: $secData | Select-String "SeNetworkLogonRight|SeDenyNetworkLogonRight"
+SRV-138 
+   2026: SRV-138_백업 및 복구 권한 설정 적절성 | [Windows 공통] 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 → "파일 및 디렉터리 백업" 항목과 "파일 및 디렉터리 
+   우리: $secData | Select-String "SeBackupPrivilege|SeRestorePrivilege"
+SRV-139 
+   2026: SRV-139_시스템 자원 소유권 변경 권한 설정 적절성 | [Windows 공통] 1. 파일 및 개체에 대한 소유권 변경 권한 설정 확인 시작 → 실행(검색) → secpol.msc → 로컬 정책 → 사용자 권한 할당 →
+   우리: $secData | Select-String "SeTakeOwnershipPrivilege"
+SRV-140 
+   2026: SRV-140_이동식 미디어 포맷 및 꺼내기 허용 정책 설정 적절성 | [Windows 2000, 2003, 2008, 2012] 1. 시작 → 실행 → secpol.msc → 로컬 정책 → 보안옵션 → "이동식미디어 포맷 및 꺼내기
+   우리: Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name AllocateDASD | Select All
+SRV-141 ➕기준외
+   2026: (기준없음) | 
+   우리: netsh advfirewall show allprofiles
+SRV-147 
+   2026: SRV-147_불필요한 네트워크 모니터링 서비스 비활성화 | * 서비스 상태 조회 명령을 통한 확인 - sc query SNMP - sc query winmgmt * 직접 확인 - 시작 → 실행 → services.msc 
+   우리: sc.exe query SNMP; sc.exe query winmgmt
+SRV-149 
+   2026: SRV-149_디스크 볼륨 암호화 적용 여부 | [Windows 공통] 폴더 선택 → 속성 → [일반] 탭 → 고급 → 고급 특성 → "데이터 보호를 위해 내용을 암호화" 확인
+   우리: manage-bde -status; Get-BitLockerVolume | Format-Table MountPoint, VolumeStatus, EncryptionPercentage, Protect
+SRV-150 
+   2026: SRV-150_로컬 로그온 허용 계정 제한 여부 | [Windows NT, 2000, 2003, 2008] 시작 → 실행 → secpol.msc → 로컬 정책 → 사용자 권한 할당 → '로컬 로그온 허용'에서 확인
+   우리: $secData | Select-String "SeInteractiveLogonRight|SeDenyInteractiveLogonRight"
+SRV-151 
+   2026: SRV-151_익명 SID/이름 변환 설정 제한 여부 | [Windows 2003, 2008] 시작 → 실행 → secpol.msc → 로컬정책 → 보안 옵션 → '네트워크 액세스 : 익명 SID/이름 변환 허용' 에서
+   우리: $secData | Select-String "LSAAnonymousNameLookup"; Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\LS
+SRV-152 
+   2026: SRV-152_원격터미널 접속 가능한 사용자 그룹 제한 여부 | [Windows 2003, 2008] 제어판 → 시스템 → 원격설정 → 원격 탭 → '원격 데스크톱-사용자 선택'에서 확인
+   우리: $secData | Select-String "SeRemoteInteractiveLogonRight|SeDenyRemoteInteractiveLogonRight"; net localgroup "Re
+SRV-156 ➕기준외
+   2026: (기준없음) | 
+   우리: $secData | Select-String "SeRemoteInteractiveLogonRight"
+SRV-158 
+   2026: SRV-158_불필요한 Telnet 서비스 비활성화 | 23번 포트에 TELNET 서비스가 동작 중인지 확인 [Windows 공통] 시작 → 관리도구 → 서비스 → 해당 서비스 확인
+   우리: if ($FastMode) { $netstatData | Select-Object -First 200
+SRV-163 
+   2026: SRV-163_시스템 사용 주의사항 출력 | [Windows 2000, 2003, 2008, 2012] 1. HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsNT\Curren
+   우리: Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\policies\system" | Select-Object LegalNotice
+SRV-166 
+   2026: SRV-166_불필요한 숨김 파일 또는 디렉터리 제거 | 숨김 디렉터리 및 숨김 파일 점검 dir c:\ /a:h
+   우리: cmd /c "dir C:\ /a:h"
+SRV-170 
+   2026: SRV-170_SMTP 서비스 정보 노출 방지 여부 | [ IIS - SMTP ] 1. SMTP 설정 정보 확인 (IIS 설정 파일에서 ConnectResponse 속성 값에 노출되는 정보가 있는지 확인) 2. SMT
+   우리: sc.exe query SMTPSVC; $netstatData | Select-String ":25"
+SRV-171 
+   2026: SRV-171_FTP 서비스 정보 노출 방지 여부 | [ IIS - FTP ] 1. FTP 설정 파일 확인 (applicationhost.config) 설정 파일 내 <ftpserver> 섹션에 suppressDef
+   우리: Select-String -Path "$env:windir\System32\inetsrv\config\applicationHost.config" -Pattern "suppressDefaultBann
+SRV-172 
+   2026: SRV-172_불필요한 시스템 자원 공유 제거 | 1. 시작 → cmd → net share 명령어를 통해 공유 현황 확인 2. 불필요해보이는 공유 확인 [Windows 공통] 시작 → 관리도구 → 컴퓨터 관리 
+   우리: net share
+SRV-173 
+   2026: SRV-173_DNS 서비스 동적 업데이트 설정 적절성 | * 명령어로 설정 확인 1. DNS 설정 추출 > dnscmd /ExportSettings 2. 설정 파일 점검 %systemroot%\system32\dns\D
+   우리: dnscmd /ExportSettings 2>$null; Get-Content "$env:systemroot\system32\dns\DnsSettings.txt" -ErrorAction Silent
+SRV-174 
+   2026: SRV-174_불필요한 DNS 서비스 비활성화 | DNS 서비스 실행 여부 확인 # sc query dns [Windows 공통] 시작 → 관리도구 → 서비스 → 해당 서비스 확인
+   우리: sc.exe query dns
+SRV-175 
+   2026: SRV-175_시간 동기화를 위한 NTP 설정 | 다음 명령을 실행하여 NTP 설정과 현재 시각 확인 > w32tm /query /configuration > wmic OS GET LocalDateTime
+   우리: w32tm /query /configuration; w32tm /query /status; wmic OS GET LocalDateTime
+SRV-177 
+   2026: SRV-178_개인 키 사용 시 passphrase 설정 여부 | 1. 다음 명령어를 실행하여 Enter passphrase for key... 등의 추가 절차가 요구되는지 확인 (추가 절차 없이 개인키가 바로 출력될 경우 설정
+   우리: Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Select EnableLUA, Consent
+SRV-179 
+   2026: SRV-179_서비스 지원이 종료된(EoS) 시스템 및 장비 교체 여부 | 1. 버전/빌드 확인 # winver 또는 # systeminfo | findstr /B /C:"OS Name" /C:"OS Version" 2. Microsof
+   우리: systeminfo | Select-String "^OS Name|^OS Version"; (Get-CimInstance Win32_OperatingSystem) | Select Caption, V

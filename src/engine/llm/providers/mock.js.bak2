@@ -1,0 +1,267 @@
+'use strict';
+/**
+ * Mock LLM Provider — raw-data 우선 판정 (v2).
+ *
+ * 2026-05-26 재설계:
+ *   v1: SecuMS 판정(OK/BAD/WAIT)을 분기 기준 → SecuMS와 항상 일치 (검증 불가능)
+ *   v2: SecuMS 판정은 참조만, raw 출력의 패턴으로 독립 판정 → 진짜 검증 가능
+ *
+ * 판정 흐름:
+ *   1. TYPE='I' 정보 수집 항목 → 판정 없이 정보
+ *   2. raw 데이터 없음 → 판정불가
+ *   3. 부재 양호 패턴 (No such file 등) → 양호
+ *   4. CHK_ID 별 취약 패턴 매칭 → 취약
+ *   5. CHK_ID 별 양호 패턴 매칭 → 양호
+ *   6. 매칭 없음 → 정보 (자동 판정 불가, 검토 필요)
+ *
+ * SecuMS 판정은 agreement 계산 시에만 비교 (aiDiagnose 에서).
+ *
+ * 1단계 패턴 라이브러리: 핵심 15개 항목 (Linux 7 + Windows 8)
+ *   2단계에서 실 진단 결과 보고 확장 예정
+ */
+
+const PATTERN_LIBRARY = require('./mockPatterns');
+
+class MockProvider {
+  constructor(cfg) { this.cfg = cfg; this._calls = 0; }
+
+  async ping() { return { ok: true, mock: true }; }
+
+  async complete(arg) {
+    this._calls++;
+    const text = typeof arg === 'string'
+      ? arg
+      : ((arg.system || '') + '\n' + (arg.user || ''));
+
+    if (text.includes('CHK_ID:') && text.includes('SecuMS 자체 판정:')) {
+      return this._aiDiagnoseMock(text);
+    }
+    return this._ruleEvalMock(text, arg.responseFormat);
+  }
+
+  /**
+   * AI 진단 모드 — raw-data 우선 판정.
+   */
+  _aiDiagnoseMock(text) {
+    // 메타 추출
+    const chkId = (text.match(/CHK_ID:\s*(\S+)/) || [])[1] || 'unknown';
+    const secumsVerdict = (text.match(/SecuMS 자체 판정:\s*(\S+)/) || [])[1] || 'unknown';
+    const typeMatch = text.match(/타입:\s*(\S+)/);
+    const itemType = typeMatch ? typeMatch[1] : null;
+
+    // 점검 액션의 출력 추출 — ```...``` 블록 (```json 제외)
+    const outputMatches = text.match(/```(?!json)\s*([\s\S]*?)```/g) || [];
+    const outputs = outputMatches
+      .map(m => m.replace(/```/g, '').trim())
+      .filter(o => o.length > 0 && !o.startsWith('{'));
+
+    // 액션 설명 추출 (### 액션 N: 설명)
+    const actionDescs = (text.match(/### 액션 \d+:\s*([^\n]+)/g) || [])
+      .map(m => m.replace(/### 액션 \d+:\s*/, '').trim());
+
+    let verdict, reason, evidence, recommend, severity, category, title;
+
+    // ── 1. TYPE='I' 정보 수집 항목 ──────────────────
+    // (프롬프트에 타입이 명시되어 있으면 우선 사용)
+    const isInfoType = itemType === 'I'
+      || /^os-linux-(369|380|389|2778|2793|3076)$/.test(chkId)
+      || /^os-win-(139|150|423|444|446|494|4635)$/.test(chkId);
+    if (isInfoType) {
+      verdict = '정보';
+      reason = '정보 수집 항목 — 보안 정책 판정 대상이 아닙니다. raw 출력은 자산 식별/현황 파악용입니다.';
+      severity = '하';
+      recommend = '';
+      evidence = this._extractEvidence(outputs);
+      category = this._inferCategory(chkId, outputs);
+      title = this._inferTitle(chkId);
+      return JSON.stringify({ verdict, category, title, reason, evidence, recommend, severity });
+    }
+
+    // ── 2. raw 데이터 없음 ────────────────────────
+    const allOutput = outputs.join('\n');
+    if (outputs.length === 0 || allOutput.trim().length === 0) {
+      verdict = '판정불가';
+      reason = '점검 raw 데이터가 수집되지 않았습니다. SecuMS Agent 점검 정책 확인 필요.';
+      severity = '하';
+      recommend = 'SecuMS Agent의 점검 정책 확인 및 재진단';
+      evidence = '';
+      category = this._inferCategory(chkId, outputs);
+      title = this._inferTitle(chkId);
+      return JSON.stringify({ verdict, category, title, reason, evidence, recommend, severity });
+    }
+
+    // ── 3. 부재 양호 패턴 ─────────────────────────
+    const absence = this._checkAbsence(outputs);
+    if (absence.matched) {
+      verdict = '양호';
+      reason = `점검 대상 미존재로 자동 양호 — ${absence.signal}`;
+      severity = '중';
+      recommend = '';
+      evidence = absence.signal;
+      category = this._inferCategory(chkId, outputs);
+      title = this._inferTitle(chkId);
+      return JSON.stringify({ verdict, category, title, reason, evidence, recommend, severity });
+    }
+
+    // ── 4 & 5. CHK_ID 별 패턴 라이브러리 매칭 ──────
+    const patterns = PATTERN_LIBRARY[chkId];
+    if (patterns) {
+      // 4. 취약 패턴 우선 (모든 취약 신호 체크)
+      const vulnHit = this._matchPatterns(allOutput, patterns.vuln || [], outputs, actionDescs);
+      if (vulnHit) {
+        verdict = '취약';
+        severity = patterns.severity || '상';
+        reason = vulnHit.reason;
+        evidence = vulnHit.evidence;
+        recommend = patterns.recommend || 'raw 출력을 검토하여 보안 정책에 맞게 조치';
+        category = patterns.category || this._inferCategory(chkId, outputs);
+        title = patterns.title || this._inferTitle(chkId);
+        return JSON.stringify({ verdict, category, title, reason, evidence, recommend, severity });
+      }
+
+      // 5. 양호 패턴
+      const safeHit = this._matchPatterns(allOutput, patterns.safe || [], outputs, actionDescs);
+      if (safeHit) {
+        verdict = '양호';
+        severity = '중';
+        reason = safeHit.reason;
+        evidence = safeHit.evidence;
+        recommend = '';
+        category = patterns.category || this._inferCategory(chkId, outputs);
+        title = patterns.title || this._inferTitle(chkId);
+        return JSON.stringify({ verdict, category, title, reason, evidence, recommend, severity });
+      }
+    }
+
+    // ── 6. 매칭 없음 → 정보 (검토 필요) ───────────
+    verdict = '정보';
+    reason = '자동 판정 규칙을 적용할 수 없습니다. raw 출력을 사람이 검토하여 보안 정책 부합 여부 확인 필요.';
+    severity = '하';
+    recommend = '수집된 raw 출력 검토 후 수동 판정';
+    evidence = this._extractEvidence(outputs);
+    category = this._inferCategory(chkId, outputs);
+    title = this._inferTitle(chkId);
+    return JSON.stringify({ verdict, category, title, reason, evidence, recommend, severity });
+  }
+
+  /**
+   * 부재 양호 패턴 검사 — "점검 대상이 없으니 안전"
+   */
+  _checkAbsence(outputs) {
+    if (!outputs || !outputs.length) return { matched: false };
+    const joined = outputs.join('\n');
+
+    // 모든 actions 중 하나라도 "있음" 신호가 있으면 부재 아님
+    // (여러 action 중 일부는 빈 결과여도, 다른 action에서 데이터가 나오면 부재가 아님)
+    const hasActualData = outputs.some(out => {
+      const t = out.trim();
+      // XML <Rows count="N"> 에서 N > 0 이면 데이터 있음
+      const rm = t.match(/<Rows count="(\d+)"/);
+      if (rm && parseInt(rm[1], 10) > 0) return true;
+      // 의미있는 명령어 출력 (cat/ls 결과 등)
+      const lines = t.split('\n').filter(l => l.trim() && !l.trim().startsWith('#') && !l.trim().startsWith('<'));
+      return lines.length >= 2;
+    });
+    if (hasActualData) return { matched: false };
+
+    // 부재 신호
+    const noFile = joined.match(/[^\n]*(?:no such file|does not exist|not found|cannot access)[^\n]*/i);
+    if (noFile) return { matched: true, signal: noFile[0].trim().substring(0, 200) };
+
+    const notInst = joined.match(/[^\n]*(?:not installed|미설치|미실행|Service is not installed)[^\n]*/i);
+    if (notInst) return { matched: true, signal: notInst[0].trim().substring(0, 200) };
+
+    if (/<Rows count="0"/i.test(joined)) {
+      // 모든 dump 가 0 행이어야 부재 양호
+      const allZero = outputs.every(o => !/<Rows count="[1-9]/.test(o));
+      if (allZero) return { matched: true, signal: '점검 결과 0행 (대상 미발견)' };
+    }
+
+    return { matched: false };
+  }
+
+  /**
+   * CHK_ID 별 패턴 매칭. 패턴은 정규식 또는 함수.
+   * patterns: [{ pattern, reason, severity?, evidence_fmt? }]
+   */
+  _matchPatterns(text, patterns, outputs, actionDescs) {
+    for (const p of patterns) {
+      let matched = null;
+      if (typeof p.pattern === 'function') {
+        matched = p.pattern(text, outputs, actionDescs);
+        if (matched) {
+          return {
+            reason: typeof matched === 'string' ? matched : (p.reason || '패턴 매칭'),
+            evidence: typeof matched === 'object' && matched.evidence ? matched.evidence : '',
+          };
+        }
+      } else if (p.pattern instanceof RegExp) {
+        const m = text.match(p.pattern);
+        if (m) {
+          const ev = m[0].length > 200 ? m[0].substring(0, 200) + '...' : m[0];
+          return {
+            reason: p.reason || '패턴 매칭',
+            evidence: ev.trim(),
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  _extractEvidence(outputs) {
+    if (!outputs || !outputs.length) return '';
+    const out = outputs[0];
+    if (out.includes('<Dump type="table">')) {
+      const rowsMatch = out.match(/<Rows count="(\d+)"/);
+      if (rowsMatch && parseInt(rowsMatch[1], 10) === 0) return '(결과 0행)';
+      const vals = (out.match(/<Value>([^<]*)<\/Value>/g) || [])
+        .slice(0, 6).map(v => v.replace(/<\/?Value>/g, ''));
+      if (vals.length) return vals.join(' | ').substring(0, 250);
+      return '';
+    }
+    const lines = out.split('\n').map(l => l.trim())
+      .filter(l => l && !l.startsWith('#') && !l.startsWith('<?xml') && !l.startsWith('<'));
+    return lines.slice(0, 3).join(' | ').substring(0, 250);
+  }
+
+  _inferCategory(chkId, outputs) {
+    const allOut = (outputs[0] || '').toLowerCase();
+    if (chkId.startsWith('os-win-')) {
+      if (/firewall|netbios/.test(allOut)) return '네트워크 보안';
+      if (/password|lockout|administrator|useraccount|group/.test(allOut)) return '계정 관리';
+      if (/registry|regissstry/.test(allOut)) return '레지스트리 보안';
+      if (/service|startmode/.test(allOut)) return '서비스 관리';
+      if (/permission|acl|share/.test(allOut)) return '파일/공유 권한';
+      if (/eventlog|audit|evtx/.test(allOut)) return '로그 관리';
+      if (/schedule|task/.test(allOut)) return '예약 작업';
+      if (/encryption|ntlm|legacy/.test(allOut)) return '암호화/인증';
+      return '시스템 보안';
+    }
+    if (/sshd|telnet|login|passwd|shadow|pam/.test(allOut)) return '계정 관리';
+    if (/snmp|rpc|nfs|ftp/.test(allOut)) return '서비스 관리';
+    if (/permission|chmod|owner/.test(allOut)) return '파일 권한';
+    if (/log|audit|rsyslog/.test(allOut)) return '로그 관리';
+    return '시스템 보안';
+  }
+
+  _inferTitle(chkId) {
+    // 기존 v1 titles 유지 (생략 — 별도 파일에서 재사용)
+    const titles = require('./mockTitles');
+    return titles[chkId] || chkId;
+  }
+
+  /** 기존 룰 평가 모드 (변경 없음) */
+  _ruleEvalMock(text, responseFormat) {
+    const lower = text.toLowerCase();
+    let status = '판정불가', reason = '데이터 부족', evidence = '';
+    if (/취약하다|취약 사례|bad case/i.test(text)) { status = '취약'; reason = '룰에 명시된 취약 조건 충족'; }
+    else if (/양호하다|good case|이상 없/i.test(text)) { status = '양호'; reason = '정상'; }
+    else if (lower.includes('permitrootlogin yes')) { status = '취약'; reason = 'PermitRootLogin yes'; evidence = 'PermitRootLogin yes'; }
+    else { status = this._calls % 2 === 0 ? '양호' : '취약'; reason = `호출 #${this._calls} 의 기본 판정`; }
+    if (responseFormat === 'json') return JSON.stringify({ status, reason, evidence });
+    return `${status}: ${reason}`;
+  }
+}
+
+module.exports = MockProvider;

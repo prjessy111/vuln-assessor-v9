@@ -1,0 +1,203 @@
+<%- include('../_header', { title: '예외 신청', activeMenu: 'exceptions' }) %>
+
+<div class="page-header">
+  <h1>예외 신청 (일괄 설정)</h1>
+  <p class="muted small">
+    취약 판정 항목에 대한 한시적 예외 처리. CISO 승인 후 효력 발생.
+    점검항목 × 대상(호스트/계정)을 한 번에 등록할 수 있습니다.
+  </p>
+  <div class="header-actions"><a href="/exceptions" class="btn">← 예외 관리</a></div>
+</div>
+
+<form id="exceptionForm" class="form-container">
+
+  <!-- ① 기본 정보 -->
+  <div class="form-section">
+    <h3>① 기본 정보</h3>
+    <div class="form-row inline">
+      <label>제목 *</label>
+      <input type="text" name="title" required
+             placeholder="예: 전자금융기반시설 2026 OS 예외 일괄 (2026-1분기)"
+             value="<%= (prefill && prefill.title) || '' %>">
+    </div>
+    <div class="form-row inline">
+      <label>정책</label>
+      <select name="policy">
+        <option value="전자금융기반시설_2026_OS">전자금융기반시설_2026_OS</option>
+      </select>
+    </div>
+    <div class="form-row inline">
+      <label>OS</label>
+      <span style="display:inline-flex;gap:14px;flex-wrap:wrap;">
+        <% ['HPUX','AIX','Solaris','Linux','Windows'].forEach((o,i) => { %>
+          <label style="font-weight:400;"><input type="radio" name="os" value="<%= o %>" data-os <%= i===3?'checked':'' %>> <%= o %></label>
+        <% }) %>
+      </span>
+    </div>
+    <div class="form-row">
+      <label>관련 근거 *</label>
+      <textarea name="related_basis" required rows="2"
+                placeholder="예외의 근거 (진단결과 ID, 승인 티켓번호, 관련 규정·공문, 검토 회의록 등) — 감사 추적·사후 필터용"><%= (prefill && prefill.related_basis) || '' %></textarea>
+    </div>
+  </div>
+
+  <!-- ② 점검 항목 선택 (검색 + 다중) -->
+  <div class="form-section">
+    <h3>② 점검 항목 선택 <span class="muted small">(검색·다중 선택)</span></h3>
+    <div class="form-row inline">
+      <label>항목 검색</label>
+      <input type="text" id="itemSearch" placeholder="SRV 코드 또는 제목으로 검색...">
+      <button type="button" class="btn-sm" onclick="toggleAllItems(true)">전체선택</button>
+      <button type="button" class="btn-sm" onclick="toggleAllItems(false)">해제</button>
+      <span class="muted small" id="itemCount"></span>
+    </div>
+    <div id="itemList" style="max-height:220px;overflow:auto;border:1px solid #e1e5ea;border-radius:6px;padding:8px;">
+      <% (checkItems || []).forEach(ci => { %>
+        <label class="item-opt" data-text="<%= (ci.srv + ' ' + ci.title).toLowerCase() %>"
+               style="display:block;font-weight:400;padding:2px 4px;">
+          <input type="checkbox" name="rule_ids" value="<%= ci.srv %>"
+                 <%= prefill && prefill.rule_id === ci.srv ? 'checked' : '' %>>
+          <code><%= ci.srv %></code> · <%= ci.title %>
+        </label>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- ③ 대상 (호스트 + 계정) : 단일 / 패턴 / CSV import -->
+  <div class="form-section">
+    <h3>③ 대상 (호스트 · 계정)</h3>
+    <% if (prefill && prefill.result_id) { %>
+      <input type="hidden" name="result_id" value="<%= prefill.result_id %>">
+      <input type="hidden" name="scope_type" value="result">
+      <p class="muted small">🔗 진단 결과 <code><%= prefill.result_id %></code> 사후 예외</p>
+    <% } %>
+    <div class="form-row inline">
+      <label>호스트명</label>
+      <input type="text" name="hostname" list="hostList" placeholder="검색·선택 (호스트명/IP). CSV 일괄 시 비움"
+             value="<%= (prefill && prefill.hostname) || '' %>">
+      <datalist id="hostList">
+        <% (servers || []).forEach(s => { %>
+          <option value="<%= s.hostname %>"><%= s.hostname %> — <%= s.ip || s.ip_address || '' %> (<%= s.os || s.os_type || '' %>)</option>
+        <% }) %>
+      </datalist>
+    </div>
+    <div class="form-row inline">
+      <label>계정명 / 패턴</label>
+      <input type="text" name="username" placeholder="계정 단위만 (예: jessy72). 와일드카드 * 가능(예: test*). 호스트 전체면 비움"
+             value="<%= (prefill && prefill.username) || '' %>">
+    </div>
+    <div class="form-row">
+      <label>CSV / Excel 일괄</label>
+      <textarea name="targets_csv" rows="4" placeholder="호스트명,계정명  (한 줄에 하나)&#10;jessy207,jessy72&#10;jessy207,test*&#10;jessy167,   ← 계정 비우면 호스트 전체"></textarea>
+      <span class="muted small">여러 호스트/계정에 선택 점검항목 예외를 한 번에. <a href="/exceptions/template.csv">CSV 템플릿</a> · (CSV 입력 시 위 단일 호스트/계정 무시)</span>
+    </div>
+  </div>
+
+  <!-- 사유 -->
+  <div class="form-section">
+    <h3>예외 사유</h3>
+    <div class="form-row inline">
+      <label>유형 *</label>
+      <select name="reason_type" required>
+        <option value="">— 선택 —</option>
+        <option value="비즈니스 요구">비즈니스 요구 (서비스 영향)</option>
+        <option value="레거시 호환">레거시 시스템 호환성</option>
+        <option value="대체 통제">대체 통제 (Compensating Control)</option>
+        <option value="패치 불가">벤더 패치 미제공</option>
+        <option value="검토 중">조치 방안 검토 중</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>상세 사유 *</label>
+      <textarea name="reason" required rows="4" placeholder="예외 처리가 필요한 구체적 사유"></textarea>
+    </div>
+    <div class="form-row">
+      <label>대체 통제</label>
+      <textarea name="compensating_control" rows="2" placeholder="위험 완화 통제 (방화벽 차단, 모니터링 강화 등)"></textarea>
+    </div>
+  </div>
+
+  <!-- 유효기간 -->
+  <div class="form-section">
+    <h3>유효기간</h3>
+    <div class="form-row inline">
+      <label>시작일 *</label>
+      <input type="date" name="effective_from" id="effFrom" required value="<%= new Date().toISOString().slice(0,10) %>">
+    </div>
+    <div class="form-row inline">
+      <label>종료일</label>
+      <input type="date" name="effective_until" id="effUntil">
+      <label style="font-weight:400;margin-left:10px;"><input type="checkbox" name="indefinite" id="indefinite" value="1"> 무기한</label>
+    </div>
+    <p class="muted small">권장 30~90일. 무기한은 종료일 없이 영구 적용.</p>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary">예외 신청</button>
+    <a href="/exceptions" class="btn">취소</a>
+  </div>
+</form>
+
+<script>
+// 항목 검색 필터
+var itemSearch = document.getElementById('itemSearch');
+function refreshItemCount(){
+  var n = document.querySelectorAll('#itemList input[name="rule_ids"]:checked').length;
+  document.getElementById('itemCount').textContent = '선택 ' + n + '개';
+}
+itemSearch.addEventListener('input', function(){
+  var q = itemSearch.value.toLowerCase().trim();
+  document.querySelectorAll('#itemList .item-opt').forEach(function(el){
+    el.style.display = (!q || el.dataset.text.indexOf(q) >= 0) ? 'block' : 'none';
+  });
+});
+function toggleAllItems(on){
+  document.querySelectorAll('#itemList .item-opt').forEach(function(el){
+    if (el.style.display === 'none') return; // 검색으로 보이는 것만
+    el.querySelector('input').checked = on;
+  });
+  refreshItemCount();
+}
+document.getElementById('itemList').addEventListener('change', refreshItemCount);
+refreshItemCount();
+
+// 무기한 토글
+var indef = document.getElementById('indefinite'), effUntil = document.getElementById('effUntil');
+indef.addEventListener('change', function(){ effUntil.disabled = indef.checked; if(indef.checked) effUntil.value=''; });
+
+// 기본 종료일 = 시작일 +30일
+(function(){ var f=document.getElementById('effFrom'), u=document.getElementById('effUntil');
+  function set(){ if(indef.checked) return; var d=new Date(f.value); d.setDate(d.getDate()+30); u.value=d.toISOString().slice(0,10); }
+  set(); f.addEventListener('change', set);
+})();
+
+document.getElementById('exceptionForm').onsubmit = async function(e){
+  e.preventDefault();
+  var data = Object.fromEntries(new FormData(e.target));
+  // 점검항목 다중
+  data.rule_ids = Array.from(document.querySelectorAll('#itemList input[name="rule_ids"]:checked')).map(function(c){return c.value;});
+  if (!data.rule_ids.length) { alert('점검 항목을 1개 이상 선택하세요.'); return; }
+  // 기간 검증
+  if (!data.indefinite && (!data.effective_until || data.effective_until <= data.effective_from)) {
+    alert('종료일은 시작일 이후여야 합니다. (또는 무기한 체크)'); return;
+  }
+  // CSV 일괄
+  if (data.targets_csv && data.targets_csv.trim()) {
+    data.targets = data.targets_csv.trim().split(/\r?\n/).map(function(line){
+      var p = line.split(','); return { hostname:(p[0]||'').trim(), username:(p[1]||'').trim() };
+    }).filter(function(t){ return t.hostname || t.username; });
+    if (!data.targets.length) { alert('CSV 형식 확인 (호스트명,계정명).'); return; }
+  }
+  delete data.targets_csv;
+
+  var res = await fetch('/exceptions/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  var j = await res.json();
+  if (j.status === 'success') {
+    alert('예외 신청 등록 (승인 대기). ' + (j.count>1 ? j.count+'건 생성.' : ''));
+    location.href = '/exceptions';
+  } else { alert('실패: ' + (j.error || '오류')); }
+};
+</script>
+
+<%- include('../_footer') %>

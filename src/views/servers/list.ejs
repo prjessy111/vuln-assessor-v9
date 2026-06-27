@@ -1,0 +1,44 @@
+<%- include('../_header', { title: '서버 관리' }) %>
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+  <h1>서버 관리</h1>
+  <a href="/servers/new" class="btn primary">+ 서버 추가</a>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr><th>ID</th><th>표시명</th><th>호스트</th><th>OS</th><th>SSH</th><th>raw 경로</th><th>마지막 수집</th><th>액션</th></tr>
+  </thead>
+  <tbody>
+    <% servers.forEach(s => { %>
+    <tr>
+      <td><%= s.server_id %></td>
+      <td><%= s.name %></td>
+      <td><code><%= s.hostname %>:<%= s.ssh_port||22 %></code></td>
+      <td><span class="os-badge"><%= s.os_type.toUpperCase() %></span></td>
+      <td>
+        <% if (s.ssh_user) { %>
+          <%= s.ssh_user %> <span class="muted small">(<%= s.ssh_auth_type %>)</span>
+        <% } else { %>
+          <span class="muted">미설정</span>
+        <% } %>
+      </td>
+      <td><code class="small"><%= s.remote_raw_path || '-' %></code></td>
+      <td class="small"><%= s.last_collected_at || '-' %></td>
+      <td>
+        <a href="/servers/<%= s.server_id %>/edit" class="btn-sm">수정</a>
+        <a href="/assess/new?server_id=<%= s.server_id %>" class="btn-sm primary">진단</a>
+        <form method="post" action="/servers/<%= s.server_id %>/delete" style="display:inline"
+              onsubmit="return confirm('삭제하시겠습니까?');">
+          <button class="btn-sm danger">삭제</button>
+        </form>
+      </td>
+    </tr>
+    <% }); %>
+    <% if (!servers.length) { %>
+      <tr><td colspan="8" class="empty">등록된 서버가 없습니다.</td></tr>
+    <% } %>
+  </tbody>
+</table>
+
+<%- include('../_footer') %>

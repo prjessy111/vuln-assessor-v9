@@ -1,0 +1,703 @@
+{
+  "generated_at": "(stamp-after)",
+  "source": "리포트1.xlsx (E=제목, K=ScanID, N=SRV)",
+  "windows": [
+    {
+      "srv": "SRV-001",
+      "scan_id": "os-win-2508",
+      "title": "안전한 네트워크 모니터링 서비스 사용"
+    },
+    {
+      "srv": "SRV-003",
+      "scan_id": "os-win-428",
+      "title": "네트워크 모니터링 서비스 접근통제 설정 적절성"
+    },
+    {
+      "srv": "SRV-004",
+      "scan_id": "os-win-160",
+      "title": "불필요한 SMTP 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-013",
+      "scan_id": "os-win-425",
+      "title": "Anonymous 계정의 FTP 서비스 접속 제한 여부"
+    },
+    {
+      "srv": "SRV-018",
+      "scan_id": "os-win-484",
+      "title": "불필요한 하드디스크 기본 공유 비활성화"
+    },
+    {
+      "srv": "SRV-020",
+      "scan_id": "os-win-298",
+      "title": "공유 기능에 대한 접근통제 설정 적절성"
+    },
+    {
+      "srv": "SRV-021",
+      "scan_id": "os-win-267",
+      "title": "FTP 서비스 접근통제 설정 적절성"
+    },
+    {
+      "srv": "SRV-022",
+      "scan_id": "os-win-59",
+      "title": "계정의 비밀번호 미설정, 빈 암호 사용 관리 여부"
+    },
+    {
+      "srv": "SRV-023",
+      "scan_id": "os-win-426",
+      "title": "원격 터미널 서비스의 암호화 설정 적절성"
+    },
+    {
+      "srv": "SRV-024",
+      "scan_id": "os-win-429",
+      "title": "취약한 Telnet 인증 방식 사용 제한 여부"
+    },
+    {
+      "srv": "SRV-027",
+      "scan_id": "os-win-306",
+      "title": "서비스 접근 IP 및 포트 제한 여부"
+    },
+    {
+      "srv": "SRV-028",
+      "scan_id": "os-win-2597",
+      "title": "원격 터미널 접속 타임아웃 설정 여부"
+    },
+    {
+      "srv": "SRV-029",
+      "scan_id": "os-win-438",
+      "title": "SMB 세션 중단 관리 설정 여부"
+    },
+    {
+      "srv": "SRV-031",
+      "scan_id": "os-win-268",
+      "title": "계정 목록 및 네트워크 공유 이름 노출 방지 여부"
+    },
+    {
+      "srv": "SRV-034",
+      "scan_id": "os-win-452",
+      "title": "불필요한 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-037",
+      "scan_id": "os-win-297",
+      "title": "취약한 FTP 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-063",
+      "scan_id": "os-win-180",
+      "title": "DNS Recursive Query 제한 설정 여부"
+    },
+    {
+      "srv": "SRV-066",
+      "scan_id": "os-win-282",
+      "title": "DNS Zone Transfer 제한 설정 적절성"
+    },
+    {
+      "srv": "SRV-069",
+      "scan_id": "os-win-495",
+      "title": "비밀번호 관리정책 설정 적절성"
+    },
+    {
+      "srv": "SRV-070",
+      "scan_id": "os-win-286",
+      "title": "취약한 패스워드 저장 방식 사용 제한 여부"
+    },
+    {
+      "srv": "SRV-072",
+      "scan_id": "os-win-284",
+      "title": "기본 관리자 계정명(Administrator) 변경 여부"
+    },
+    {
+      "srv": "SRV-073",
+      "scan_id": "os-win-285",
+      "title": "관리자 그룹에 불필요한 사용자 제거"
+    },
+    {
+      "srv": "SRV-074",
+      "scan_id": "os-win-2503",
+      "title": "불필요하거나 관리되지 않는 계정 제거"
+    },
+    {
+      "srv": "SRV-078",
+      "scan_id": "os-win-287",
+      "title": "불필요한 Guest 계정 비활성화"
+    },
+    {
+      "srv": "SRV-079",
+      "scan_id": "os-win-418",
+      "title": "익명 사용자에게 부적절한 권한(Everyone) 제거"
+    },
+    {
+      "srv": "SRV-080",
+      "scan_id": "os-win-65",
+      "title": "일반 사용자의 프린터 드라이버 설치 제한 여부"
+    },
+    {
+      "srv": "SRV-082",
+      "scan_id": "os-win-1993",
+      "title": "시스템 주요 디렉터리 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-084",
+      "scan_id": "os-win-289",
+      "title": "시스템 주요 파일 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-090",
+      "scan_id": "os-win-300",
+      "title": "불필요한 원격 레지스트리 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-092",
+      "scan_id": "os-win-440",
+      "title": "사용자 홈 디렉터리 경로 및 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-097",
+      "scan_id": "os-win-526",
+      "title": "FTP 서비스 디렉터리 접근권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-101",
+      "scan_id": "os-win-432",
+      "title": "불필요한 예약 작업 제거"
+    },
+    {
+      "srv": "SRV-103",
+      "scan_id": "os-win-60",
+      "title": "LAN Manager 인증 수준 적절성"
+    },
+    {
+      "srv": "SRV-104",
+      "scan_id": "os-win-64",
+      "title": "보안 채널 데이터 디지털 암호화 또는 서명 기능 설정 적절성"
+    },
+    {
+      "srv": "SRV-105",
+      "scan_id": "os-win-444",
+      "title": "불필요한 시작프로그램 제거"
+    },
+    {
+      "srv": "SRV-108",
+      "scan_id": "os-win-263",
+      "title": "로그에 대한 접근통제 및 관리 적절성"
+    },
+    {
+      "srv": "SRV-109",
+      "scan_id": "os-win-2592",
+      "title": "시스템 주요 이벤트 로그 설정 적절성"
+    },
+    {
+      "srv": "SRV-115",
+      "scan_id": "os-win-494",
+      "title": "로그의 정기적 검토 및 보고 수행 여부"
+    },
+    {
+      "srv": "SRV-116",
+      "scan_id": "os-win-291",
+      "title": "“보안 감사를 수행할 수 없는 경우, 즉시 시스템 종료” 기능 비활성화"
+    },
+    {
+      "srv": "SRV-118",
+      "scan_id": "os-win-150",
+      "title": "주기적인 보안패치 및 벤더 권고사항 적용 여부"
+    },
+    {
+      "srv": "SRV-119",
+      "scan_id": "os-win-489",
+      "title": "백신 프로그램 업데이트 적용 여부"
+    },
+    {
+      "srv": "SRV-123",
+      "scan_id": "os-win-152",
+      "title": "최종 로그인 사용자 계정 노출 방지 여부"
+    },
+    {
+      "srv": "SRV-125",
+      "scan_id": "os-win-154",
+      "title": "화면보호기 설정 적절성"
+    },
+    {
+      "srv": "SRV-126",
+      "scan_id": "os-win-301",
+      "title": "자동 로그온 방지 설정 여부"
+    },
+    {
+      "srv": "SRV-127",
+      "scan_id": "os-win-486",
+      "title": "로그인 실패 횟수에 따른 접속 제한 설정"
+    },
+    {
+      "srv": "SRV-128",
+      "scan_id": "os-win-157",
+      "title": "NTFS 파일 시스템 사용 여부"
+    },
+    {
+      "srv": "SRV-129",
+      "scan_id": "os-win-487",
+      "title": "백신 프로그램 설치 여부"
+    },
+    {
+      "srv": "SRV-135",
+      "scan_id": "os-win-2582",
+      "title": "TCP 보안 설정 여부"
+    },
+    {
+      "srv": "SRV-136",
+      "scan_id": "os-win-56",
+      "title": "로그온 단계에서 \"시스템 종료\" 기능 비활성화"
+    },
+    {
+      "srv": "SRV-137",
+      "scan_id": "os-win-188",
+      "title": "네트워크 서비스 접근 권한 적절성"
+    },
+    {
+      "srv": "SRV-138",
+      "scan_id": "os-win-186",
+      "title": "백업 및 복구 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-139",
+      "scan_id": "os-win-295",
+      "title": "시스템 자원 소유권 변경 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-140",
+      "scan_id": "os-win-296",
+      "title": "이동식 미디어 포맷 및 꺼내기 허용 정책 설정 적절성"
+    },
+    {
+      "srv": "SRV-147",
+      "scan_id": "os-win-448",
+      "title": "불필요한 네트워크 모니터링 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-149",
+      "scan_id": "os-win-446",
+      "title": "디스크 볼륨 암호화 적용 여부"
+    },
+    {
+      "srv": "SRV-150",
+      "scan_id": "os-win-443",
+      "title": "로컬 로그온 허용 계정 제한 여부"
+    },
+    {
+      "srv": "SRV-151",
+      "scan_id": "os-win-421",
+      "title": "익명 SID/이름 변환 설정 제한 여부"
+    },
+    {
+      "srv": "SRV-152",
+      "scan_id": "os-win-423",
+      "title": "원격터미널 접속 가능한 사용자 그룹 제한 여부"
+    },
+    {
+      "srv": "SRV-158",
+      "scan_id": "os-win-49",
+      "title": "불필요한 Telnet 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-163",
+      "scan_id": "os-win-156",
+      "title": "시스템 사용 주의사항 출력"
+    },
+    {
+      "srv": "SRV-166",
+      "scan_id": "os-win-2789",
+      "title": "불필요한 숨김 파일 또는 디렉터리 제거"
+    },
+    {
+      "srv": "SRV-170",
+      "scan_id": "os-win-2588",
+      "title": "SMTP 서비스 정보 노출 방지 여부"
+    },
+    {
+      "srv": "SRV-171",
+      "scan_id": "os-win-2589",
+      "title": "FTP 서비스 정보 노출 방지 여부"
+    },
+    {
+      "srv": "SRV-172",
+      "scan_id": "os-win-139",
+      "title": "불필요한 시스템 자원 공유 제거"
+    },
+    {
+      "srv": "SRV-173",
+      "scan_id": "os-win-2590",
+      "title": "DNS 서비스 동적 업데이트 설정 적절성"
+    },
+    {
+      "srv": "SRV-174",
+      "scan_id": "os-win-2591",
+      "title": "불필요한 DNS 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-175",
+      "scan_id": "os-win-361",
+      "title": "시간 동기화를 위한 NTP 설정"
+    },
+    {
+      "srv": "SRV-177",
+      "scan_id": "os-win-2985",
+      "title": "개인 키 사용 시 passphrase 설정 여부"
+    },
+    {
+      "srv": "SRV-179",
+      "scan_id": "os-win-4635",
+      "title": "서비스 지원이 종료된(EoS) 시스템 및 장비 교체 여부"
+    }
+  ],
+  "linux": [
+    {
+      "srv": "SRV-001",
+      "scan_id": "os-linux-2498",
+      "title": "안전한 네트워크 모니터링 서비스 사용"
+    },
+    {
+      "srv": "",
+      "scan_id": "os-linux-3077",
+      "title": "네트워크 모니터링 서비스 접근통제 설정 적절성"
+    },
+    {
+      "srv": "SRV-004",
+      "scan_id": "os-linux-2688",
+      "title": "불필요한 SMTP 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-005",
+      "scan_id": "os-linux-335",
+      "title": "SMTP 서비스의 expn/vrfy 명령어 실행 제한 여부"
+    },
+    {
+      "srv": "SRV-006",
+      "scan_id": "os-linux-1922",
+      "title": "SMTP 서비스 로그 수준 설정 적절성"
+    },
+    {
+      "srv": "SRV-007",
+      "scan_id": "os-linux-337",
+      "title": "SMTP 서비스 보안 패치 적용 여부"
+    },
+    {
+      "srv": "SRV-008",
+      "scan_id": "os-linux-324",
+      "title": "SMTP 서비스의 DoS 방지 기능 설정 여부"
+    },
+    {
+      "srv": "SRV-009",
+      "scan_id": "os-linux-338",
+      "title": "SMTP 서비스 스팸 메일 릴레이 제한 설정 여부"
+    },
+    {
+      "srv": "SRV-010",
+      "scan_id": "os-linux-41",
+      "title": "SMTP 서비스의 메일 queue 처리 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-011",
+      "scan_id": "os-linux-340",
+      "title": "시스템 관리자 계정의 FTP 사용 제한 여부"
+    },
+    {
+      "srv": "SRV-012",
+      "scan_id": "os-linux-341",
+      "title": ".netrc 파일 내 중요 정보 미포함 여부"
+    },
+    {
+      "srv": "SRV-013",
+      "scan_id": "os-linux-188",
+      "title": "Anonymous 계정의 FTP 서비스 접속 제한 여부"
+    },
+    {
+      "srv": "SRV-014",
+      "scan_id": "os-linux-306",
+      "title": "NFS 접근통제 설정 적절성"
+    },
+    {
+      "srv": "SRV-015",
+      "scan_id": "os-linux-342",
+      "title": "불필요한 NFS 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-016",
+      "scan_id": "os-linux-286",
+      "title": "불필요한 RPC 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-021",
+      "scan_id": "os-linux-2778",
+      "title": "FTP 서비스 접근통제 설정 적절성"
+    },
+    {
+      "srv": "SRV-022",
+      "scan_id": "os-linux-378",
+      "title": "계정의 비밀번호 미설정, 빈 암호 사용 관리 여부"
+    },
+    {
+      "srv": "SRV-025",
+      "scan_id": "os-linux-381",
+      "title": "hosts.equiv 또는 .rhosts 설정 제한 여부"
+    },
+    {
+      "srv": "SRV-026",
+      "scan_id": "os-linux-383",
+      "title": "root 계정 원격 접속 제한 여부"
+    },
+    {
+      "srv": "SRV-027",
+      "scan_id": "os-linux-254",
+      "title": "서비스 접근 IP 및 포트 제한 여부"
+    },
+    {
+      "srv": "SRV-028",
+      "scan_id": "os-linux-344",
+      "title": "원격 터미널 접속 타임아웃 설정 여부"
+    },
+    {
+      "srv": "SRV-034",
+      "scan_id": "os-linux-285",
+      "title": "불필요한 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-035",
+      "scan_id": "os-linux-61",
+      "title": "취약한 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-037",
+      "scan_id": "os-linux-2389",
+      "title": "취약한 FTP 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-062",
+      "scan_id": "os-linux-361",
+      "title": "DNS 서비스 정보 노출 방지 여부"
+    },
+    {
+      "srv": "SRV-063",
+      "scan_id": "os-linux-362",
+      "title": "DNS Recursive Query 제한 설정 여부"
+    },
+    {
+      "srv": "SRV-064",
+      "scan_id": "os-linux-293",
+      "title": "DNS 서비스 보안 패치 적용 여부"
+    },
+    {
+      "srv": "SRV-066",
+      "scan_id": "os-linux-363",
+      "title": "DNS Zone Transfer 제한 설정 적절성"
+    },
+    {
+      "srv": "SRV-069",
+      "scan_id": "os-linux-377",
+      "title": "비밀번호 관리정책 설정 적절성"
+    },
+    {
+      "srv": "SRV-070",
+      "scan_id": "os-linux-320",
+      "title": "취약한 패스워드 저장 방식 사용 제한 여부"
+    },
+    {
+      "srv": "SRV-073",
+      "scan_id": "os-linux-84",
+      "title": "관리자 그룹에 불필요한 사용자 제거"
+    },
+    {
+      "srv": "SRV-074",
+      "scan_id": "os-linux-2502",
+      "title": "불필요하거나 관리되지 않는 계정 제거"
+    },
+    {
+      "srv": "SRV-075",
+      "scan_id": "os-linux-365",
+      "title": "비밀번호 복잡도 설정"
+    },
+    {
+      "srv": "SRV-081",
+      "scan_id": "os-linux-34",
+      "title": "Crontab 설정파일 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-082",
+      "scan_id": "os-linux-367",
+      "title": "시스템 주요 디렉터리 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-083",
+      "scan_id": "os-linux-379",
+      "title": "시스템 스타트업 스크립트 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-084",
+      "scan_id": "os-linux-25",
+      "title": "시스템 주요 파일 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-087",
+      "scan_id": "os-linux-440",
+      "title": "설치된 C 컴파일러의 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-091",
+      "scan_id": "os-linux-273",
+      "title": "불필요하게 SUID, SGID bit가 설정된 파일 제거"
+    },
+    {
+      "srv": "SRV-092",
+      "scan_id": "os-linux-2576",
+      "title": "사용자 홈 디렉터리 경로 및 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-093",
+      "scan_id": "os-linux-1056",
+      "title": "불필요한 world writable 파일 제거"
+    },
+    {
+      "srv": "SRV-094",
+      "scan_id": "os-linux-386",
+      "title": "Crontab 참조파일 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-095",
+      "scan_id": "os-linux-1026",
+      "title": "존재하지 않는 소유자 및 그룹 권한을 가진 파일 또는 디렉터리 제거"
+    },
+    {
+      "srv": "SRV-096",
+      "scan_id": "os-linux-1998",
+      "title": "사용자 환경파일의 소유자 또는 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-108",
+      "scan_id": "os-linux-374",
+      "title": "로그에 대한 접근통제 및 관리 적절성"
+    },
+    {
+      "srv": "SRV-109",
+      "scan_id": "os-linux-2581",
+      "title": "시스템 주요 이벤트 로그 설정 적절성"
+    },
+    {
+      "srv": "SRV-112",
+      "scan_id": "os-linux-2784",
+      "title": "Cron 서비스 로깅 설정 적절성"
+    },
+    {
+      "srv": "SRV-115",
+      "scan_id": "os-linux-369",
+      "title": "로그의 정기적 검토 및 보고 수행 여부"
+    },
+    {
+      "srv": "SRV-118",
+      "scan_id": "os-linux-1025",
+      "title": "주기적인 보안패치 및 벤더 권고사항 적용 여부"
+    },
+    {
+      "srv": "SRV-121",
+      "scan_id": "os-linux-207",
+      "title": "root 계정의 PATH 환경변수 설정 적절성"
+    },
+    {
+      "srv": "SRV-122",
+      "scan_id": "os-linux-2369",
+      "title": "umask 설정 적절성"
+    },
+    {
+      "srv": "SRV-127",
+      "scan_id": "os-linux-271",
+      "title": "로그인 실패 횟수에 따른 접속 제한 설정"
+    },
+    {
+      "srv": "SRV-131",
+      "scan_id": "os-linux-2289",
+      "title": "SU 명령 사용가능 그룹 제한 설정 적절성"
+    },
+    {
+      "srv": "SRV-133",
+      "scan_id": "os-linux-380",
+      "title": "Cron 서비스 사용 계정 제한 설정 적절성"
+    },
+    {
+      "srv": "SRV-142",
+      "scan_id": "os-linux-227",
+      "title": "중복 UID가 부여된 계정 제한 여부"
+    },
+    {
+      "srv": "SRV-144",
+      "scan_id": "os-linux-2507",
+      "title": "/dev 경로에 불필요한 파일 제거"
+    },
+    {
+      "srv": "SRV-147",
+      "scan_id": "os-linux-237",
+      "title": "불필요한 네트워크 모니터링 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-158",
+      "scan_id": "os-linux-1973",
+      "title": "불필요한 Telnet 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-161",
+      "scan_id": "os-linux-289",
+      "title": "ftpusers 파일의 소유자 및 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-163",
+      "scan_id": "os-linux-318",
+      "title": "시스템 사용 주의사항 출력"
+    },
+    {
+      "srv": "SRV-164",
+      "scan_id": "os-linux-279",
+      "title": "구성원이 존재하지 않는 GID 제거"
+    },
+    {
+      "srv": "SRV-165",
+      "scan_id": "os-linux-2586",
+      "title": "불필요하게 Shell이 부여된 계정 제거"
+    },
+    {
+      "srv": "SRV-166",
+      "scan_id": "os-linux-1028",
+      "title": "불필요한 숨김 파일 또는 디렉터리 제거"
+    },
+    {
+      "srv": "SRV-170",
+      "scan_id": "os-linux-2790",
+      "title": "SMTP 서비스 정보 노출 방지 여부"
+    },
+    {
+      "srv": "SRV-171",
+      "scan_id": "os-linux-2793",
+      "title": "FTP 서비스 정보 노출 방지 여부"
+    },
+    {
+      "srv": "SRV-173",
+      "scan_id": "os-linux-2788",
+      "title": "DNS 서비스 동적 업데이트 설정 적절성"
+    },
+    {
+      "srv": "SRV-174",
+      "scan_id": "os-linux-2596",
+      "title": "불필요한 DNS 서비스 비활성화"
+    },
+    {
+      "srv": "SRV-175",
+      "scan_id": "os-linux-1013",
+      "title": "시간 동기화를 위한 NTP 설정"
+    },
+    {
+      "srv": "SRV-177",
+      "scan_id": "os-linux-3072",
+      "title": "sudo 명령어 접근 권한 설정 적절성"
+    },
+    {
+      "srv": "SRV-179",
+      "scan_id": "os-linux-3076",
+      "title": "서비스 지원이 종료된(EoS) 시스템 및 장비 교체 여부"
+    }
+  ]
+}

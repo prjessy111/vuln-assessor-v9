@@ -1,0 +1,440 @@
+<%- include('../_header', { title: (diag.diagnose_type === 'llm' ? 'LLM 상세 진단 결과 #' : 'AI 진단 결과 #') + diag.assessment_id, activeMenu: 'diagnosis' }) %>
+
+<div class="page-header">
+  <h1><%= diag.diagnose_type === 'llm' ? 'LLM 상세 진단 결과' : 'AI 진단 결과' %> — #<%= diag.assessment_id %></h1>
+  <p class="muted small">
+    <%= resultScope && resultScope.description ? resultScope.description : 'SecuMS raw 또는 Script XML의 raw evidence를 AI/LLM이 직접 분석한 결과입니다.' %>
+    SecuMS 판정은 AI 입력값이 아니라 사후 정합성 비교 기준으로만 사용합니다.
+    <strong>판정 사유</strong>와 <strong>구체적 조치 권고</strong>는 raw evidence 기반으로 생성됩니다.
+  </p>
+  <div class="header-actions">
+    <a href="/diagnosis" class="btn">← 진단 관리</a>
+    <% if (baseAiDiag) { %>
+      <a href="/diagnosis/<%= baseAiDiag.assessment_id %>/ai" class="btn primary">AI 전체 결과 #<%= baseAiDiag.assessment_id %></a>
+    <% } %>
+    <a href="/diagnosis/<%= diag.assessment_id %>/cve" class="btn">CVE 자동 진단</a>
+    <button type="button" id="btnRediagnose" class="btn"
+            style="background:#e67e22;color:#fff;"
+            data-server="<%= diag.server_id %>"
+            data-source="<%= diag.source_type || 'secums' %>"
+            data-base="<%= diag.assessment_id %>"
+            onclick="rediagnoseReviewNeeded(this)">🔁 판정불가/취약만 재진단 (LLM)</button>
+  </div>
+</div>
+
+<script>
+async function rediagnoseReviewNeeded(btn) {
+  if (!confirm('이 진단의 판정불가/취약 항목만 사내 LLM으로 재진단합니다.\n(최신 수집 raw 기준으로 다시 판정 — sh 재수집을 먼저 했다면 그 결과가 반영됩니다.)\n계속할까요?')) return;
+  var orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ 재진단 중...';
+  try {
+    var resp = await fetch('/diagnosis/llm-run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        server_id: btn.dataset.server,
+        source: btn.dataset.source,
+        filter: 'review_needed',
+        base_assessment_id: btn.dataset.base
+      })
+    });
+    var data = await resp.json();
+    if (resp.ok && data.status === 'success' && data.assessment_id) {
+      btn.textContent = '✓ 완료 — 결과로 이동';
+      location.href = '/diagnosis/' + data.assessment_id + '/ai';
+    } else {
+      alert('재진단 실패: ' + (data.error || resp.status));
+      btn.disabled = false; btn.textContent = orig;
+    }
+  } catch (e) {
+    alert('재진단 요청 오류: ' + e.message);
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+</script>
+
+<%
+  var isLlmDetail = diag.diagnose_type === 'llm';
+  var isAiFull = diag.diagnose_type === 'ai';
+  var filterText = '';
+  if (diag.filter) {
+    filterText = typeof diag.filter === 'object' ? JSON.stringify(diag.filter) : String(diag.filter);
+  } else {
+    filterText = isLlmDetail ? 'all' : '-';
+  }
+  var disagreeRealCount = typeof diag.disagree_real_count === 'number' ? diag.disagree_real_count : (diag.disagree_count || 0);
+  var needsReviewCount = diag.needs_review_count || 0;
+  var comparisonCount = typeof diag.comparison_count === 'number' ? diag.comparison_count : ((diag.agree_count || 0) + disagreeRealCount);
+  var validationFailureRate = typeof diag.validation_failure_rate === 'number'
+    ? diag.validation_failure_rate
+    : (comparisonCount ? Math.round(disagreeRealCount / comparisonCount * 100) : 0);
+%>
+
+<div class="section-box">
+  <h3>결과 범위</h3>
+  <table class="data-table" style="max-width:860px;">
+    <tr>
+      <th style="width:180px;">현재 화면</th>
+      <td>
+        <strong><%= resultScope ? resultScope.label : (isLlmDetail ? 'LLM 상세 결과' : 'AI 전체 결과') %></strong>
+        <span class="muted small">(#<%= diag.assessment_id %>)</span>
+      </td>
+    </tr>
+    <% if (isLlmDetail) { %>
+      <tr>
+        <th>표시 기준</th>
+        <td>AI 전체 결과 중 LLM 상세 검토 대상으로 선별된 항목만 표시합니다.</td>
+      </tr>
+      <tr>
+        <th>LLM 필터</th>
+        <td><code><%= filterText %></code></td>
+      </tr>
+      <tr>
+        <th>AI 전체 결과</th>
+        <td>
+          <% if (baseAiDiag) { %>
+            <a href="/diagnosis/<%= baseAiDiag.assessment_id %>/ai">#<%= baseAiDiag.assessment_id %></a>
+            <span class="muted small">전체 <%= baseAiDiag.total_count || 0 %>개 / 현재 LLM <%= diag.total_count || 0 %>개</span>
+          <% } else { %>
+            <span class="muted">연결된 AI 전체 결과가 없습니다.</span>
+          <% } %>
+        </td>
+      </tr>
+    <% } else { %>
+      <tr>
+        <th>표시 기준</th>
+        <td>수집 원자료에서 추출한 AI 전체 진단 항목을 표시합니다.</td>
+      </tr>
+      <% if (relatedLlmDiags && relatedLlmDiags.length) { %>
+        <tr>
+          <th>연결된 LLM 상세</th>
+          <td>
+            <% relatedLlmDiags.forEach(function(d, idx) { %>
+              <% if (idx > 0) { %><span class="muted"> / </span><% } %>
+              <a href="/diagnosis/<%= d.assessment_id %>/ai">#<%= d.assessment_id %></a>
+              <span class="muted small">(<%= d.total_count || 0 %>개)</span>
+            <% }) %>
+          </td>
+        </tr>
+      <% } %>
+    <% } %>
+  </table>
+</div>
+
+<!-- 핵심 KPI -->
+<div class="kpi-grid kpi-5col">
+  <div class="kpi-card">
+    <div class="kpi-label">전체 항목</div>
+    <div class="kpi-num"><%= diag.total_count %></div>
+    <div class="kpi-sub"><%= isLlmDetail ? 'LLM 상세 대상' : 'AI 전체 진단' %></div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">취약</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= diag.vuln_count %></div>
+    <div class="kpi-sub">조치 필요</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">양호</div>
+    <div class="kpi-num" style="color:#27ae60;"><%= diag.safe_count %></div>
+    <div class="kpi-sub">부재 <%= diag.safe_absence_count || 0 %> / 값준수 <%= diag.safe_value_count || 0 %></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">판정불가</div>
+    <div class="kpi-num" style="color:#888;"><%= diag.na_count %></div>
+    <div class="kpi-sub">데이터 부족</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">명확 비교 일치율</div>
+    <div class="kpi-num"
+         style="color:<%= diag.agreement_rate >= 80 ? '#27ae60' : diag.agreement_rate >= 60 ? '#e67e22' : '#c0392b' %>;">
+      <%= diag.agreement_rate %>%
+    </div>
+    <div class="kpi-sub">일치 <%= diag.agree_count || 0 %> / 실패 <%= disagreeRealCount %></div>
+  </div>
+</div>
+
+<!-- 메타 정보 -->
+<div class="section-box">
+  <table class="data-table" style="max-width:700px;">
+    <tr><th style="width:160px;">서버</th>
+        <td><%= diag.hostname %> (#<%= diag.server_id %>) — <%= diag.asset_no || '-' %></td></tr>
+    <tr><th>진단 시각</th><td class="mono"><%= diag.executed_at %> (소요 <%= (function(ms){ms=Number(ms)||0; var s=Math.round(ms/1000); return s<60 ? s+'초' : Math.floor(s/60)+'분 '+(s%60)+'초';})(diag.elapsed_ms) %>)</td></tr>
+    <tr><th>실행자 / 트리거</th><td><%= diag.executed_by %> / <%= diag.triggered_by %></td></tr>
+    <tr><th>LLM</th><td><code><%= diag.llm_provider %></code> / <code><%= diag.llm_model || '-' %></code></td></tr>
+    <tr><th>데이터 소스</th><td><code><%= diag.source_type || 'secums' %></code></td></tr>
+    <% if (diag.secums_file || diag.script_file) { %>
+      <tr><th>수집 파일</th>
+          <td>
+            <% if (diag.secums_file) { %><div>SecuMS: <code><%= diag.secums_file %></code></div><% } %>
+            <% if (diag.script_file) { %><div>Script: <code><%= diag.script_file %></code></div><% } %>
+          </td></tr>
+    <% } %>
+    <% if (diag.secums_wait_count) { %>
+      <tr><th>SecuMS 미점검 추론</th>
+          <td><strong style="color:#1976d2;"><%= diag.secums_wait_count %>건</strong> —
+              SecuMS가 수집하지 못한 항목을 AI가 raw 데이터로 추론 (우리 +α)</td></tr>
+    <% } %>
+  </table>
+</div>
+
+<div class="section-box">
+  <h3>검증 결과 분류</h3>
+  <table class="data-table" style="max-width:760px;">
+    <thead>
+      <tr><th>분류</th><th>건수</th><th>의미</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:#27ae60;">일치</strong></td>
+        <td><%= diag.agree_count || 0 %></td>
+        <td class="muted small">SecuMS와 AI/LLM의 명확 판정이 같습니다.</td>
+      </tr>
+      <tr>
+        <td><strong style="color:#c0392b;">검증 실패</strong></td>
+        <td><%= disagreeRealCount %></td>
+        <td class="muted small">양쪽이 취약/양호로 명확히 판단했는데 서로 다릅니다. 실패율 <%= validationFailureRate %>%</td>
+      </tr>
+      <tr>
+        <td><strong style="color:#e67e22;">검토 필요</strong></td>
+        <td><%= needsReviewCount %></td>
+        <td class="muted small">AI/LLM이 정보제공 또는 판정불가로 보류한 항목입니다.</td>
+      </tr>
+      <tr>
+        <td><strong style="color:#1976d2;">SecuMS 미점검/비교불가</strong></td>
+        <td><%= diag.secums_wait_count || 0 %></td>
+        <td class="muted small">SecuMS 판정이 없거나 Script 단독 소스라 비교 기준이 없습니다.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 카테고리별 통계 -->
+<% if (Object.keys(byCategory).length > 0) { %>
+<div class="section-box">
+  <h3>카테고리별 분포</h3>
+  <table class="data-table" style="max-width:800px;">
+    <thead>
+      <tr><th>카테고리</th><th>전체</th><th>취약</th><th>양호</th><th>판정불가/정보제공</th></tr>
+    </thead>
+    <tbody>
+      <% Object.entries(byCategory).sort((a,b) => b[1].vuln - a[1].vuln).forEach(([cat, s]) => { %>
+        <tr>
+          <td><strong><%= cat %></strong></td>
+          <td><%= s.total %></td>
+          <td><% if (s.vuln) { %><span style="color:#c0392b;font-weight:600;"><%= s.vuln %></span><% } else { %>-<% } %></td>
+          <td><span style="color:#27ae60;"><%= s.safe %></span></td>
+          <td class="muted"><%= s.na + s.info %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+
+<!-- 심각도 분포 (취약 항목만) -->
+<% if (diag.vuln_count > 0) { %>
+<div class="section-box">
+  <h3>취약 항목 심각도</h3>
+  <div style="display:flex;gap:1.5rem;">
+    <div><span style="color:#c0392b;font-weight:600;">상: <%= bySeverity.상 || 0 %>건</span></div>
+    <div><span style="color:#e67e22;font-weight:600;">중: <%= bySeverity.중 || 0 %>건</span></div>
+    <div><span style="color:#888;">하: <%= bySeverity.하 || 0 %>건</span></div>
+  </div>
+</div>
+<% } %>
+
+<!-- 전체 항목 상세 -->
+<div class="section-box">
+  <h3>전체 진단 결과 (필터 가능)</h3>
+  <div class="filter-row" style="margin-bottom:1rem;">
+    <input type="search" id="resultSearch" placeholder="검색 (CHK_ID/제목/카테고리/사유/증거)...">
+    <select id="resultCategory">
+      <option value="">전체 카테고리</option>
+      <% Object.keys(byCategory).sort().forEach(cat => { %>
+        <option value="<%= cat %>"><%= cat %></option>
+      <% }) %>
+    </select>
+    <select id="resultSeverity">
+      <option value="">전체 심각도</option>
+      <option value="상">상</option>
+      <option value="중">중</option>
+      <option value="하">하</option>
+    </select>
+    <button class="btn-sm" onclick="filterRows()">필터 적용</button>
+    <button class="btn-sm" onclick="resetResultFilters()">초기화</button>
+  </div>
+  <div style="margin-bottom:1rem;">
+    <label><input type="radio" name="filter" value="all" checked onchange="filterRows(this.value)"> 전체</label>
+        <label><input type="radio" name="filter" value="vuln" onchange="filterRows(this.value)"> 취약만</label>
+        <label><input type="radio" name="filter" value="safe" onchange="filterRows(this.value)"> 양호만</label>
+        <label><input type="radio" name="filter" value="info" onchange="filterRows(this.value)"> 정보제공만</label>
+        <label><input type="radio" name="filter" value="na" onchange="filterRows(this.value)"> 판정불가만</label>
+        <label><input type="radio" name="filter" value="disagree_real" onchange="filterRows(this.value)"> 검증 실패</label>
+        <label><input type="radio" name="filter" value="needs_review" onchange="filterRows(this.value)"> 검토 필요</label>
+        <label><input type="radio" name="filter" value="secums_wait" onchange="filterRows(this.value)"> SecuMS 미점검/비교불가</label>
+  </div>
+  <table class="data-table" id="resultsTable">
+    <thead>
+      <tr>
+        <th>CHK_ID</th>
+        <th>제목 / 카테고리</th>
+        <th>SecuMS</th>
+        <th>AI 판정</th>
+        <th>일치</th>
+        <th>심각도</th>
+        <th>사유 / 권고</th>
+        <th>조치</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% (diag.results || []).forEach(r => { %>
+        <% var verdictClass = r.ai_verdict === '취약' ? 'vuln'
+                             : r.ai_verdict === '양호' ? 'safe'
+                             : (r.ai_verdict === '정보제공' || r.ai_verdict === '정보') ? 'info' : 'na'; %>
+        <% var normalizedAgreement = r.agreement;
+           if (normalizedAgreement === 'disagree') {
+             var aiClear = r.ai_verdict === '취약' || r.ai_verdict === '양호';
+             var secumsClear = r.secums_verdict === 'OK' || r.secums_verdict === 'BAD';
+             normalizedAgreement = aiClear && secumsClear ? 'disagree_real' : 'needs_review';
+           }
+           var agreementClass = normalizedAgreement === 'agree' ? 'agree'
+                              : normalizedAgreement === 'secums_wait' ? 'secums_wait'
+                              : normalizedAgreement === 'needs_review' ? 'needs_review'
+                              : normalizedAgreement === 'disagree_real' ? 'disagree_real'
+                              : 'unknown'; %>
+        <tr class="result-row verdict-<%= verdictClass %> agree-<%= agreementClass %>"
+            data-category="<%= r.ai_category || '' %>"
+            data-severity="<%= r.ai_severity || '' %>"
+            data-search="<%= [r.chk_id, r.ai_title, r.ai_category, r.ai_verdict, r.ai_severity, r.ai_reason, r.ai_evidence, r.ai_recommend, r.secums_verdict].filter(Boolean).join(' ').toLowerCase() %>">
+          <td class="mono small"><%= r.chk_id %></td>
+          <td>
+            <strong><%= r.ai_title %></strong>
+            <% if (r.ai_category) { %>
+              <div class="muted small"><%= r.ai_category %></div>
+            <% } %>
+          </td>
+          <td>
+            <% if (r.secums_verdict === 'BAD') { %>
+              <span style="color:#c0392b;font-weight:600;">🚨 BAD</span>
+            <% } else if (r.secums_verdict === 'OK') { %>
+              <span style="color:#27ae60;">✓ OK</span>
+            <% } else if (r.secums_verdict === 'WAIT') { %>
+              <span class="muted">- WAIT</span>
+            <% } else { %>
+              <span class="muted"><%= r.secums_verdict %></span>
+            <% } %>
+          </td>
+          <td>
+            <% if (r.ai_verdict === '취약') { %>
+              <span style="color:#c0392b;font-weight:600;">🚨 취약</span>
+            <% } else if (r.ai_verdict === '양호') { %>
+              <span style="color:#27ae60;">✓ 양호</span>
+              <% if (r.ai_safe_type) { %>
+                <div class="muted small"><%= r.ai_safe_type %></div>
+              <% } %>
+            <% } else if (r.ai_verdict === '정보제공' || r.ai_verdict === '정보') { %>
+              <span class="muted">ℹ 정보제공</span>
+            <% } else { %>
+              <span class="muted">? 판정불가</span>
+            <% } %>
+          </td>
+          <td>
+            <% if (r.agreement === 'agree') { %>
+              <span style="color:#27ae60;">✓</span>
+            <% } else if (normalizedAgreement === 'secums_wait') { %>
+              <span style="color:#1976d2;" title="SecuMS 미점검 또는 비교불가">비교불가</span>
+            <% } else if (normalizedAgreement === 'needs_review') { %>
+              <span style="color:#e67e22;font-weight:600;" title="AI/LLM 판정 보류">검토</span>
+            <% } else if (normalizedAgreement === 'disagree_real') { %>
+              <span style="color:#c0392b;font-weight:600;" title="양쪽 명확 판정 충돌">검증 실패</span>
+            <% } else { %>
+              <span class="muted">-</span>
+            <% } %>
+          </td>
+          <td>
+            <% if (r.ai_verdict === '취약') { %>
+              <span style="color:<%= r.ai_severity === '상' ? '#c0392b' : r.ai_severity === '중' ? '#e67e22' : '#888' %>;font-weight:600;">
+                <%= r.ai_severity %>
+              </span>
+            <% } else { %>
+              <span class="muted">-</span>
+            <% } %>
+          </td>
+          <td style="max-width:450px;">
+            <div><%= r.ai_reason %></div>
+            <% if (r.ai_evidence) { %>
+              <div class="muted small mono" style="margin-top:0.3rem;">증거: <%= r.ai_evidence.substring(0, 200) %></div>
+            <% } %>
+            <% if (r.ai_recommend) { %>
+              <div style="margin-top:0.3rem;padding:0.3rem;background:#fff8e1;border-left:3px solid #f9a825;font-size:0.85em;">
+                <strong>권고:</strong> <%= r.ai_recommend %>
+              </div>
+            <% } %>
+          </td>
+          <td class="small" style="white-space:nowrap;">
+            <% if (r.ai_verdict === '취약') {
+                 var _rid = (diag.assessment_id || '') + '-' + r.chk_id;
+                 var _q = 'result_id=' + encodeURIComponent(_rid) + '&rule_id=' + encodeURIComponent(r.chk_id) + '&server_id=' + encodeURIComponent(diag.server_id || ''); %>
+              <a class="btn-sm" href="/exceptions/new?<%= _q %>" title="사후 예외 신청 (이 결과 항목)" style="background:#e67e22;color:#fff;">예외</a>
+            <% } else { %>
+              <span class="muted">-</span>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+document.querySelectorAll('#resultsTable tbody tr').forEach(function(tr) {
+  if (!tr.dataset.search) {
+    tr.dataset.search = Array.from(tr.cells).map(function(td) { return td.textContent || ''; }).join(' ').toLowerCase();
+  }
+});
+
+function currentVerdictFilter(value) {
+  if (value) return value;
+  const checked = document.querySelector('input[name="filter"]:checked');
+  return checked ? checked.value : 'all';
+}
+
+function filterRows(filter) {
+  filter = currentVerdictFilter(filter);
+  const q = (document.getElementById('resultSearch')?.value || '').toLowerCase();
+  const category = document.getElementById('resultCategory')?.value || '';
+  const severity = document.getElementById('resultSeverity')?.value || '';
+  const rows = document.querySelectorAll('#resultsTable tbody tr');
+  rows.forEach(tr => {
+    let show = false;
+    if (filter === 'all') show = true;
+    else if (filter === 'vuln')        show = tr.classList.contains('verdict-vuln');
+    else if (filter === 'safe')        show = tr.classList.contains('verdict-safe');
+    else if (filter === 'info')        show = tr.classList.contains('verdict-info');
+    else if (filter === 'na')          show = tr.classList.contains('verdict-na');
+    else if (filter === 'disagree_real') show = tr.classList.contains('agree-disagree_real');
+    else if (filter === 'needs_review')  show = tr.classList.contains('agree-needs_review');
+    else if (filter === 'secums_wait') show = tr.classList.contains('agree-secums_wait');
+    if (q && !tr.dataset.search.includes(q)) show = false;
+    if (category && tr.dataset.category !== category) show = false;
+    if (severity && tr.dataset.severity !== severity) show = false;
+    tr.style.display = show ? '' : 'none';
+  });
+}
+
+function resetResultFilters() {
+  document.getElementById('resultSearch').value = '';
+  document.getElementById('resultCategory').value = '';
+  document.getElementById('resultSeverity').value = '';
+  const all = document.querySelector('input[name="filter"][value="all"]');
+  if (all) all.checked = true;
+  filterRows('all');
+}
+
+['resultSearch', 'resultCategory', 'resultSeverity'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(id === 'resultSearch' ? 'input' : 'change', () => filterRows());
+});
+</script>
+
+<%- include('../_footer') %>

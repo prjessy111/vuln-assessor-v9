@@ -1,0 +1,338 @@
+﻿### linux — 우리 스크립트 110개 / 2026 기준 70개 ###
+
+SRV-001 
+   2026: SRV-001_안전한 네트워크 모니터링 서비스 사용 | 1. /etc/snmp/snmpd.conf 파일에서 Community String 확인 # cat /etc/snmp/snmpd.conf, # cat /etc/sn
+   우리: fDumpS "SRV-001 SRV-002"
+SRV-003 ❌미수집
+   2026: SRV-003_네트워크 모니터링 서비스 접근통제 설정 적절성 | * 다음 명령을 실행하여 접근 제어 확인 # grep -E '^(agentAddress|rocommunity|rwcommunity|com2sec|group|vie
+   우리: (없음)
+SRV-004 
+   2026: SRV-004_불필요한 SMTP 서비스 비활성화 | 1. 25번 포트에 SMTP 서비스가 동작 중인지 확인 # netstat -na | grep 25 # ps -ef | grep sendmail
+   우리: fDumpS "SRV-004"
+SRV-005 
+   2026: SRV-005_SMTP 서비스의 expn/vrfy 명령어 실행 제한 여부 | [Sendmail] 1. SMTP 포트(25번)에 접속하여 expn 과 vrfy 명령을 통해 aliases 정보와 사용자 정보를 알아낼 수 있는지 점검 또는 2.
+   우리: fDumpS "SRV-005"
+SRV-006 
+   2026: SRV-006_SMTP 서비스 로그 수준 설정 적절성 | [Sendmail] 1. sendmail.cf 설정 파일 내부의 LogLevel 설정값 확인 2. LogLevel 설정값이 기본값 이상의 수준(9 이상)인지 확인
+   우리: fDumpS "SRV-006"
+SRV-007 
+   2026: SRV-007_SMTP 서비스 보안 패치 적용 여부 | [Sendmail] * sendmail 현재 버전 확인 # echo \$Z | /usr/lib/sendmail -bt -d0 Version 8.12.5+Sun 최
+   우리: fDumpS "SRV-007"
+SRV-008 
+   2026: SRV-008_SMTP 서비스의 DoS 방지 기능 설정 여부 | [Sendmail] sendmail.cf 파일 내부에 아래 파라미터들이 설정된 경우 양호, 파라미터가 없거나, 주석 처리된 경우 취약 - MaxDaemonChil
+   우리: fDumpS "SRV-008"
+SRV-009 
+   2026: SRV-009_SMTP 서비스 스팸 메일 릴레이 제한 설정 여부 | [Sendmail] 1. sendmail 버전 8.9 이상인 경우 양호(디폴트로 스팸 메일 릴레이 방지 설정이 되어 있음) 2. 8.9 미만 버전은 스팸 메일 릴
+   우리: fDumpS "SRV-009"
+SRV-010 
+   2026: SRV-010_SMTP 서비스의 메일 queue 처리 권한 설정 적절성 | [Sendmail] sendmail.cf 파일 내 PrivacyOptions 에 restrictqrun 설정 존재 여부 확인 - restrictqrun 설정이 있
+   우리: fDumpS "SRV-010"
+SRV-011 
+   2026: SRV-011_시스템 관리자 계정의 FTP 사용 제한 여부 | 1. ftpusers 파일 존재 확인 후, ftpusers 파일 내에 시스템 계정이 존재하는지 확인 2. 실제 시스템 계정으로 ftp 접속이 거부되는지 확인 - 
+   우리: #fDumpS "SRV-011"
+SRV-012 
+   2026: SRV-012_.netrc 파일 내 중요 정보 미포함 여부 | 1. .netrc 파일의 존재 유무 확인 # find / -name .netrc 2. 파일 내에 민감한 정보 존재 유무 확인 # cat [User Home]/.n
+   우리: fDumpS "SRV-012"
+SRV-013 
+   2026: SRV-013_Anonymous 계정의 FTP 서비스 접속 제한 여부 | 1. ftp 설정파일 확인 2. 실제 ftp 접속 시도 (ID:anonymous / PW: ) 3. ftp/anonymous 계정 존재 확인 # cat /etc/
+   우리: fDumpS "SRV-013"
+SRV-014 
+   2026: SRV-014_NFS 접근통제 설정 적절성 | 1. NFS 서비스 실행 여부 2. /etc/exports 파일 및 /etc/dfs/dfstab 파일 확인 # cat /etc/exports # cat /etc/
+   우리: fDumpS "SRV-014 SRV-015"
+SRV-015 ❌미수집
+   2026: SRV-015_불필요한 NFS 서비스 비활성화 | 1. nfsd 프로세스 구동 확인 # ps -ef | grep nfsd 2. rpcinfo -p 결과에 nfs 존재 여부 확인 # rpcinfo -p 3. ine
+   우리: (없음)
+SRV-016 
+   2026: SRV-016_불필요한 RPC 서비스 비활성화 | 1. 프로세스 목록에서 rpc 프로세스 구동 확인 2. rpcinfo -p 명령 결과에서 RPC 서비스 설정 확인 3. inetd.conf 파일에서 RPC 서비스
+   우리: fDumpS "SRV-016"
+SRV-017 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-017"
+SRV-019 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-019"
+SRV-021 
+   2026: SRV-021_FTP 서비스 접근통제 설정 적절성 | 1. FTP 접근제어 설정 점검 # cat /etc/proftpd.conf # cat /usr/local/etc/proftpd.conf
+   우리: fDumpS "SRV-021"
+SRV-022 
+   2026: SRV-022_계정의 비밀번호 미설정, 빈 암호 사용 관리 여부 | 1. 패스워드 파일을 확인하여 패스워드필드가 공란인 계정 확인(공란인 경우 미 설정으로 인식됨)
+   우리: fDumpS "SRV-022"
+SRV-025 
+   2026: SRV-025_hosts.equiv 또는 .rhosts 설정 제한 여부 | 1. /etc/hosts.equiv 파일 또는 [각 계정의 홈디렉터리]/.rhosts 파일 내에 '+' 설정이나 불필요한 계정/호스트 IP가 존재하는지 확인 # 
+   우리: fDumpS "SRV-025"
+SRV-026 
+   2026: SRV-026_root 계정 원격 접속 제한 여부 | <Telnet 사용 시> 1. pts/0~pts/x 가상터미널 허용 여부 확인 # cat /etc/securetty # cat /etc/pam.d/login au
+   우리: fDumpS "SRV-026"
+SRV-027 
+   2026: SRV-027_서비스 접근 IP 및 포트 제한 여부 | 다음 중, 해당 사항이 있는 것만 점검 1. 방화벽 현황 2. 3rd-party 제품 활용 여부 3. tcp-wrapper 설정 (/etc/hosts.allow,
+   우리: fDumpS "SRV-027"
+SRV-028 
+   2026: SRV-028_원격 터미널 접속 타임아웃 설정 여부 | 1. /etc/profile(.profile) 파일 내 TMOUT 값 확인 <sh, ksh, bash 사용 시> # cat /etc/profile 또는 # cat
+   우리: fDumpS "SRV-028"
+SRV-030 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-030"
+SRV-033 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-033"
+SRV-034 
+   2026: SRV-034_불필요한 서비스 비활성화 | <automountd 활성화 여부 및 버전 확인> - automount 프로세스 실행 여부 확인 # ps -ef | egrep 'autofs|automount' 
+   우리: fDumpS "SRV-034"
+SRV-035 
+   2026: SRV-035_취약한 서비스 비활성화 | 1. <tftp, talk, ntalk> # ps -ef | grep [tftp | talk] # grep tftp /etc/inetd.conf 명령어로 tftp
+   우리: fDumpS "SRV-035"
+SRV-036 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-036"
+SRV-037 
+   2026: SRV-037_취약한 FTP 서비스 비활성화 | 1. FTP 서비스 구동 확인 # ps -ef | grep ftp # ps -ef | grep vsftpd 2. 일반 FTP 서비스 비활성화 여부 확인 # vi 
+   우리: fDumpS "SRV-037"
+SRV-039 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-039"
+SRV-040 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-040"
+SRV-042 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-042"
+SRV-043 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-043"
+SRV-044 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-044"
+SRV-045 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-045"
+SRV-046 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-046"
+SRV-047 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-047"
+SRV-060 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-060"
+SRV-061 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-061"
+SRV-062 
+   2026: SRV-062_DNS 서비스 정보 노출 방지 여부 | [BIND] /etc/named.conf 내부의 version 옵션 확인 - option 내부에 version "" 구문과 같이 빈 문자열로 설정되어 있으면 버전
+   우리: fDumpS "SRV-062"
+SRV-063 
+   2026: SRV-063_DNS Recursive Query 제한 설정 여부 | [BIND] /etc/named.conf 내부의 recursion 옵션 확인 - options { } 내부에 recursion yes 옵션이 없거나 no 로 설정
+   우리: fDumpS "SRV-063"
+SRV-064 
+   2026: SRV-064_DNS 서비스 보안 패치 적용 여부 | [BIND] 알려진 취약점이 없는 DNS 버전 사용여부 점검 dig @localhost +short porttest.dns-oarc.net TXT * Bind 최
+   우리: fDumpS "SRV-064"
+SRV-065 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-065"
+SRV-066 
+   2026: SRV-066_DNS Zone Transfer 제한 설정 적절성 | [BIND] /etc/named.conf 파일 내용 중 allow-transfer 설정이 되어 있는지 확인 # ps -ef | grep named | grep -
+   우리: fDumpS "SRV-066"
+SRV-068 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-068"
+SRV-069 
+   2026: SRV-069_비밀번호 관리정책 설정 적절성 | * 비밀번호의 복잡도 설정 및 기타 설정 1. DEB 기반 시스템 (1) 패스워드 길이 # /etc/pam.d/common-password 설정 파일에서 다음의 
+   우리: fDumpS "SRV-069"
+SRV-070 
+   2026: SRV-070_취약한 패스워드 저장 방식 사용 제한 여부 | </etc/shadow 파일에 비밀번호가 암호화되어 있는지 확인> 1. /etc/shadow 파일 존재 확인 # ls -l /etc/shadow 2. /etc/p
+   우리: #fDumpS "SRV-070"
+SRV-071 ➕기준외
+   2026: (기준없음) | 
+   우리: #fDumpS "SRV-071: 각 계정별 고유 UID 미사용/안전하지 않은 UID 사용"
+SRV-073 
+   2026: SRV-073_관리자 그룹에 불필요한 사용자 제거 | # cat /etc/group root:x:0:root # cat /etc/passwd
+   우리: fDumpS "SRV-073"
+SRV-074 
+   2026: SRV-074_불필요하거나 관리되지 않는 계정 제거 | 1. 로그인이 가능한 계정별 비밀번호 변경일자 및 로그인 기록 확인 필요 # cat /etc/shadow 또는 # chage -l [계정명]
+   우리: fDumpS "SRV-074"
+SRV-075 
+   2026: SRV-075_비밀번호 복잡도 설정 | 1. 비밀번호 없이 로그인 가능한 계정이 있는지 확인 2. 패스워드 크랙 시도
+   우리: fDumpS "SRV-075 SRV-076"
+SRV-077 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-077"
+SRV-081 
+   2026: SRV-081_Crontab 설정파일 권한 설정 적절성 | 1. /usr/bin/crontab 의 권한 확인 # ls -alLd /usr/bin/crontab 2. /var/spool/cron/crontabs/* 의 권한
+   우리: fDumpS "SRV-081"
+SRV-082 
+   2026: SRV-082_시스템 주요 디렉터리 권한 설정 적절성 | 1. ls 명령을 통한 주요 디렉터리의 권한 확인 # ls -alLd /usr /bin /sbin /etc /var
+   우리: fDumpS "SRV-082"
+SRV-083 
+   2026: SRV-083_시스템 스타트업 스크립트 권한 설정 적절성 | 1. 스타트업 디렉터리 파일들의 권한 확인 # ls -l {스타트업 파일} * 스타트업 스크립트 관련 파일/폴더 : [RHEL5,6 버전] /etc/inittab
+   우리: fDumpS "SRV-083"
+SRV-084 
+   2026: SRV-084_시스템 주요 파일 권한 설정 적절성 | 1. ls -alL <시스템 주요 파일 경로> 명령으로 파일 소유자 및 권한 확인 # ls -alL /etc/passwd # ls -alL /etc/shadow 
+   우리: # fDumpS "SRV-084"
+SRV-085 ➕기준외
+   2026: (기준없음) | 
+   우리: #fDumpS "SRV-085: 임시 디렉토리 권한 설정 오류"
+SRV-086 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-086"
+SRV-087 
+   2026: SRV-087_설치된 C 컴파일러의 권한 설정 적절성 | 1. C 컴파일러(CC/GCC 등)의 others 권한 확인 # ls -alL [C 컴파일러(cc,gcc) 경로] * cc, gcc 컴파일러 경로 1. 기본파일 
+   우리: fDumpS "SRV-087"
+SRV-088 ➕기준외
+   2026: (기준없음) | 
+   우리: #fDumpS "SRV-088: 파일시스템 mount nosuid 옵션 미설정"
+SRV-089 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-089"
+SRV-091 
+   2026: SRV-091_불필요하게 SUID, SGID bit가 설정된 파일 제거 | 1. SUID/SGID 설정된 의심스러운 파일 확인 # find / -user root -type f \( -perm -04000 -o -perm -02000 \
+   우리: fDumpS "SRV-091"
+SRV-092 
+   2026: SRV-092_사용자 홈 디렉터리 경로 및 권한 설정 적절성 | 1. 사용자 계정 별 홈 디렉터리 경로 확인 # cat /etc/passwd 2. 사용자의 홈 디렉터리 소유자 및 접근 권한 확인 # ls -al [Home 디렉
+   우리: fDumpS "SRV-092"
+SRV-093 
+   2026: SRV-093_불필요한 world writable 파일 제거 | 1. others에 write 권한이 부여된 파일을 확인하고, 업무상 필요한 권한인지 확인 HOMEDIR=`egrep -v 'nologin|false' /etc/
+   우리: fDumpS "SRV-093"
+SRV-094 
+   2026: SRV-094_Crontab 참조파일 권한 설정 적절성 | 1. ls -alL crontab 참조파일 권한 확인 ex) 참조파일 : cron 파일 내 실행하는 파일
+   우리: fDumpS "SRV-094"
+SRV-095 
+   2026: SRV-095_존재하지 않는 소유자 및 그룹 권한을 가진 파일 또는 디렉터리 제거 | <존재하지 않는 UID 및 GID를 가진 파일 및 디렉터리 검색> # find / -type f -a -nouser -exec ls -alLd {} \; # fi
+   우리: fDumpS "SRV-095"
+SRV-096 
+   2026: SRV-096_사용자 환경파일의 소유자 또는 권한 설정 적절성 | 1. 사용자별 환경파일 권한 확인 # ls -l [사용자별 환경 설정 파일] * 사용자별 환경 설정 파일 : ex) ".profile", ".login", ".k
+   우리: fDumpS "SRV-096"
+SRV-099 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-099"
+SRV-100 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-100"
+SRV-106 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-106"
+SRV-107 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-107"
+SRV-108 
+   2026: SRV-108_로그에 대한 접근통제 및 관리 적절성 | 1. /var/log 디렉터리 내 파일들의 권한 확인
+   우리: fDumpS "SRV-108"
+SRV-109 
+   2026: SRV-109_시스템 주요 이벤트 로그 설정 적절성 | 1. /etc/syslog.conf 또는 /etc/rsyslog.conf 파일에서 로그 기록 정책 확인 - syslog 데몬 서비스 확인 # ps -ef | gr
+   우리: fDumpS "SRV-109"
+SRV-112 
+   2026: SRV-112_Cron 서비스 로깅 설정 적절성 | 1. /etc/syslog.conf 또는 /etc/rsyslog.conf 파일에서 로그 기록 정책 확인 (cron 구문 존재 확인)
+   우리: fDumpS "SRV-112"
+SRV-114 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-114"
+SRV-115 
+   2026: SRV-115_로그의 정기적 검토 및 보고 수행 여부 | 1. 로그 검토 보고서 확인/인터뷰
+   우리: fDumpS "SRV-115"
+SRV-118 
+   2026: SRV-118_주기적인 보안패치 및 벤더 권고사항 적용 여부 | [패치 정보] 1. 각 linux 사이트에서 적절한 패치 정보 및 패치 획득 (레드햇(http://www.redhat.com/), wowlinux, etc ) 2
+   우리: fDumpS "SRV-118"
+SRV-121 
+   2026: SRV-121_root 계정의 PATH 환경변수 설정 적절성 | 1. PATH 변수 내부에 "./" 혹은 "::" 또는 불필요한 임의의 경로가 존재하는지 확인 # echo $PATH
+   우리: fDumpS "SRV-121"
+SRV-122 
+   2026: SRV-122_umask 설정 적절성 | 1. 모든 계정의 umask 값을 확인 2. 로그인 혹은 shell 변경 시, 설정 파일과 shell 스크립트로 인해 적용될 umask 값 확인. 일반적으로 다음
+   우리: fDumpS "SRV-122"
+SRV-127 
+   2026: SRV-127_로그인 실패 횟수에 따른 접속 제한 설정 | [ 아래 파일에 다음과 같은 설정이 존재하는지 확인 ] - /etc/pam.d/password-auth, - /etc/pam.d/common-auth, - /et
+   우리: fDumpS "SRV-127"
+SRV-130 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-130"
+SRV-131 
+   2026: SRV-131_SU 명령 사용가능 그룹 제한 설정 적절성 | [wheel 그룹을 이용하는 경우] 1. "wheel" 그룹(su 명령어 사용 그룹) 및 그룹 내 구성원 존재 여부 확인 # cat /etc/group wheel
+   우리: fDumpS "SRV-131"
+SRV-132 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-132"
+SRV-133 
+   2026: SRV-133_Cron 서비스 사용 계정 제한 설정 적절성 | 1. cron.allow , cron.deny 파일 존재 여부, 파일 내부에 계정 존재 여부 확인 # cat /etc/cron.allow # cat /etc/cr
+   우리: fDumpS "SRV-133"
+SRV-134 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-134"
+SRV-135 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-135"
+SRV-142 
+   2026: SRV-142_중복 UID가 부여된 계정 제한 여부 | 1. /etc/passwd 파일을 확인하여, 동일한 UID를 가진 계정이 존재하는지 점검 # cat /etc/passwd
+   우리: fDumpS "SRV-142"
+SRV-143 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-143"
+SRV-144 
+   2026: SRV-144_/dev 경로에 불필요한 파일 제거 | 1. /dev 경로에 존재하지 않는 device 파일 점검 # find /dev -type f -exec ls -l {} \;
+   우리: fDumpS "SRV-144"
+SRV-145 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-145"
+SRV-146 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-146"
+SRV-147 
+   2026: SRV-147_불필요한 네트워크 모니터링 서비스 비활성화 | 1. SNMP 서비스 확인 # ps -ef | grep snmp
+   우리: fDumpS "SRV-147"
+SRV-148 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-148"
+SRV-158 
+   2026: SRV-158_불필요한 Telnet 서비스 비활성화 | 1. 23번 포트에 TELNET 서비스가 동작 중인지 확인 # vi /etc/xinetd.conf
+   우리: fDumpS "SRV-158"
+SRV-159 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-159"
+SRV-160 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-160"
+SRV-161 
+   2026: SRV-161_ftpusers 파일의 소유자 및 권한 설정 적절성 | 1. ftpusers 파일에 대한 권한 확인 # ls -alLd /etc/ftpusers # ls -alLd /etc/ftpd/ftpusers # ls -alLd
+   우리: fDumpS "SRV-161"
+SRV-162 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-162"
+SRV-163 
+   2026: SRV-163_시스템 사용 주의사항 출력 | 다음의 파일들에 메시지 설정 존재 여부 확인 1. /etc/motd 에 시스템 사용주의사항 입력여부 확인 # cat /etc/motd 2. /etc/issue.n
+   우리: fDumpS "SRV-163"
+SRV-164 
+   2026: SRV-164_구성원이 존재하지 않는 GID 제거 | 구성원이 존재하지 않는 그룹 확인 1. /etc/passwd 파일과 /etc/group 파일을 비교하여 확인 2. 필요한 경우 /etc/gshadow 파일도 함께
+   우리: fDumpS "SRV-164"
+SRV-165 
+   2026: SRV-165_불필요하게 Shell이 부여된 계정 제거 | 1. cat /etc/passwd 파일 확인 # cat /etc/passwd | egrep "^daemon|^bin|^sys|^adm|^listen|^nobody
+   우리: fDumpS "SRV-165"
+SRV-166 
+   2026: SRV-166_불필요한 숨김 파일 또는 디렉터리 제거 | 1. 특정 디렉터리 내 불필요한 파일 점검 # ls -al [디렉터리명] 2. 전체 숨김 디렉터리 및 숨김 파일 점검 # find / -type f -name "
+   우리: # fDumpS "SRV-166"
+SRV-167 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-167"
+SRV-168 ➕기준외
+   2026: (기준없음) | 
+   우리: fDumpS "SRV-168"
+SRV-170 
+   2026: SRV-170_SMTP 서비스 정보 노출 방지 여부 | [Sendmail] 설정 파일(sendmail.cf) 내의 SmtpGreetingMessage 설정 값 확인 배너 메시지 설정 값에 $v 파라미터가 설정 되어있으
+   우리: SRV-170) echo "SMTP 배너 버전정보 노출 여부 확인|SMTP 배너에서 버전/제품 정보 비노출|SMTP 배너에 버전 정보 노출|SMTP 배너의 버전 정보 노출을 제거하십시오." ;;
+SRV-171 
+   2026: SRV-171_FTP 서비스 정보 노출 방지 여부 | 1. FTP 배너 메시지 점검 # cat /etc/proftpd.conf # cat /usr/local/etc/proftpd.conf (ServerIdent 구문
+   우리: SRV-171) echo "FTP 배너 정보 노출 여부 확인|기본 배너 억제 또는 버전 비노출|FTP 배너에 버전/제품 정보 노출|FTP 배너의 정보 노출을 차단하십시오." ;;
+SRV-172 ➕기준외
+   2026: (기준없음) | 
+   우리: SRV-172) echo "불필요한 공유 자원 존재 여부 확인|기본/관리 공유 외 불필요 공유 없음|불필요한 공유 자원 존재|불필요한 공유를 제거하십시오." ;;
+SRV-173 
+   2026: SRV-173_DNS 서비스 동적 업데이트 설정 적절성 | [BIND] /etc/named.conf 내부의 allow-update 또는 update-policy 존재 구문 확인
+   우리: SRV-173) echo "DNS 동적 업데이트 허용 여부 확인|동적 업데이트 비허용 또는 secure-only|allow-update/AllowUpdate 허용|DNS 동적 업데이트를 제한하십시오
+SRV-174 
+   2026: SRV-174_불필요한 DNS 서비스 비활성화 | [BIND] DNS 서비스 실행 여부 확인 # ps -ef | grep named
+   우리: SRV-174) echo "불필요한 DNS 서비스 실행 여부 확인|DNS 미사용 시 비활성화|불필요한 DNS 서비스 실행 중|불필요한 DNS 서비스를 중지하십시오." ;;
+SRV-175 
+   2026: SRV-175_시간 동기화를 위한 NTP 설정 | 1. 다음 명령을 실행하여 NTP 설정과 현재 시각 확인 # ntpq -pn # chronyc tracking # date "+%Y-%m-%d %T"
+   우리: SRV-175) echo "시간 동기화(NTP) 설정 여부 확인|신뢰 NTP 서버와 동기화 설정|NTP 미설정 또는 동기화 안됨|신뢰할 수 있는 NTP 서버로 시간 동기화를 설정하십시오." ;;
+SRV-177 
+   2026: SRV-177_sudo 명령어 접근 권한 설정 적절성 | 1. sudo 설치 여부 확인 후 sudoer 파일의 설정 확인 # which sudo # cat /etc/sudoers 2. 불필요한 사용자가 sudo 명령어 
+   우리: SRV-177) echo "sudo/관리자 명령 접근 권한 적절성 확인|최소 권한 원칙의 sudoers/UAC 설정|불필요한 사용자에 광범위한 권한 부여|관리자 명령 권한을 최소화하십시오." ;;
+SRV-179 
+   2026: SRV-179_서비스 지원이 종료된(EoS) 시스템 및 장비 교체 여부 | 1. 배포판/버전 확인 # cat /etc/os-release 또는 #lsb_release -a 2. 해당 벤더(RHEL/SLES/Ubuntu 등) Lifecyc
+   우리: SRV-179) echo "지원종료(EoS) OS/장비 사용 여부 확인|벤더 지원이 유효한 버전 사용|지원 종료(EoS) 버전 사용|지원 종료 시스템을 교체/업그레이드하십시오." ;;

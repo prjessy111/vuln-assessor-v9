@@ -1,0 +1,249 @@
+<%- include('../_header', { title: isEdit ? '예약 편집' : '새 예약 등록', activeMenu: 'schedules' }) %>
+<style>
+  .host-tree { border:1px solid #e3e8ef; border-radius:8px; padding:12px 14px; margin-top:10px; background:#fafbfd; max-width:640px; }
+  .host-group { margin-bottom:10px; }
+  .host-group-head { display:block; padding:4px 0; border-bottom:1px solid #eef1f5; }
+  .host-items { display:flex; flex-wrap:wrap; gap:6px 18px; padding:8px 0 0 18px; }
+  .host-item { display:inline-flex; align-items:center; gap:6px; min-width:200px; cursor:pointer; }
+  .host-item .hn { font-weight:600; }
+  .picker-foot { margin-top:8px; padding-top:8px; border-top:1px dashed #d9e0ea; font-size:13px; color:#46505f; }
+</style>
+
+<div class="page-header">
+  <h1><%= isEdit ? '예약 진단 편집 #' + schedule.schedule_id : '새 예약 진단 등록' %></h1>
+  <p class="muted small">
+    cron 표현식으로 자동 실행 주기를 정의합니다. 예: <code>0 2 * * *</code> = 매일 02:00,
+    <code>0 * * * *</code> = 매시 정각, <code>*/15 * * * *</code> = 15분마다.
+    수동 실행 전용으로 두려면 cron 표현식에 <code>manual</code> 입력.
+  </p>
+  <div class="header-actions">
+    <a href="/schedules" class="btn">← 예약 진단</a>
+  </div>
+</div>
+
+<form id="schForm" class="form-container">
+  <div class="form-section">
+    <h3>기본 정보</h3>
+    <div class="form-row inline">
+      <label>이름 *</label>
+      <input type="text" name="name" required maxlength="80"
+             value="<%= isEdit ? schedule.name : '' %>"
+             placeholder="예: 야간 전체 점검">
+    </div>
+    <div class="form-row inline">
+      <label>설명</label>
+      <input type="text" name="description" maxlength="200"
+             value="<%= isEdit ? (schedule.description || '') : '' %>"
+             placeholder="예: 매일 02:00 전체 서버 진단">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>실행 주기</h3>
+    <div class="form-row inline">
+      <label>cron 표현식 *</label>
+      <input type="text" id="cronInput" name="cron_expr" required
+             value="<%= isEdit ? schedule.cron_expr : '0 2 * * *' %>"
+             placeholder="0 2 * * *  또는  manual">
+      <button type="button" class="btn-sm" onclick="testCron()">미리보기</button>
+    </div>
+    <p class="muted small" id="cronPreview">
+      형식: <code>분 시 일 월 요일</code> (0-59 0-23 1-31 1-12 0-6, 일=0)
+    </p>
+    <div class="form-row inline">
+      <label>빠른 선택</label>
+      <select onchange="if(this.value) { document.getElementById('cronInput').value = this.value; testCron(); }">
+        <option value="">— 자주 쓰는 패턴 —</option>
+        <option value="0 2 * * *">매일 02:00 (야간 점검)</option>
+        <option value="0 */6 * * *">6시간마다</option>
+        <option value="0 * * * *">매시 정각</option>
+        <option value="*/15 * * * *">15분마다</option>
+        <option value="0 3 * * 0">매주 일요일 03:00</option>
+        <option value="0 3 1 * *">매월 1일 03:00</option>
+        <option value="manual">수동 실행 전용</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>대상 서버</h3>
+    <%
+      // 편집 시 기존 선택 id 정규화
+      var selIds = [];
+      if (isEdit && schedule.server_ids) {
+        selIds = (Array.isArray(schedule.server_ids) ? schedule.server_ids : String(schedule.server_ids).split(',')).map(function(x){ return String(x).trim(); }).filter(Boolean);
+      }
+      var isList = isEdit && schedule.server_scope === 'list';
+      // OS별 그룹화
+      var osGroups = {};
+      (servers || []).forEach(function(s){ var k = (s.os_type || '기타'); (osGroups[k] = osGroups[k] || []).push(s); });
+    %>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="server_scope" value="all" <%= isList ? '' : 'checked' %>>
+        <strong>전체 서버</strong>
+        <span class="muted small">servers.csv 등록 전체 (<%= (servers||[]).length %>대)</span>
+      </label>
+      <label>
+        <input type="radio" name="server_scope" value="list" <%= isList ? 'checked' : '' %>>
+        <strong>개별 선택</strong>
+        <span class="muted small">아래 호스트에서 직접 선택</span>
+      </label>
+    </div>
+
+    <div id="hostPicker" class="host-tree" style="display:<%= isList ? '' : 'none' %>;">
+      <% Object.keys(osGroups).forEach(function(osk){ var grp = osGroups[osk]; %>
+        <div class="host-group">
+          <label class="host-group-head">
+            <input type="checkbox" class="os-all" data-os="<%= osk %>"> <strong><%= String(osk).toUpperCase() %></strong>
+            <span class="muted small">(<%= grp.length %>대)</span>
+          </label>
+          <div class="host-items">
+            <% grp.forEach(function(s){ %>
+              <label class="host-item">
+                <input type="checkbox" class="host-chk" value="<%= s.server_id %>" data-os="<%= osk %>"
+                       <%= selIds.includes(String(s.server_id)) ? 'checked' : '' %>>
+                <span class="hn"><%= s.hostname %></span>
+                <span class="muted small"><%= s.ip_address %></span>
+              </label>
+            <% }); %>
+          </div>
+        </div>
+      <% }); %>
+      <div class="picker-foot">선택된 서버 <strong id="selCount">0</strong>대</div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>알림</h3>
+    <div class="form-row inline">
+      <label>
+        <input type="checkbox" name="notify_on_vuln" value="on"
+               <%= isEdit && schedule.notify_on_vuln ? 'checked' : '' %>>
+        취약점 발견 시 알림
+      </label>
+    </div>
+    <div class="form-row inline">
+      <label>
+        <input type="checkbox" name="notify_on_failure" value="on"
+               <%= isEdit && schedule.notify_on_failure ? 'checked' : '' %>>
+        진단 실패 시 알림
+      </label>
+    </div>
+    <p class="muted small">
+      채널 설정: <a href="/notifications">알림 관리</a> 참조 (기본 console).
+    </p>
+  </div>
+
+  <div class="form-section">
+    <h3>상태</h3>
+    <div class="form-row inline">
+      <label>
+        <input type="checkbox" name="enabled" value="on"
+               <%= (!isEdit || schedule.enabled) ? 'checked' : '' %>>
+        활성화 (자동 실행 사용)
+      </label>
+    </div>
+  </div>
+
+  <% if (isEdit) { %>
+    <div class="form-section">
+      <h3>참고 정보</h3>
+      <table class="data-table" style="max-width:500px;">
+        <tr><th>생성</th><td class="mono small"><%= schedule.created_at || '-' %> (<%= schedule.created_by || '-' %>)</td></tr>
+        <tr><th>마지막 실행</th><td class="mono small"><%= schedule.last_run_at || '-' %></td></tr>
+        <tr><th>마지막 상태</th><td><%= schedule.last_status || '-' %></td></tr>
+        <tr><th>다음 실행 (계산)</th><td class="mono small"><%= schedule.next_run_at || '-' %></td></tr>
+      </table>
+    </div>
+  <% } %>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary"><%= isEdit ? '저장' : '예약 등록' %></button>
+    <a href="/schedules" class="btn">취소</a>
+  </div>
+</form>
+
+<script>
+// 대상 서버 — 전체/개별 토글 + OS 전체선택 + 카운트
+const hostPicker = document.getElementById('hostPicker');
+function updateSelCount() {
+  const n = document.querySelectorAll('.host-chk:checked').length;
+  const el = document.getElementById('selCount'); if (el) el.textContent = n;
+}
+document.querySelectorAll('input[name="server_scope"]').forEach(r => {
+  r.addEventListener('change', e => {
+    if (hostPicker) hostPicker.style.display = e.target.value === 'list' ? '' : 'none';
+  });
+});
+document.querySelectorAll('.os-all').forEach(cb => {
+  cb.addEventListener('change', e => {
+    const os = e.target.dataset.os;
+    document.querySelectorAll('.host-chk[data-os="' + os + '"]').forEach(h => { h.checked = e.target.checked; });
+    updateSelCount();
+  });
+});
+document.querySelectorAll('.host-chk').forEach(cb => cb.addEventListener('change', updateSelCount));
+updateSelCount();
+
+async function testCron() {
+  const expr = document.getElementById('cronInput').value.trim();
+  const out = document.getElementById('cronPreview');
+  if (!expr) { out.textContent = '표현식을 입력하세요.'; return; }
+  if (expr === 'manual') {
+    out.innerHTML = '<strong>수동 실행</strong> — 자동 실행 안 함, [즉시 실행] 버튼으로만 트리거';
+    return;
+  }
+  try {
+    const res = await fetch('/schedules/preview-cron?expr=' + encodeURIComponent(expr));
+    const j = await res.json();
+    if (j.status === 'success') {
+      out.innerHTML = '<strong>' + j.humanized + '</strong> — 다음 실행 예정: ' +
+        j.next_runs.map(t => '<code>' + t + '</code>').join(', ');
+    } else {
+      out.innerHTML = '<span style="color:#c0392b;">⚠ ' + j.error + '</span>';
+    }
+  } catch (e) {
+    out.innerHTML = '<span style="color:#c0392b;">⚠ ' + e.message + '</span>';
+  }
+}
+
+document.getElementById('schForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = {};
+  for (const [k, v] of fd.entries()) data[k] = v;
+  // checkbox unchecked 처리
+  data.notify_on_vuln    = fd.has('notify_on_vuln');
+  data.notify_on_failure = fd.has('notify_on_failure');
+  data.enabled           = fd.has('enabled');
+  // 대상 서버
+  if (data.server_scope === 'list') {
+    const ids = [...document.querySelectorAll('.host-chk:checked')].map(c => c.value);
+    if (!ids.length) { alert('개별 선택 시 최소 1대 이상 호스트를 선택하세요.'); return; }
+    data.server_ids = ids;
+    data.target_count = ids.length;
+    data.server_group = null;
+  } else {
+    data.server_ids = null;
+    data.server_group = null;
+    data.target_count = <%= (servers||[]).length %>;
+  }
+
+  const url = '<%= isEdit ? "/schedules/" + schedule.schedule_id + "/update" : "/schedules/save" %>';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const j = await res.json();
+  if (j.status === 'success') {
+    alert('<%= isEdit ? "수정되었습니다." : "예약이 등록되었습니다." %>');
+    location.href = '/schedules';
+  } else {
+    alert('실패: ' + (j.error || '오류'));
+  }
+};
+</script>
+
+<%- include('../_footer') %>

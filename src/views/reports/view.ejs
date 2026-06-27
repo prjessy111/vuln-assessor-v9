@@ -1,0 +1,93 @@
+<%- include('../_header', { title: '진단 리포트' }) %>
+
+<div class="report-header">
+  <h1>진단 리포트 #<%= session.assessment_id %></h1>
+  <div class="report-actions">
+    <a href="/reports/<%= session.assessment_id %>/xlsx" class="btn">XLSX 다운로드</a>
+    <a href="/reports/<%= session.assessment_id %>/pdf" class="btn">PDF 다운로드</a>
+    <a href="/history?server_id=<%= session.server_id %>" class="btn">이력으로</a>
+  </div>
+</div>
+
+<table class="meta-table">
+  <tr><th>서버</th><td><%= session.server_name %> (<%= session.hostname %>)</td>
+      <th>OS</th><td><%= session.os_type %> <%= session.os_version ? `(${session.os_version})` : '' %></td></tr>
+  <tr><th>진단일시</th><td><%= session.executed_at %></td>
+      <th>실행자</th><td><%= session.executed_by || '-' %></td></tr>
+  <tr><th>룰셋</th><td><%= session.ruleset_ver %> (<%= session.ruleset_target || '범용' %>)</td>
+      <th>소요시간</th><td><%= fmtMs(session.elapsed_ms) %></td></tr>
+  <tr><th>어댑터</th><td><%= session.adapter || '-' %></td>
+      <th>LLM 엔진</th><td><%= session.llm_engine || '-' %></td></tr>
+  <tr><th>Raw 파일</th><td colspan="3"><%= session.raw_file_name %>
+      <span class="muted small">(SHA-256: <%= session.raw_file_hash.slice(0,32) %>...)</span></td></tr>
+</table>
+
+<div class="summary-cards">
+  <div class="summary-card total"><div>전체</div><div class="num"><%= session.total_count %></div></div>
+  <div class="summary-card vuln"><div>취약</div><div class="num"><%= session.vuln_count %></div></div>
+  <div class="summary-card safe"><div>양호</div><div class="num"><%= session.safe_count %></div></div>
+  <div class="summary-card na"><div>점검불가</div><div class="num"><%= session.na_count %></div></div>
+</div>
+
+<div class="eval-method-summary">
+  평가 방법 분포:
+  <span class="method-badge simple">즉시 판정(SQL): <%= session.simple_count || 0 %>건</span>
+  <span class="method-badge llm">AI 판정(LLM): <%= session.llm_count || 0 %>건</span>
+</div>
+
+<% Object.keys(grouped).forEach(cat => { %>
+  <h2><%= cat %>
+    <span class="cat-stat">
+      <%
+        const c = grouped[cat];
+        const v = c.filter(r => r.status === '취약').length;
+        const s = c.filter(r => r.status === '양호').length;
+        const n = c.filter(r => r.status === '점검불가').length;
+      %>
+      (취약 <%= v %> / 양호 <%= s %> / N/A <%= n %>)
+    </span>
+  </h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:90px">항목ID</th>
+        <th>점검항목</th>
+        <th style="width:60px">중요도</th>
+        <th style="width:75px">평가</th>
+        <th style="width:90px">판정</th>
+        <th>사유</th>
+        <th style="width:200px">조치권고</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% grouped[cat].forEach(r => { %>
+        <tr class="status-<%= r.status === '취약' ? 'vuln' : r.status === '양호' ? 'safe' : 'na' %>">
+          <td><code><%= r.rule_id %></code></td>
+          <td>
+            <strong><%= r.title %></strong>
+            <% if (r.description) { %>
+              <div class="muted small"><%= r.description %></div>
+            <% } %>
+          </td>
+          <td><span class="sev sev-<%= r.severity %>"><%= r.severity %></span></td>
+          <td>
+            <span class="method-badge <%= r.eval_method === 'simple' ? 'simple' : r.eval_method === 'llm' ? 'llm' : 'na' %>">
+              <%= r.eval_method === 'simple' ? 'SQL' : r.eval_method === 'llm' ? 'AI' : 'N/A' %>
+            </span>
+          </td>
+          <td><span class="badge b-<%= r.status === '취약' ? 'vuln' : r.status === '양호' ? 'safe' : 'na' %>">
+              <%= r.status %></span></td>
+          <td>
+            <%= r.reason %>
+            <% if (r.evidence) { %>
+              <div class="evidence">증거: <code><%= r.evidence %></code></div>
+            <% } %>
+          </td>
+          <td class="muted small"><%= r.recommend %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+<% }); %>
+
+<%- include('../_footer') %>

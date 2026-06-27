@@ -1,0 +1,235 @@
+<%- include('../_header', { title: '취약점 관리', activeMenu: 'vuln' }) %>
+
+<div class="page-header">
+  <h1>취약점 관리</h1>
+  <p class="muted small">
+    모든 진단 결과에서 발견된 취약점을 통합 조회합니다. 
+    동일 (서버, 룰) 조합은 최신 진단 기준으로 표시.
+    조치 처리는 <a href="/remediation">조치 관리</a>에서.
+  </p>
+</div>
+
+<!-- KPI (실데이터) -->
+<div class="kpi-grid kpi-5col">
+  <div class="kpi-card kpi-vuln">
+    <div class="kpi-label">전체 취약점</div>
+    <div class="kpi-num"><%= stats.total %></div>
+    <div class="kpi-sub">소항목 포함 <%= stats.total + stats.sub_total %>건</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">위험도 상</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= stats.by_severity.상 %></div>
+    <div class="kpi-sub">즉시 조치 권고</div>
+  </div>
+  <div class="kpi-card kpi-new">
+    <div class="kpi-label">신규 (7일 이내)</div>
+    <div class="kpi-num"><%= stats.new %></div>
+    <div class="kpi-sub">즉시 검토</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">조치율</div>
+    <div class="kpi-num"><%= stats.fix_rate %>%</div>
+    <div class="kpi-sub"><%= stats.fixed %>/<%= stats.total %> 완료</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#8e44ad;">
+    <div class="kpi-label">CVE 매핑됨</div>
+    <div class="kpi-num" style="color:#8e44ad;"><%= stats.cve_mapped %></div>
+    <div class="kpi-sub">알려진 취약점 연계</div>
+  </div>
+</div>
+
+<!-- 필터 -->
+<div class="section-box">
+  <div class="filter-row">
+    <select id="filterServer">
+      <option value="">전체 서버</option>
+      <% servers.forEach(s => { %>
+        <option value="<%= s.hostname %>"><%= s.hostname %></option>
+      <% }); %>
+    </select>
+    <select id="filterSeverity">
+      <option value="">전체 위험도</option>
+      <option value="상">상</option>
+      <option value="중">중</option>
+      <option value="하">하</option>
+    </select>
+    <select id="filterStatus">
+      <option value="">전체 상태</option>
+      <option value="미조치">미조치</option>
+      <option value="진행중">진행중</option>
+      <option value="조치완료">조치완료</option>
+      <option value="예외">예외</option>
+    </select>
+    <select id="filterNew">
+      <option value="">신규/기존</option>
+      <option value="new">신규 (7일 이내)</option>
+      <option value="old">기존</option>
+    </select>
+    <select id="filterCategory">
+      <option value="">전체 카테고리</option>
+      <% Array.from(new Set(vulns.map(v => v.category).filter(Boolean))).sort().forEach(c => { %>
+        <option value="<%= c %>"><%= c %></option>
+      <% }) %>
+    </select>
+    <input type="date" id="filterFrom">
+    <input type="date" id="filterTo">
+    <input type="search" id="filterText" placeholder="검색 (룰ID/제목/호스트/담당자)...">
+    <button class="btn-sm" onclick="applyFilter()">필터 적용</button>
+    <button class="btn-sm" onclick="resetFilter()">초기화</button>
+  </div>
+</div>
+
+<!-- 취약점 목록 -->
+<div class="section-box">
+  <h3>발견된 취약점 (<%= vulns.length %>건)</h3>
+  <table class="data-table vuln-table">
+    <thead>
+      <tr>
+        <th>관리번호</th>
+        <th>서버</th>
+        <th>룰</th>
+        <th>취약점</th>
+        <th>카테고리</th>
+        <th>위험도</th>
+        <th>소항목</th>
+        <th>발견일</th>
+        <th>경과</th>
+        <th>조치상태</th>
+        <th>담당자</th>
+        <th>액션</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% vulns.forEach(v => { %>
+        <tr data-server="<%= v.hostname %>" 
+            data-severity="<%= v.severity %>" 
+            data-status="<%= v.fix_status %>"
+            data-new="<%= v.is_new ? 'new' : 'old' %>"
+            data-category="<%= v.category || '' %>"
+            data-date="<%= (v.discovered_at || '').slice(0, 10) %>"
+            data-search="<%= (v.rule_id + ' ' + v.title + ' ' + v.hostname + ' ' + (v.assignee || '') + ' ' + (v.category || '')).toLowerCase() %>">
+          <td class="mono small"><%= v.management_no %></td>
+          <td>
+            <strong><%= v.hostname %></strong>
+            <% if (v.service_name) { %>
+              <div class="muted small"><%= v.service_name %></div>
+            <% } %>
+          </td>
+          <td class="mono small"><span class="rule-id-badge"><%= v.rule_id %></span></td>
+          <td class="small"><%= v.title %></td>
+          <td class="small muted"><%= v.category %></td>
+          <td><span class="severity-badge sev-<%= v.severity %>"><%= v.severity %></span></td>
+          <td class="text-center small">
+            <% if (v.is_per_row) { %>
+              <span class="badge-sub"><%= v.sub_vuln %>/<%= v.sub_count %></span>
+            <% } else { %>
+              <span class="muted">-</span>
+            <% } %>
+          </td>
+          <td class="mono small"><%= (v.discovered_at || '').slice(0, 10) %></td>
+          <td class="small">
+            <% if (v.is_new) { %>
+              <span class="badge-new">신규</span>
+            <% } else { %>
+              <span class="muted"><%= v.days_old %>일</span>
+            <% } %>
+          </td>
+          <td>
+            <% if (v.fix_status === '조치완료') { %>
+              <span class="status-pill status-success">✓ 완료</span>
+            <% } else if (v.fix_status === '진행중') { %>
+              <span class="status-pill status-running">진행중</span>
+            <% } else if (v.fix_status === '예외') { %>
+              <span class="status-pill status-exception">예외</span>
+            <% } else { %>
+              <span class="status-pill status-fail">미조치</span>
+            <% } %>
+          </td>
+          <td class="small"><%= v.assignee || '-' %></td>
+          <td>
+            <a href="/vulnerabilities/<%= v.result_id %>" class="btn-sm">상세</a>
+            <a href="/remediation#<%= v.result_id %>" class="btn-sm primary">조치</a>
+            <% if (v.fix_status !== '예외') { %>
+              <button class="btn-sm" onclick="requestException('<%= v.result_id %>', '<%= v.rule_id %>', '<%= v.hostname %>')" 
+                      style="background:#8e44ad;color:#fff;">예외</button>
+            <% } %>
+          </td>
+        </tr>
+      <% }); %>
+      <% if (!vulns.length) { %>
+        <tr><td colspan="12" class="empty" style="padding:32px;text-align:center;">
+          발견된 취약점이 없습니다. 진단을 실행하면 여기 표시됩니다.
+        </td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function applyFilter() {
+  const server = document.getElementById('filterServer').value;
+  const sev = document.getElementById('filterSeverity').value;
+  const status = document.getElementById('filterStatus').value;
+  const isNew = document.getElementById('filterNew').value;
+  const category = document.getElementById('filterCategory').value;
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+  const text = document.getElementById('filterText').value.toLowerCase();
+  
+  document.querySelectorAll('.vuln-table tbody tr').forEach(tr => {
+    let show = true;
+    if (server && tr.dataset.server !== server) show = false;
+    if (sev && tr.dataset.severity !== sev) show = false;
+    if (status && tr.dataset.status !== status) show = false;
+    if (isNew && tr.dataset.new !== isNew) show = false;
+    if (category && tr.dataset.category !== category) show = false;
+    if (from && tr.dataset.date && tr.dataset.date < from) show = false;
+    if (to && tr.dataset.date && tr.dataset.date > to) show = false;
+    if (text && !tr.dataset.search?.includes(text)) show = false;
+    tr.style.display = show ? '' : 'none';
+  });
+}
+
+function resetFilter() {
+  ['filterServer','filterSeverity','filterStatus','filterNew','filterCategory','filterFrom','filterTo','filterText'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('.vuln-table tbody tr').forEach(tr => tr.style.display = '');
+}
+
+['filterServer','filterSeverity','filterStatus','filterNew','filterCategory','filterFrom','filterTo','filterText'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(id === 'filterText' ? 'input' : 'change', applyFilter);
+});
+
+function requestException(resultId, ruleId, hostname) {
+  const reason = prompt(`예외 신청\n\n룰: ${ruleId} / 호스트: ${hostname}\n\n사유를 입력하세요:`);
+  if (!reason) return;
+  
+  const until = prompt('유효 기간 (YYYY-MM-DD, 예: 2026-12-31):');
+  if (!until) return;
+  
+  fetch('/exceptions/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      scope_type: 'result',
+      result_id: resultId,
+      rule_id: ruleId,
+      reason: reason,
+      effective_from: new Date().toISOString().slice(0,10),
+      effective_until: until,
+      requested_by: '<%= currentUser?.username %>',
+    }),
+  }).then(r => r.json()).then(j => {
+    if (j.status === 'success') {
+      alert('예외 신청이 등록되었습니다. (대기 상태)');
+      location.reload();
+    } else {
+      alert('실패: ' + (j.error || '오류'));
+    }
+  });
+}
+</script>
+
+<%- include('../_footer') %>

@@ -1,0 +1,203 @@
+ruleset_ver: "v1.0"
+rules:
+  # ---------- Linux ----------
+  - rule_id: U-01
+    title: root 계정 원격 접속 제한
+    category: 계정관리
+    severity: 상
+    os_target: linux
+    check_key: sshd_permit_root_login
+    check_type: equals
+    check_param: { expect: "no" }
+    recommend: /etc/ssh/sshd_config 의 PermitRootLogin no 설정 후 sshd 재시작
+
+  - rule_id: U-02
+    title: 패스워드 최소 길이 (8자 이상)
+    category: 계정관리
+    severity: 상
+    os_target: linux
+    check_key: login_defs_pass_min_len
+    check_type: int_min
+    check_param: { min: 8 }
+    recommend: /etc/login.defs 에서 PASS_MIN_LEN 8 이상 설정
+
+  - rule_id: U-03
+    title: 패스워드 최대 사용 기간 (90일 이하)
+    category: 계정관리
+    severity: 중
+    os_target: linux
+    check_key: login_defs_pass_max_days
+    check_type: int_max
+    check_param: { max: 90 }
+    recommend: /etc/login.defs 에서 PASS_MAX_DAYS 90 이하 설정
+
+  - rule_id: U-04
+    title: 계정 잠금 임계값 (5회 이하)
+    category: 계정관리
+    severity: 상
+    os_target: linux
+    check_key: pam_faillock_deny
+    check_type: int_max
+    check_param: { max: 5 }
+    recommend: pam_faillock.so deny=5 이하 설정
+
+  - rule_id: U-05
+    title: /etc/passwd 파일 권한 (644 이하)
+    category: 파일및디렉토리관리
+    severity: 상
+    os_target: linux
+    check_key: passwd_perm
+    check_type: perm_le
+    check_param: { max: "644" }
+    recommend: chmod 644 /etc/passwd; chown root:root /etc/passwd
+
+  - rule_id: U-06
+    title: /etc/shadow 파일 권한 (400 이하)
+    category: 파일및디렉토리관리
+    severity: 상
+    os_target: linux
+    check_key: shadow_perm
+    check_type: perm_le
+    check_param: { max: "400" }
+    recommend: chmod 400 /etc/shadow; chown root:root /etc/shadow
+
+  - rule_id: U-07
+    title: /etc/hosts 파일 권한 (600 이하)
+    category: 파일및디렉토리관리
+    severity: 중
+    os_target: linux
+    check_key: hosts_perm
+    check_type: perm_le
+    check_param: { max: "600" }
+    recommend: chmod 600 /etc/hosts
+
+  - rule_id: U-08
+    title: Telnet 서비스 비활성화
+    category: 서비스관리
+    severity: 상
+    os_target: linux
+    check_key: telnet_service
+    check_type: service_off
+    check_param: {}
+    recommend: systemctl disable --now telnet.socket; SSH 사용 권장
+
+  - rule_id: U-09
+    title: FTP 서비스 비활성화 (또는 SFTP 사용)
+    category: 서비스관리
+    severity: 상
+    os_target: linux
+    check_key: ftp_service
+    check_type: service_off
+    check_param: {}
+    recommend: systemctl disable --now vsftpd; SFTP/SCP 사용 권장
+
+  - rule_id: U-10
+    title: rlogin/rsh/rexec 서비스 비활성화
+    category: 서비스관리
+    severity: 중
+    os_target: linux
+    check_key: rservices
+    check_type: service_off
+    check_param: {}
+    recommend: r-services 제거 (yum remove rsh rsh-server)
+
+  - rule_id: U-11
+    title: rsyslog 서비스 활성화
+    category: 로그관리
+    severity: 중
+    os_target: linux
+    check_key: rsyslog_service
+    check_type: service_on
+    check_param: {}
+    recommend: systemctl enable --now rsyslog
+
+  - rule_id: U-12
+    title: 미적용 보안 패치 없음
+    category: 패치관리
+    severity: 중
+    os_target: linux
+    check_key: pending_security_updates
+    check_type: int_max
+    check_param: { max: 0 }
+    recommend: yum update --security 또는 apt-get upgrade 수행
+
+  # ---------- Windows ----------
+  - rule_id: W-01
+    title: Administrator 계정 이름 변경
+    category: 계정관리
+    severity: 상
+    os_target: windows
+    check_key: admin_account_renamed
+    check_type: not_contains
+    check_param: { keyword: "Administrator" }
+    recommend: 로컬 보안 정책 > 계정 > Administrator 이름 바꾸기
+
+  - rule_id: W-02
+    title: Guest 계정 비활성화
+    category: 계정관리
+    severity: 상
+    os_target: windows
+    check_key: guest_account_status
+    check_type: equals
+    check_param: { expect: "Disabled" }
+    recommend: net user guest /active:no
+
+  - rule_id: W-03
+    title: 암호 최소 길이 (8자 이상)
+    category: 계정관리
+    severity: 상
+    os_target: windows
+    check_key: min_password_length
+    check_type: int_min
+    check_param: { min: 8 }
+    recommend: 로컬 보안 정책 > 암호 정책 > 최소 암호 길이 8 이상
+
+  - rule_id: W-04
+    title: 계정 잠금 임계값 (1~5회)
+    category: 계정관리
+    severity: 상
+    os_target: windows
+    check_key: account_lockout_threshold
+    check_type: int_range_inclusive
+    check_param: { min: 1, max: 5 }
+    recommend: 로컬 보안 정책 > 계정 잠금 정책 > 임계값 1~5 (0 사용 금지)
+
+  - rule_id: W-05
+    title: SMBv1 프로토콜 비활성화
+    category: 서비스관리
+    severity: 상
+    os_target: windows
+    check_key: smbv1_enabled
+    check_type: equals
+    check_param: { expect: "False" }
+    recommend: Disable-WindowsOptionalFeature -Online -FeatureName smb1protocol
+
+  - rule_id: W-06
+    title: 불필요한 공유 폴더 제거
+    category: 서비스관리
+    severity: 중
+    os_target: windows
+    check_key: unnecessary_shares
+    check_type: equals
+    check_param: { expect: "none" }
+    recommend: net share <공유명> /delete 로 제거
+
+  - rule_id: W-07
+    title: 로그온 이벤트 감사 (성공/실패)
+    category: 로그관리
+    severity: 중
+    os_target: windows
+    check_key: audit_logon_events
+    check_type: regex
+    check_param: { pattern: "(?i)success.*failure|failure.*success" }
+    recommend: auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+
+  - rule_id: W-08
+    title: 미적용 보안 업데이트 없음
+    category: 패치관리
+    severity: 중
+    os_target: windows
+    check_key: pending_security_updates
+    check_type: int_max
+    check_param: { max: 0 }
+    recommend: Windows Update 또는 WSUS로 보안 업데이트 적용

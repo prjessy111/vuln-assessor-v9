@@ -1,0 +1,19 @@
+<%- include('_header', { title: '오류', activeMenu: typeof activeMenu !== 'undefined' ? activeMenu : '' }) %>
+
+<div class="page-header">
+  <h1>⚠ 오류</h1>
+</div>
+
+<div class="alert alert-warning">
+  <strong><%= typeof message !== 'undefined' ? message : '오류가 발생했습니다.' %></strong>
+  <% if (typeof detail !== 'undefined' && detail) { %>
+    <div class="small" style="margin-top: 8px;"><%= detail %></div>
+  <% } %>
+</div>
+
+<div class="form-actions">
+  <a href="/" class="btn primary">대시보드로</a>
+  <a href="javascript:history.back()" class="btn">이전 페이지</a>
+</div>
+
+<%- include('_footer') %>

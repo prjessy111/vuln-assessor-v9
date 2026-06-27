@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title><%= typeof title !== 'undefined' ? title : '취약점 진단 시스템' %></title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">🛡️ 취약점 진단 시스템</div>
+  <nav>
+    <a href="/" class="<%= activeMenu === '' ? 'active' : '' %>">대시보드</a>
+    <a href="/servers" class="<%= activeMenu === 'servers' ? 'active' : '' %>">서버 관리</a>
+    <a href="/assess/new" class="<%= activeMenu === 'assess' ? 'active' : '' %>">진단 실행</a>
+    <a href="/history" class="<%= activeMenu === 'history' ? 'active' : '' %>">진단 이력</a>
+    <a href="/rules" class="<%= activeMenu === 'rules' ? 'active' : '' %>">룰셋 관리</a>
+  </nav>
+</header>
+<main class="container">
+  <%- body %>
+</main>
+</body>
+</html>

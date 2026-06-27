@@ -1,0 +1,573 @@
+<%- include('../_header', { title: '수집 관리', activeMenu: 'collection' }) %>
+<% const deployJobs = scriptDeployJobs || []; %>
+<style>
+  .progress-panel { margin-top:10px;padding:10px 12px;background:#f8fafc;border:1px solid #dfe6e9;border-radius:6px; }
+  .progress-row { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px; }
+  .progress-title { font-weight:600;color:#2d3436; }
+  .progress-percent { font-variant-numeric:tabular-nums;color:#0984e3;font-weight:700; }
+  .progress-track { height:10px;background:#e9eef3;border-radius:999px;overflow:hidden; }
+  .progress-fill { height:100%;width:0%;background:#0984e3;transition:width .25s ease; }
+  .progress-message { margin-top:6px;color:#636e72; }
+  .progress-mini { width:120px;height:8px;background:#e9eef3;border-radius:999px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px; }
+  .progress-mini > span { display:block;height:100%;background:#0984e3; }
+</style>
+
+<div class="page-header">
+  <h1>🔄 자동 수집 관리</h1>
+  <div class="header-actions">
+    <a href="/collection/history" class="btn">📋 수집 이력</a>
+    <button class="btn primary" onclick="runAll('secums')" style="background:#27ae60;border-color:#27ae60;">SecuMS 전체 진단</button>
+    <button class="btn primary" onclick="runAll('script')" style="background:#6c5ce7;border-color:#6c5ce7;">Script 전체 진단</button>
+    <button class="btn" onclick="location.reload()">🔁 새로고침</button>
+  </div>
+</div>
+
+<p class="muted small" style="margin:0.5rem 0 1rem;">
+  검증 정합성을 위해 SecuMS raw DB 진단과 Script XML 진단을 별도 assessment로 저장합니다.
+</p>
+<div id="collectionProgress" style="display:none;"></div>
+
+<div style="display:flex;gap:8px;margin:0 0 12px;">
+  <button type="button" class="btn primary collection-tab-btn" data-tab="secums" style="background:#27ae60;border-color:#27ae60;">SecuMS 진단</button>
+  <button type="button" class="btn collection-tab-btn" data-tab="script-diagnosis">Script 진단</button>
+  <button type="button" class="btn collection-tab-btn" data-tab="script">Script 업로드</button>
+  <button type="button" class="btn collection-tab-btn" data-tab="deploy">Script 배포</button>
+</div>
+
+<div id="tab-script" class="collection-tab" style="display:none;">
+<div class="section-box">
+  <h3>Script XML 업로드</h3>
+  <p class="muted small">
+    SecuMS Script XML을 수동 업로드합니다. 저장 위치는 <code>data/uploads/YYYY-MM-DD/hostname_script_YYYYMMDD.xml</code> 입니다.
+  </p>
+  <form id="scriptUploadForm" enctype="multipart/form-data" style="display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;align-items:end;">
+    <label>
+      <span class="small muted">서버 선택</span>
+      <select name="server_id" id="scriptServerSelect">
+        <option value="">직접 입력</option>
+        <% csvServers.forEach(s => { %>
+          <option value="<%= s.server_id || s.ip %>" data-hostname="<%= s.hostname %>">
+            <%= s.hostname %> (<%= s.ip %>)
+          </option>
+        <% }) %>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">호스트명</span>
+      <input type="text" name="hostname" id="scriptHostname" placeholder="예: jessy62" required>
+    </label>
+    <label>
+      <span class="small muted">진단 엔진</span>
+      <select name="engine">
+        <option value="ai_llm">AI 후 LLM</option>
+        <option value="ai">AI(mock)</option>
+        <option value="llm">LLM</option>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">Script XML</span>
+      <input type="file" name="scriptfile" accept=".xml" required>
+    </label>
+    <label style="grid-column:1 / span 2;">
+      <input type="checkbox" name="run_immediately" checked>
+      업로드 후 Script 소스로 바로 진단
+    </label>
+    <div style="grid-column:3 / span 2;text-align:right;">
+      <button type="submit" class="btn primary" style="background:#6c5ce7;border-color:#6c5ce7;">Script 업로드</button>
+    </div>
+  </form>
+  <div id="scriptUploadResult" class="muted small" style="margin-top:10px;"></div>
+</div>
+</div>
+
+<div id="tab-deploy" class="collection-tab" style="display:none;">
+<div class="section-box">
+  <h3>Script 배포</h3>
+  <form id="scriptDeployForm" enctype="multipart/form-data" style="display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;align-items:end;">
+    <label>
+      <span class="small muted">서버 선택</span>
+      <select name="server_id" id="deployServerSelect" required>
+        <option value="">선택</option>
+        <% csvServers.forEach(s => { %>
+          <option value="<%= s.server_id || s.ip %>" data-hostname="<%= s.hostname %>" data-username="<%= s.username || s.ssh_user || '' %>" data-port="<%= s.ssh_port || s.winrm_port || s.port || '' %>" data-os="<%= s.os || s.os_type || '' %>">
+            <%= s.hostname %> (<%= s.ip %>)
+          </option>
+        <% }) %>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">호스트명</span>
+      <input type="text" name="hostname" id="deployHostname" placeholder="예: jessy62" required>
+    </label>
+    <label>
+      <span class="small muted">진단 엔진</span>
+      <select name="engine">
+        <option value="ai_llm">AI 후 LLM</option>
+        <option value="ai">AI(mock)</option>
+        <option value="llm">LLM</option>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">실행 방식</span>
+      <select name="deploy_mode">
+        <option value="direct">직접 실행 (Linux SSH / Windows WinRM)</option>
+        <option value="agent">Agent 대기열</option>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">작업 단계</span>
+      <select name="script_action" id="deployActionSelect">
+        <option value="deploy_run_diagnose">3. 배포 + 실행 + 진단</option>
+        <option value="deploy_run">2. 배포 + 실행</option>
+        <option value="deploy_only">1. 배포만</option>
+      </select>
+    </label>
+    <label>
+      <span class="small muted">원격 사용자(일회성)</span>
+      <input type="text" name="remote_username" id="deployRemoteUsername" placeholder="servers.csv 값 사용">
+    </label>
+    <label>
+      <span class="small muted">원격 비밀번호(일회성)</span>
+      <input type="password" name="remote_password" autocomplete="off" placeholder="비워두면 등록값 사용">
+    </label>
+    <label>
+      <span class="small muted">SSH/WinRM 포트</span>
+      <input type="number" name="remote_port" id="deployRemotePort" min="1" max="65535" placeholder="비우면 UNIX 22 / Windows 5985">
+    </label>
+    <label>
+      <span class="small muted">SSH 키 경로(UNIX 선택)</span>
+      <input type="text" name="remote_ssh_key_path" placeholder="예: C:\keys\id_rsa">
+    </label>
+    <p class="muted small" style="grid-column:1 / span 4;margin:0;">
+      직접 실행은 Linux/UNIX는 SSH, Windows는 WinRM만 사용합니다. 위 일회성 인증값은 배포 요청에만 사용하고 작업 이력에는 저장하지 않습니다.
+    </p>
+    <label style="grid-column:1 / span 2;">
+      <span class="small muted">원격 작업 폴더</span>
+      <input type="text" name="remote_work_dir" placeholder="비우면 .env 기본값 / 예: C:\Windows\Temp 또는 E:\backup2\script">
+    </label>
+    <label>
+      <span class="small muted">결과 XML 패턴</span>
+      <input type="text" name="result_glob" value="*.xml">
+    </label>
+    <label style="grid-column:1 / span 2;">
+      <span class="small muted">실행 인자</span>
+      <input type="text" name="script_args" placeholder="-Fast 또는 -Full">
+    </label>
+    <label>
+      <span class="small muted">ZIP 실행 파일</span>
+      <input type="text" name="package_script" placeholder="예: fsi_win_ai.ps1">
+    </label>
+    <label>
+      <span class="small muted">배포 Script</span>
+      <input type="file" name="deploy_script" accept=".sh,.bash,.ps1,.bat,.cmd,.py,.pl,.xml,.zip" required>
+    </label>
+    <div style="grid-column:1 / span 4;text-align:right;">
+      <button type="submit" class="btn primary" style="background:#0984e3;border-color:#0984e3;">선택 단계 실행</button>
+    </div>
+  </form>
+  <p class="muted small" style="margin-top:8px;">Windows 점검은 단일 <code>fsi_win_ai.ps1</code> 업로드를 기본 권장합니다. 인자를 비우면 빠른 점검(<code>-Fast</code>)으로 실행되며, 전체 원자료가 필요하면 <code>-Full</code>을 입력하세요. <code>1. 배포만</code>은 파일 전송 후 실행하지 않습니다.</p>
+  <div id="scriptDeployResult" class="muted small" style="margin-top:10px;"></div>
+</div>
+
+<h2 style="margin-top:1.5rem;">최근 Script 배포 작업 (<%= deployJobs.length %>개)</h2>
+<% if (deployJobs.length === 0) { %>
+  <p class="muted">등록된 Script 배포 작업이 없습니다.</p>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>상태</th><th>진행률</th><th>호스트</th><th>Script</th><th>결과</th><th>진단</th><th>등록일</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% deployJobs.forEach(j => { %>
+        <tr>
+          <td><span class="badge"><%= j.status %></span></td>
+          <td class="small">
+            <% const pct = Math.max(0, Math.min(100, Number(j.progress_percent || 0))); %>
+            <span class="progress-mini"><span style="width:<%= pct %>%;"></span></span><%= pct %>%
+            <% if (j.progress_message || j.agent_message) { %>
+              <br><span class="muted"><%= j.progress_message || j.agent_message %></span>
+            <% } %>
+          </td>
+          <td><strong><%= j.hostname %></strong><br><span class="small muted"><%= j.ip || '' %></span></td>
+          <td class="small"><%= j.original_name || j.script_file %><br><code><%= j.job_id %></code></td>
+          <td class="small"><%= j.result_file || '-' %></td>
+          <td>
+            <% if (j.assessment_id) { %>
+              <a href="/diagnosis/<%= j.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">#<%= j.assessment_id %></a>
+            <% } else { %>
+              <span class="muted small"><%= j.diagnose_error || '-' %></span>
+            <% } %>
+          </td>
+          <td class="small"><%= j.created_at || '-' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+</div>
+
+<div id="tab-secums" class="collection-tab">
+<h2 style="margin-top:1.5rem;">📋 등록된 서버 (<%= csvServers.length %>개)</h2>
+<% if (csvServers.length === 0) { %>
+  <p class="muted" style="padding:1rem;background:#fffbe6;border-left:3px solid #f1c40f;">
+    ⚠ <code>servers.csv</code> 파일이 없거나 비어 있습니다.<br>
+    프로젝트 루트(<code>vuln-assessor-v9/</code>)에 <code>servers.csv</code> 파일을 만들어 주세요.<br>
+    형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
+  </p>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
+        <th style="width:160px;">SecuMS 실행</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% csvServers.forEach(s => { %>
+        <tr>
+          <td><strong><%= s.hostname %></strong></td>
+          <td class="mono small"><%= s.ip %></td>
+          <td><%= s.os %></td>
+          <td class="small"><%= s.username %></td>
+          <td class="small"><%= s.asset_no %></td>
+          <td>
+            <button class="btn-sm primary" onclick="fetchAndRun('<%= s.ip %>', '<%= s.hostname %>', 'secums')" style="background:#27ae60;">SecuMS 진단</button>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+</div>
+
+<div id="tab-script-diagnosis" class="collection-tab" style="display:none;">
+<h2 style="margin-top:1.5rem;">📋 등록된 서버 (<%= csvServers.length %>개)</h2>
+<% if (csvServers.length === 0) { %>
+  <p class="muted" style="padding:1rem;background:#fffbe6;border-left:3px solid #f1c40f;">
+    ⚠ <code>servers.csv</code> 파일이 없거나 비어 있습니다.<br>
+    프로젝트 루트(<code>vuln-assessor-v9/</code>)에 <code>servers.csv</code> 파일을 만들어 주세요.<br>
+    형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
+  </p>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
+        <th style="width:160px;">Script 실행</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% csvServers.forEach(s => { %>
+        <tr>
+          <td><strong><%= s.hostname %></strong></td>
+          <td class="mono small"><%= s.ip %></td>
+          <td><%= s.os %></td>
+          <td class="small"><%= s.username %></td>
+          <td class="small"><%= s.asset_no %></td>
+          <td>
+            <button class="btn-sm primary" onclick="fetchAndRun('<%= s.ip %>', '<%= s.hostname %>', 'script')" style="background:#6c5ce7;">Script 진단</button>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>
+</div>
+
+<script>
+function clampProgress(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function createProgress(target, title) {
+  const el = typeof target === 'string' ? document.getElementById(target) : target;
+  if (!el) return null;
+  el.style.display = '';
+  el.innerHTML =
+    '<div class="progress-panel">' +
+      '<div class="progress-row">' +
+        '<span class="progress-title">' + title + '</span>' +
+        '<span class="progress-percent">0%</span>' +
+      '</div>' +
+      '<div class="progress-track"><div class="progress-fill"></div></div>' +
+      '<div class="progress-message small">준비 중</div>' +
+    '</div>';
+  return el.querySelector('.progress-panel');
+}
+
+function setProgress(panel, percent, message) {
+  if (!panel) return;
+  const pct = clampProgress(percent);
+  const fill = panel.querySelector('.progress-fill');
+  const pctEl = panel.querySelector('.progress-percent');
+  const msgEl = panel.querySelector('.progress-message');
+  if (fill) fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (msgEl && message) msgEl.textContent = message;
+}
+
+function startSoftProgress(target, title, start, maxBeforeDone) {
+  const panel = createProgress(target, title);
+  let pct = clampProgress(start || 8);
+  const max = clampProgress(maxBeforeDone || 92);
+  setProgress(panel, pct, '요청 전송 중');
+  const timer = setInterval(function() {
+    if (pct < max) {
+      pct = Math.min(max, pct + Math.max(1, Math.round((max - pct) * 0.08)));
+      setProgress(panel, pct, '처리 중');
+    }
+  }, 900);
+  return {
+    panel,
+    set: function(nextPct, message) {
+      pct = clampProgress(nextPct);
+      setProgress(panel, pct, message);
+    },
+    done: function(message) {
+      clearInterval(timer);
+      setProgress(panel, 100, message || '완료');
+    },
+    fail: function(message) {
+      clearInterval(timer);
+      setProgress(panel, 100, message || '실패');
+      const fill = panel && panel.querySelector('.progress-fill');
+      if (fill) fill.style.background = '#d63031';
+    },
+    stop: function() {
+      clearInterval(timer);
+    },
+  };
+}
+
+function isTerminalDeployStatus(status) {
+  return ['completed', 'diagnosed', 'failed', 'diagnosis_failed'].includes(String(status || ''));
+}
+
+async function pollDeployProgress(jobId, progress) {
+  for (let i = 0; i < 120; i += 1) {
+    const res = await fetch('/collection/script-deploy/' + encodeURIComponent(jobId) + '/status');
+    const data = await res.json();
+    if (!res.ok || data.status !== 'success') throw new Error(data.error || '진행 상태 조회 실패');
+    progress.set(data.progress_percent, data.progress_message || data.job_status);
+    if (isTerminalDeployStatus(data.job_status)) return data;
+    await new Promise(function(resolve) { setTimeout(resolve, 2000); });
+  }
+  return null;
+}
+
+document.querySelectorAll('.collection-tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const tab = this.getAttribute('data-tab');
+    document.querySelectorAll('.collection-tab').forEach(function(panel) {
+      panel.style.display = panel.id === 'tab-' + tab ? '' : 'none';
+    });
+    document.querySelectorAll('.collection-tab-btn').forEach(function(b) {
+      b.classList.remove('primary');
+      b.style.background = '';
+      b.style.borderColor = '';
+    });
+    this.classList.add('primary');
+    if (tab === 'secums') {
+      this.style.background = '#27ae60';
+      this.style.borderColor = '#27ae60';
+    } else if (tab === 'script-diagnosis') {
+      this.style.background = '#6c5ce7';
+      this.style.borderColor = '#6c5ce7';
+    } else if (tab === 'deploy') {
+      this.style.background = '#0984e3';
+      this.style.borderColor = '#0984e3';
+    }
+  });
+});
+
+const scriptServerSelect = document.getElementById('scriptServerSelect');
+if (scriptServerSelect) {
+  scriptServerSelect.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const hostname = opt ? opt.getAttribute('data-hostname') : '';
+    if (hostname) document.getElementById('scriptHostname').value = hostname;
+  });
+}
+
+const deployServerSelect = document.getElementById('deployServerSelect');
+if (deployServerSelect) {
+  deployServerSelect.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const hostname = opt ? opt.getAttribute('data-hostname') : '';
+    const username = opt ? opt.getAttribute('data-username') : '';
+    const port = opt ? opt.getAttribute('data-port') : '';
+    if (hostname) document.getElementById('deployHostname').value = hostname;
+    const userInput = document.getElementById('deployRemoteUsername');
+    const portInput = document.getElementById('deployRemotePort');
+    if (userInput && username && !userInput.value) userInput.value = username;
+    if (portInput && port && !portInput.value) portInput.value = port;
+  });
+}
+
+const scriptUploadForm = document.getElementById('scriptUploadForm');
+if (scriptUploadForm) {
+  scriptUploadForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const resultBox = document.getElementById('scriptUploadResult');
+    const btn = this.querySelector('button[type="submit"]');
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '업로드 중...';
+    resultBox.textContent = '';
+    const progress = startSoftProgress(resultBox, 'Script 업로드 및 진단', 8, 92);
+    try {
+      const res = await fetch('/collection/script-upload', {
+        method: 'POST',
+        body: new FormData(this),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') {
+        throw new Error(data.error || '업로드 실패');
+      }
+      progress.done('업로드 및 진단 완료');
+      let msg = '완료: ' + data.saved_path;
+      if (data.assessment_id) {
+        msg += ' / 진단 ID #' + data.assessment_id;
+        alert('Script XML 업로드 및 진단 완료\n\n' + (data.message || '') + '\n저장: ' + data.saved_path);
+        location.href = '/diagnosis/' + data.assessment_id + '/ai';
+      } else {
+        alert('Script XML 업로드 완료\n\n저장: ' + data.saved_path);
+      }
+      resultBox.textContent = msg;
+    } catch (err) {
+      progress.fail(err.message);
+      resultBox.textContent = '오류: ' + err.message;
+      alert('Script 업로드 실패: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  });
+}
+
+const scriptDeployForm = document.getElementById('scriptDeployForm');
+if (scriptDeployForm) {
+  scriptDeployForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const resultBox = document.getElementById('scriptDeployResult');
+    const btn = this.querySelector('button[type="submit"]');
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+    resultBox.textContent = '';
+    const progress = startSoftProgress(resultBox, 'Script 배포/실행/진단', 8, 92);
+    try {
+      const res = await fetch('/collection/script-deploy', {
+        method: 'POST',
+        body: new FormData(this),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') {
+        throw new Error(data.error || '배포 등록 실패');
+      }
+      if (data.job_id && !isTerminalDeployStatus(data.deploy_status || data.job_status)) {
+        progress.stop();
+        const latest = await pollDeployProgress(data.job_id, progress);
+        if (latest && latest.assessment_id) data.assessment_id = latest.assessment_id;
+        if (latest && latest.job_status) data.deploy_status = latest.job_status;
+      } else {
+        progress.done('Script 배포/실행/진단 완료');
+      }
+      resultBox.textContent = '완료: ' + data.job_id;
+      if (data.assessment_id) {
+        alert('Script 배포/실행 및 진단 완료\n\nJob: ' + data.job_id + '\n진단 ID #' + data.assessment_id);
+        location.href = '/diagnosis/' + data.assessment_id + '/ai';
+      } else {
+        alert('Script 배포 처리 완료\n\nJob: ' + data.job_id + '\n' + (data.message || ''));
+        location.reload();
+      }
+    } catch (err) {
+      progress.fail(err.message);
+      resultBox.textContent = '오류: ' + err.message;
+      alert('Script 배포 등록 실패: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  });
+}
+
+function diagnosisSourceLabel(source) {
+  return source === 'script' ? 'Script XML' : 'SecuMS raw DB';
+}
+
+async function fetchAndRun(serverId, hostname, source) {
+  source = source || 'secums';
+  const label = diagnosisSourceLabel(source);
+  if (!confirm('[' + hostname + '] ' + label + ' 수집 후 AI/LLM 진단을 실행합니다.\n진행할까요?')) return;
+  const btns = document.querySelectorAll('button[onclick*="fetchAndRun"]');
+  btns.forEach(function(b) { b.disabled = true; });
+  const progress = startSoftProgress('collectionProgress', '[' + hostname + '] ' + label + ' 진단', 8, 92);
+  try {
+    const res = await fetch('/diagnosis/fetch-and-run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server_id: serverId, source: source }),
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      progress.done(label + ' 진단 완료');
+      const s = data.summary || {};
+      alert('✅ [' + data.hostname + '] ' + label + ' 완료!\n취약 ' + s.vuln + ' / 양호 ' + s.safe + ' / 정보제공 ' + (s.info || 0) + '건\n일치율 ' + s.agreement_rate + '%\n검증 실패율 ' + (s.validation_failure_rate || 0) + '%');
+      location.href = '/diagnosis/' + data.assessment_id + '/ai';
+    } else {
+      progress.fail('처리 실패');
+      const reason = data.fetch_status === 'failed' ? '수집 실패: ' + data.fetch_error :
+                     data.diagnose_status === 'failed' ? '진단 실패: ' + data.diagnose_error :
+                     data.error || '알 수 없는 오류';
+      alert('❌ [' + (data.hostname || hostname) + '] 처리 실패\n\n' + reason);
+    }
+  } catch (e) {
+    progress.fail(e.message);
+    alert('네트워크 오류: ' + e.message);
+  } finally {
+    btns.forEach(function(b) { b.disabled = false; });
+  }
+}
+
+async function runAll(source) {
+  source = source || 'secums';
+  const label = diagnosisSourceLabel(source);
+  if (!confirm('servers.csv 의 모든 서버를 순차로 [' + label + ' 수집 + 진단] 합니다.\n시간이 걸릴 수 있습니다. 진행할까요?')) return;
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 실행 중... (페이지를 떠나지 마세요)';
+  const progress = startSoftProgress('collectionProgress', '전체 서버 ' + label + ' 진단', 5, 95);
+  try {
+    const res = await fetch('/scheduler/run-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: source }),
+    });
+    const data = await res.json();
+    if (data.status === 'completed') {
+      progress.done('전체 서버 처리 완료');
+      const s = data.summary;
+      let msg = '✅ 일괄 처리 완료\n\n전체 ' + s.total + '개\n진단 성공: ' + s.success + '개\n수집만: ' + s.fetched_only + '개\n실패: ' + s.failed + '개\n';
+      alert(msg);
+      location.href = '/collection/history';
+    } else {
+      progress.fail(data.error || '처리 실패');
+      alert('❌ 일괄 처리 실패\n\n' + (data.error || '?'));
+    }
+  } catch (e) {
+    progress.fail(e.message);
+    alert('네트워크 오류: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+</script>
+
+<%- include('../_footer') %>

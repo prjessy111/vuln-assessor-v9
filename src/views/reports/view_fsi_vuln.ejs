@@ -1,0 +1,158 @@
+<%- include('../_header', { title: '취약점 리포트1', activeMenu: 'reports' }) %>
+
+<div class="report-header">
+  <h1>취약점 리포트 #<%= session.assessment_id %> (취약점 리포트1)</h1>
+  <div class="report-actions">
+    <a href="/reports/<%= session.assessment_id %>/fsi" class="btn">📋 전체 리포트1로</a>
+    <a href="/reports/<%= session.assessment_id %>/samsung/vuln" class="btn" style="background:#c0392b;color:#fff;">🚨 취약점 리포트2로</a>
+    <a href="/reports/<%= session.assessment_id %>/fsi/vuln/xlsx" class="btn primary">XLSX 다운로드</a>
+    <a href="/history?server_id=<%= session.server_id %>" class="btn">이력으로</a>
+  </div>
+</div>
+
+<table class="meta-table">
+  <tr><th>호스트명</th><td><%= session.hostname %></td>
+      <th>자산번호</th><td><%= session.asset_no || '미등록' %></td></tr>
+  <tr><th>업무명/용도</th><td><%= session.service_name || '미등록' %></td>
+      <th>IP</th><td><%= session.ip_address || '-' %></td></tr>
+  <tr><th>분석환경</th><td><%= session.os_type %> <%= session.os_version ? `(${session.os_version})` : '' %> / <%= session.policy_name %></td>
+      <th>진단일시</th><td><%= session.executed_at %></td></tr>
+  <tr><th>운영 부서</th><td><%= session.department || '-' %></td>
+      <th>실행자</th><td><%= session.executed_by || '-' %></td></tr>
+</table>
+
+<div class="summary-cards">
+  <div class="summary-card vuln">
+    <div>취약 중항목</div><div class="num"><%= session.vuln_count %></div>
+    <div class="small muted">소항목 <%= session.sub_vuln || 0 %>건</div>
+  </div>
+  <div class="summary-card new-flag">
+    <div>신규</div><div class="num"><%= session.new_vuln_count || 0 %></div>
+  </div>
+  <div class="summary-card recurring">
+    <div>기존(미조치)</div><div class="num"><%= (session.vuln_count - (session.new_vuln_count || 0)) %></div>
+  </div>
+  <div class="summary-card safe">
+    <div>양호</div><div class="num"><%= session.safe_count %></div>
+  </div>
+  <div class="summary-card na">
+    <div>점검불가</div><div class="num"><%= session.na_count %></div>
+  </div>
+</div>
+
+<h2>취약 항목 (<%= vulnRows.length %>건 — 조치 대상)</h2>
+<p class="muted small">
+  조치가 필요한 취약 항목만 표시합니다 (금보원 제출용).
+  전체 결과를 보려면 <a href="/reports/<%= session.assessment_id %>/fsi">리포트1 (전체)</a>을 이용하세요.
+</p>
+
+<div class="fsi-table-wrap">
+<table class="fsi-table">
+  <thead>
+    <tr>
+      <th>관리번호</th>
+      <th>항목번호</th>
+      <th>자산번호</th>
+      <th>호스트명</th>
+      <th>업무명/용도</th>
+      <th>IP</th>
+      <th>취약점</th>
+      <th>평가항목</th>
+      <th>위험도</th>
+      <th>소항목</th>
+      <th>취약항목 (사유)</th>
+      <th>신규여부</th>
+      <th>담당자</th>
+      <th>전달일자</th>
+      <th>조치일자</th>
+      <th>조치여부</th>
+      <th>미조치사유</th>
+      <th>비고</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% vulnRows.forEach((r) => { %>
+      <% var rowStatus = 'vuln'; %>
+      <tr class="row-status-<%= rowStatus %> row-<%= r.fix_status === '조치완료' ? 'done' : r.fix_status === '진행중' ? 'in-progress' : '' %>">
+        <td class="mono"><%= r.management_no %></td>
+        <td class="mono"><%= r.rule_id %></td>
+        <td class="mono"><%= session.asset_no || '-' %></td>
+        <td><%= session.hostname %></td>
+        <td><%= session.service_name || '-' %></td>
+        <td class="mono small"><%= session.ip_address || '-' %></td>
+        <td class="long-text"><%= r.title %></td>
+        <td class="small"><%= r.category %></td>
+        <td>
+          <% if (r.status === '취약') { %>
+            <span class="sev sev-<%= r.severity %>"><%= r.severity %></span>
+          <% } else if (r.status === '양호') { %>
+            <span style="color:#27ae60;font-weight:600;">✓ 양호</span>
+          <% } else if (r.status === '정보제공' || r.status === '정보') { %>
+            <span class="muted">ℹ 정보제공</span>
+          <% } else { %>
+            <span class="muted">? 판정불가</span>
+          <% } %>
+        </td>
+        <td class="small">
+          <% if (r.subs && r.subs.length) {
+               const sv = r.subs.filter(s => s.status === '취약').length; %>
+            <span class="sub-badge">
+              <strong><%= sv %></strong>/<%= r.subs.length %>건 취약
+            </span>
+          <% } else { %>
+            <span class="muted">-</span>
+          <% } %>
+        </td>
+        <td class="long-text small">
+          <%= r.reason %>
+          <% if (r.evidence) { %><br><span class="muted">→ <%= r.evidence %></span><% } %>
+        </td>
+        <td>
+          <span class="newflag newflag-<%= r.is_new ? 'new' : 'old' %>">
+            <%= r.is_new ? '신규' : '기존' %>
+          </span>
+        </td>
+        <td class="editable"><%= r.assignee || '-' %></td>
+        <td class="editable mono small"><%= r.delivered_at || '-' %></td>
+        <td class="editable mono small"><%= r.fixed_at || '-' %></td>
+        <td class="editable">
+          <span class="fix-status fs-<%= r.fix_status === '조치완료' ? 'done' :
+                                          r.fix_status === '진행중' ? 'progress' :
+                                          r.fix_status === '예외' ? 'exempt' : 'pending' %>">
+            <%= r.fix_status %>
+          </span>
+          <% if (r.fix_status !== '조치완료' && r.fix_status !== '예외') { %>
+            <% if (r.subs && r.subs.length) { %>
+              <div class="cascade-hint">
+                조치완료 시<br>소항목 <%= r.subs.length %>건 일괄 종료
+              </div>
+            <% } %>
+          <% } else { %>
+            <% if (r.subs && r.subs.length) { %>
+              <div class="cascade-done">↳ 소항목 <%= r.subs.length %>건 동기화됨</div>
+            <% } %>
+          <% } %>
+        </td>
+        <td class="editable long-text small"><%= r.unfixed_reason || '-' %></td>
+        <td class="editable small"><%= r.remark || '-' %></td>
+      </tr>
+    <% }); %>
+    <% if (!vulnRows.length) { %>
+      <tr><td colspan="18" class="empty" style="padding:32px;text-align:center;">취약 항목이 없습니다. 점검 결과 모두 양호.</td></tr>
+    <% } %>
+  </tbody>
+</table>
+</div>
+
+<div class="legend">
+  <strong>범례:</strong>
+  <span class="sub-badge"><strong>N</strong>/M건 취약</span> 소항목 중 N건 취약 (M개 중)
+  <span class="newflag newflag-new">신규</span> 이번 진단에서 처음 발견
+  <span class="newflag newflag-old">기존</span> 이전 진단부터 존재
+  <span class="fix-status fs-pending">미조치</span>
+  <span class="fix-status fs-progress">진행중</span>
+  <span class="fix-status fs-done">조치완료</span>
+  <span class="fix-status fs-exempt">예외</span>
+</div>
+
+<%- include('../_footer') %>

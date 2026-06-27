@@ -1,0 +1,142 @@
+<%- include('../_header', { title: '수집 이력', activeMenu: 'collection' }) %>
+
+<div class="page-header">
+  <h1>📋 자동 수집 이력</h1>
+  <div class="header-actions">
+    <a href="/collection" class="btn">🔄 수집 관리로</a>
+    <button class="btn" onclick="location.reload()">🔁 새로고침</button>
+  </div>
+</div>
+
+<p class="muted small">
+  자동 수집 실행 이력 (최근 <strong><%= history.length %></strong>건 / 전체 <%= total %>건)
+</p>
+
+<div class="section-box">
+  <div class="filter-row">
+    <input type="search" id="historySearch" placeholder="검색 (호스트/IP/OS/결과ID/오류)...">
+    <select id="historyFetch">
+      <option value="">전체 수집 상태</option>
+      <option value="success">수집 성공</option>
+      <option value="failed">수집 실패</option>
+    </select>
+    <select id="historyDiagnose">
+      <option value="">전체 진단 상태</option>
+      <option value="success">진단 완료</option>
+      <option value="failed">진단 실패</option>
+      <option value="skipped">건너뜀</option>
+    </select>
+    <select id="historySource">
+      <option value="">전체 소스</option>
+      <option value="secums">SecuMS</option>
+      <option value="script">Script</option>
+      <option value="script_deploy">Script 배포</option>
+      <option value="both">SecuMS+Script</option>
+    </select>
+    <input type="date" id="historyFrom">
+    <input type="date" id="historyTo">
+    <button class="btn-sm" onclick="applyHistoryFilter()">필터 적용</button>
+    <button class="btn-sm" onclick="resetHistoryFilter()">초기화</button>
+  </div>
+</div>
+
+<table class="data-table" id="collectionHistoryTable">
+  <thead>
+    <tr>
+      <th style="width:140px;">시작 시각</th>
+      <th>호스트</th><th style="width:110px;">IP</th><th style="width:70px;">OS</th>
+      <th style="width:80px;">수집</th><th style="width:80px;">진단</th>
+      <th style="width:90px;">결과 ID</th><th>요약</th><th style="width:80px;">소요</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (!history.length) { %>
+      <tr>
+        <td colspan="9" class="empty" style="padding:40px;text-align:center;">
+          자동 수집 이력이 없습니다.<br>
+          <span class="muted small">[수집 관리] 에서 [▶ 전체 실행] 누르거나 <code>npm run scheduler</code> 실행 시 기록됩니다.</span>
+        </td>
+      </tr>
+    <% } %>
+    <% history.forEach(h => { %>
+      <tr data-fetch="<%= h.fetch_status || '' %>"
+          data-diagnose="<%= h.diagnose_status || '' %>"
+          data-source="<%= h.source_type || '' %>"
+          data-date="<%= (h.started_at || '').slice(0, 10) %>"
+          data-search="<%= ((h.hostname || '') + ' ' + (h.ip || '') + ' ' + (h.os || '') + ' ' + (h.assessment_id || '') + ' ' + (h.deploy_job_id || '') + ' ' + (h.fetch_error || '') + ' ' + (h.diagnose_error || '')).toLowerCase() %>">
+        <td class="small mono"><%= h.started_at %></td>
+        <td><strong><%= h.hostname %></strong></td>
+        <td class="mono small"><%= h.ip %></td>
+        <td><%= h.os %></td>
+        <td>
+          <% if (h.fetch_status === 'success') { %><span style="color:#27ae60;font-weight:600;">✓ 성공</span>
+          <% } else if (h.fetch_status === 'failed') { %><span style="color:#c0392b;font-weight:600;" title="<%= h.fetch_error %>">✗ 실패</span>
+          <% } else if (h.fetch_status === 'queued') { %><span class="muted">대기</span>
+          <% } else { %><span class="muted">-</span><% } %>
+        </td>
+        <td>
+          <% if (h.diagnose_status === 'success') { %><span style="color:#27ae60;font-weight:600;">✓ 완료</span>
+          <% } else if (h.diagnose_status === 'skipped') { %><span class="muted">건너뜀</span>
+          <% } else if (h.diagnose_status === 'waiting_agent') { %><span class="muted">Agent 대기</span>
+          <% } else if (h.diagnose_status === 'failed') { %><span style="color:#c0392b;font-weight:600;" title="<%= h.diagnose_error %>">✗ 실패</span>
+          <% } else { %><span class="muted">-</span><% } %>
+        </td>
+        <td>
+          <% if (h.assessment_id) { %><a href="/diagnosis/<%= h.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">#<%= h.assessment_id %></a>
+          <% } else { %><span class="muted">-</span><% } %>
+        </td>
+        <td class="small">
+          <% if (h.summary) { %>
+            <span style="color:#c0392b;">취약 <%= h.summary.vuln %></span> /
+            <span style="color:#27ae60;">양호 <%= h.summary.safe %></span>
+            <% if (h.summary.info) { %>/ 정보제공 <%= h.summary.info %><% } %>
+            <% if (h.summary.na) { %>/ <span style="color:#b9770e;">N/A <%= h.summary.na %></span><% } %>
+          <% } else if (h.fetch_error) { %>
+            <span class="muted" style="font-size:0.85em;"><%= h.fetch_error.substring(0, 80) %></span>
+          <% } else if (h.diagnose_error) { %>
+            <span class="muted" style="font-size:0.85em;"><%= h.diagnose_error.substring(0, 80) %></span>
+          <% } else { %><span class="muted">-</span><% } %>
+        </td>
+        <td class="small mono"><%= h.elapsed_ms ? (function(ms){var s=Math.round(ms/1000);return s<60 ? s+'초' : Math.floor(s/60)+'분 '+(s%60)+'초';})(h.elapsed_ms) : '-' %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<script>
+function applyHistoryFilter() {
+  const q = document.getElementById('historySearch').value.toLowerCase();
+  const fetchStatus = document.getElementById('historyFetch').value;
+  const diagnoseStatus = document.getElementById('historyDiagnose').value;
+  const source = document.getElementById('historySource').value;
+  const from = document.getElementById('historyFrom').value;
+  const to = document.getElementById('historyTo').value;
+
+  document.querySelectorAll('#collectionHistoryTable tbody tr').forEach(tr => {
+    if (!tr.dataset.search) return;
+    let show = true;
+    const date = tr.dataset.date || '';
+    if (q && !tr.dataset.search.includes(q)) show = false;
+    if (fetchStatus && tr.dataset.fetch !== fetchStatus) show = false;
+    if (diagnoseStatus && tr.dataset.diagnose !== diagnoseStatus) show = false;
+    if (source && tr.dataset.source !== source) show = false;
+    if (from && date && date < from) show = false;
+    if (to && date && date > to) show = false;
+    tr.style.display = show ? '' : 'none';
+  });
+}
+
+function resetHistoryFilter() {
+  ['historySearch', 'historyFetch', 'historyDiagnose', 'historySource', 'historyFrom', 'historyTo'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('#collectionHistoryTable tbody tr').forEach(tr => { tr.style.display = ''; });
+}
+
+['historySearch', 'historyFetch', 'historyDiagnose', 'historySource', 'historyFrom', 'historyTo'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(id === 'historySearch' ? 'input' : 'change', applyHistoryFilter);
+});
+</script>
+
+<%- include('../_footer') %>

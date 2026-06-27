@@ -1,0 +1,124 @@
+<%- include('../_header', { title: isEdit ? '사용자 편집' : '사용자 추가', activeMenu: 'users' }) %>
+
+<div class="page-header">
+  <h1><%= isEdit ? '사용자 편집 #' + user.user_id : '사용자 추가' %></h1>
+</div>
+
+<form id="userForm" class="form-container">
+  <div class="form-section">
+    <h3>기본 정보</h3>
+    <div class="form-row inline">
+      <label>아이디 *</label>
+      <input type="text" name="username" required pattern="[a-zA-Z0-9_]{3,30}" 
+             value="<%= isEdit ? user.username : '' %>"
+             <%= isEdit ? 'readonly' : '' %>
+             placeholder="영문/숫자/_ 3~30자">
+      <% if (isEdit) { %>
+        <span class="muted small">아이디는 변경 불가</span>
+      <% } %>
+    </div>
+    <div class="form-row inline">
+      <label>이름 *</label>
+      <input type="text" name="name" required maxlength="50" 
+             value="<%= isEdit ? user.name : '' %>"
+             placeholder="실명">
+    </div>
+    <div class="form-row inline">
+      <label>이메일</label>
+      <input type="email" name="email" maxlength="100"
+             value="<%= isEdit ? (user.email || '') : '' %>"
+             placeholder="example@lsware.com">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>비밀번호</h3>
+    <% if (isEdit) { %>
+      <p class="muted small">
+        비워두면 기존 비밀번호 유지. 변경하려면 새 비밀번호 입력.
+      </p>
+    <% } %>
+    <div class="form-row inline">
+      <label><%= isEdit ? '새 비밀번호' : '비밀번호 *' %></label>
+      <input type="password" name="password" 
+             <%= isEdit ? '' : 'required' %>
+             minlength="8"
+             placeholder="최소 8자">
+    </div>
+    <div class="form-row inline">
+      <label>비밀번호 확인 <%= isEdit ? '' : '*' %></label>
+      <input type="password" name="password_confirm" 
+             <%= isEdit ? '' : 'required' %>
+             placeholder="다시 입력">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>권한</h3>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="role" value="admin" 
+               <%= isEdit && user.role === 'admin' ? 'checked' : '' %>>
+        <strong>👑 관리자 (admin)</strong>
+        <span class="muted small">모든 기능 + 사용자 관리</span>
+      </label>
+      <label>
+        <input type="radio" name="role" value="operator" 
+               <%= !isEdit || user.role === 'operator' ? 'checked' : '' %>>
+        <strong>🔧 운영자 (operator)</strong>
+        <span class="muted small">진단/예외/제외 등 일반 운영 기능</span>
+      </label>
+      <label>
+        <input type="radio" name="role" value="viewer" 
+               <%= isEdit && user.role === 'viewer' ? 'checked' : '' %>>
+        <strong>👁 조회자 (viewer)</strong>
+        <span class="muted small">리포트 조회만 가능</span>
+      </label>
+    </div>
+  </div>
+
+  <% if (isEdit) { %>
+    <div class="form-section">
+      <h3>상태</h3>
+      <div class="form-row inline">
+        <label>활성</label>
+        <input type="checkbox" name="enabled" value="1" <%= user.enabled ? 'checked' : '' %>>
+        <span class="muted small">비활성 시 로그인 불가</span>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary"><%= isEdit ? '저장' : '사용자 추가' %></button>
+    <a href="/users" class="btn">취소</a>
+  </div>
+</form>
+
+<script>
+document.getElementById('userForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  
+  if (data.password && data.password !== data.password_confirm) {
+    alert('비밀번호가 일치하지 않습니다.');
+    return;
+  }
+  delete data.password_confirm;
+  
+  const url = '<%= isEdit ? "/users/" + user.user_id + "/update" : "/users/save" %>';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const j = await res.json();
+  if (j.status === 'success') {
+    alert('<%= isEdit ? "수정되었습니다." : "사용자가 추가되었습니다." %>');
+    location.href = '/users';
+  } else {
+    alert('실패: ' + (j.error || '오류'));
+  }
+};
+</script>
+
+<%- include('../_footer') %>

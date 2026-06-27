@@ -1,0 +1,112 @@
+<%- include('../_header', { title: '사용자 관리', activeMenu: 'users' }) %>
+
+<div class="page-header">
+  <h1>사용자 관리</h1>
+  <p class="muted small">
+    시스템 사용자를 관리합니다. <strong>관리자(admin)</strong>만 사용자를 추가/수정/삭제할 수 있습니다.
+  </p>
+  <div class="header-actions">
+    <a href="/users/new" class="btn primary">+ 사용자 추가</a>
+  </div>
+</div>
+
+<div class="kpi-grid kpi-4col">
+  <div class="kpi-card kpi-total">
+    <div class="kpi-label">전체 사용자</div>
+    <div class="kpi-num"><%= users.length %></div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">활성</div>
+    <div class="kpi-num"><%= users.filter(u => u.enabled).length %></div>
+  </div>
+  <div class="kpi-card" style="border-top-color: #8e44ad;">
+    <div class="kpi-label">관리자</div>
+    <div class="kpi-num" style="color: #8e44ad;"><%= users.filter(u => u.role === 'admin').length %></div>
+  </div>
+  <div class="kpi-card" style="border-top-color: #95a5a6;">
+    <div class="kpi-label">비활성</div>
+    <div class="kpi-num" style="color: #95a5a6;"><%= users.filter(u => !u.enabled).length %></div>
+  </div>
+</div>
+
+<div class="section-box">
+  <h3>사용자 목록</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>아이디</th>
+        <th>이름</th>
+        <th>이메일</th>
+        <th>권한</th>
+        <th>활성</th>
+        <th>최근 로그인</th>
+        <th>생성일</th>
+        <th>액션</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% users.forEach(u => { %>
+        <tr class="<%= !u.enabled ? 'row-disabled' : '' %>">
+          <td class="mono">#<%= u.user_id %></td>
+          <td class="mono"><strong><%= u.username %></strong>
+            <% if (u.must_change_password) { %>
+              <div class="muted small" style="color:#e67e22;">⚠ 비밀번호 변경 필요</div>
+            <% } %>
+          </td>
+          <td><%= u.name %></td>
+          <td class="small"><%= u.email || '-' %></td>
+          <td>
+            <% if (u.role === 'admin') { %>
+              <span class="role-badge role-admin">👑 관리자</span>
+            <% } else if (u.role === 'operator') { %>
+              <span class="role-badge role-operator">🔧 운영자</span>
+            <% } else { %>
+              <span class="role-badge role-viewer">👁 조회자</span>
+            <% } %>
+          </td>
+          <td>
+            <% if (u.enabled) { %>
+              <span class="status-cell st-safe">활성</span>
+            <% } else { %>
+              <span class="status-cell st-na">비활성</span>
+            <% } %>
+          </td>
+          <td class="small mono"><%= u.last_login_at || '없음' %></td>
+          <td class="small mono"><%= u.created_at %></td>
+          <td>
+            <a href="/users/<%= u.user_id %>/edit" class="btn-sm">편집</a>
+            <% if (u.user_id != currentUser.user_id) { %>
+              <button class="btn-sm" onclick="deleteUser(<%= u.user_id %>, '<%= u.username %>')" style="background:#c0392b;color:#fff;">삭제</button>
+            <% } %>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<div class="info-box">
+  <h4>권한 안내</h4>
+  <ul>
+    <li><strong>👑 관리자(admin)</strong>: 모든 기능 + 사용자 관리</li>
+    <li><strong>🔧 운영자(operator)</strong>: 진단 실행, 예외/제외 등록, 리포트 조회</li>
+    <li><strong>👁 조회자(viewer)</strong>: 리포트 조회만 가능 (수정 불가)</li>
+  </ul>
+</div>
+
+<script>
+async function deleteUser(id, username) {
+  if (!confirm('사용자 "' + username + '" 을(를) 삭제하시겠습니까?')) return;
+  const res = await fetch('/users/' + id + '/delete', { method: 'POST' });
+  const j = await res.json();
+  if (j.status === 'success') {
+    alert('삭제되었습니다.');
+    location.reload();
+  } else {
+    alert('실패: ' + (j.error || '오류'));
+  }
+}
+</script>
+
+<%- include('../_footer') %>

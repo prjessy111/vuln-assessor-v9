@@ -1,0 +1,90 @@
+<%- include('../_header', { title: '리포트3 (정합성)', activeMenu: 'reports' }) %>
+<% const s = report3.summary; %>
+<style>
+  .r3-cards { display:flex; flex-wrap:wrap; gap:12px; margin:16px 0; }
+  .r3-card { flex:1 1 120px; background:#fff; border:1px solid #e1e5ea; border-radius:8px; padding:12px 14px; text-align:center; }
+  .r3-card .num { font-size:1.8rem; font-weight:700; }
+  .r3-card.agree .num { color:#27ae60; }
+  .r3-card.bad .num { color:#c0392b; }
+  .r3-card.review .num { color:#b9770e; }
+  .r3-card.wait .num { color:#888; }
+  .r3-card.rate .num { color:#2d3436; }
+  .r3-banner { padding:12px 14px; border-radius:8px; margin:14px 0; }
+  .r3-banner.warn { background:#fff8e1; border-left:4px solid #f1c40f; }
+  .r3-group { margin-top:22px; }
+  .r3-group h3 { margin:0 0 8px; }
+  .badge-agree { color:#27ae60; font-weight:700; }
+  .badge-bad { color:#c0392b; font-weight:700; }
+  .badge-review { color:#b9770e; font-weight:700; }
+  .badge-wait { color:#888; }
+  table.r3 { width:100%; border-collapse:collapse; }
+  table.r3 th, table.r3 td { border:1px solid #e1e5ea; padding:6px 8px; font-size:0.85rem; vertical-align:top; }
+  table.r3 th { background:#f5f6fa; }
+</style>
+
+<div class="report-header">
+  <h1>정합성 리포트 #<%= session.assessment_id %> (리포트3)</h1>
+  <div class="report-actions">
+    <a href="/reports/<%= session.assessment_id %>/fsi" class="btn">리포트1로</a>
+    <a href="/reports/<%= session.assessment_id %>/report3/xlsx" class="btn primary">XLSX 다운로드</a>
+    <a href="/history?server_id=<%= session.server_id %>" class="btn">이력으로</a>
+  </div>
+</div>
+
+<table class="meta-table">
+  <tr><th>호스트명</th><td><%= session.hostname %></td>
+      <th>자산번호</th><td><%= session.asset_no || '미등록' %></td></tr>
+  <tr><th>분석환경</th><td><%= session.os_type %> <%= session.os_version ? `(${session.os_version})` : '' %></td>
+      <th>진단일시</th><td><%= session.executed_at %></td></tr>
+</table>
+
+<div class="r3-cards">
+  <div class="r3-card"><div>전체 항목</div><div class="num"><%= s.total %></div></div>
+  <div class="r3-card"><div>비교 가능</div><div class="num"><%= s.comparable %></div></div>
+  <div class="r3-card agree"><div>일치</div><div class="num"><%= s.agree %></div></div>
+  <div class="r3-card bad"><div>검증 실패</div><div class="num"><%= s.disagree_real %></div></div>
+  <div class="r3-card review"><div>검토 필요</div><div class="num"><%= s.needs_review %></div></div>
+  <div class="r3-card wait"><div>SecuMS 미점검</div><div class="num"><%= s.waiting %></div></div>
+  <div class="r3-card rate"><div>일치율</div><div class="num"><%= s.baselinePresent ? s.agreementRate + '%' : 'N/A' %></div></div>
+</div>
+
+<% if (!s.baselinePresent) { %>
+  <div class="r3-banner warn">
+    ⚠ <strong>SecuMS 점검 결과가 없어 정합성(일치율)을 계산할 수 없습니다.</strong>
+    이 진단은 AI/LLM 단독 결과이며 <%= s.waiting %>개 항목 모두 비교 기준(SecuMS 판정)이 <code>WAIT</code> 상태입니다.
+    동일 호스트(<%= session.hostname %>)에 대해 <a href="/collection">SecuMS 진단</a>을 함께 실행하면 AI↔SecuMS 정합성이 채워집니다.
+  </div>
+<% } %>
+
+<% report3.groups.forEach(function(g) { %>
+  <div class="r3-group">
+    <h3>
+      <% if (g.code === 'agree') { %><span class="badge-agree">✔ <%= g.label %></span>
+      <% } else if (g.code === 'disagree_real') { %><span class="badge-bad">✘ <%= g.label %></span>
+      <% } else if (g.code === 'needs_review') { %><span class="badge-review">⚠ <%= g.label %></span>
+      <% } else if (g.code === 'secums_wait') { %><span class="badge-wait">· <%= g.label %></span>
+      <% } else { %><%= g.label %><% } %>
+      <span class="muted">(<%= g.rows.length %>건)</span>
+    </h3>
+    <table class="r3">
+      <thead>
+        <tr><th>항목ID</th><th>제목</th><th>카테고리</th><th>AI 판정</th><th>심각도</th><th>SecuMS 판정</th><th>사유</th></tr>
+      </thead>
+      <tbody>
+        <% g.rows.forEach(function(r) { %>
+          <tr>
+            <td><%= r.rule_id %></td>
+            <td><%= r.title %></td>
+            <td><%= r.category %></td>
+            <td><%= r.status %></td>
+            <td><%= r.severity || '' %></td>
+            <td><%= r.secums_verdict || '-' %></td>
+            <td><%= r.reason || '' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% }); %>
+
+<%- include('../_footer') %>

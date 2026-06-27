@@ -1,0 +1,163 @@
+<%- include('../_header', { title: '알림 관리', activeMenu: 'notifications' }) %>
+
+<div class="page-header">
+  <h1>알림 관리</h1>
+  <p class="muted small">
+    진단/예약 실행 중 발생한 이벤트(취약점 발견, 실패 등)의 발송 이력입니다.
+    채널은 환경변수 <code>NOTIFIER_CHANNELS</code>로 설정 (예: <code>console,slack</code>).
+  </p>
+  <div class="header-actions">
+    <button class="btn primary" onclick="testNotify()">테스트 알림 발송</button>
+  </div>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid kpi-5col">
+  <div class="kpi-card">
+    <div class="kpi-label">전체</div>
+    <div class="kpi-num"><%= kpi.total %></div>
+    <div class="kpi-sub">최대 500건 보관</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">최근 24시간</div>
+    <div class="kpi-num"><%= kpi.last24h %></div>
+    <div class="kpi-sub">발송 시도</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">최근 7일</div>
+    <div class="kpi-num"><%= kpi.last7d %></div>
+    <div class="kpi-sub">발송 시도</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">발송 실패</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= kpi.failures %></div>
+    <div class="kpi-sub">채널별 일부 실패 포함</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">Error</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= kpi.by_severity.error || 0 %></div>
+    <div class="kpi-sub">긴급 알림</div>
+  </div>
+</div>
+
+<!-- 채널 설정 -->
+<div class="section-box">
+  <h3>채널 설정</h3>
+  <table class="data-table" style="max-width:700px;">
+    <tr>
+      <th style="width:200px;">활성 채널</th>
+      <td>
+        <code><%= channel || 'console' %></code>
+        <span class="muted small"> — <code>NOTIFIER_CHANNELS</code> 환경변수로 변경 (쉼표 구분)</span>
+      </td>
+    </tr>
+    <tr>
+      <th>이메일 (SMTP)</th>
+      <td>
+        <% if (config.smtp_configured) { %>
+          <span style="color:#27ae60;">● 설정됨</span>
+        <% } else { %>
+          <span class="muted">미설정 — <code>SMTP_HOST</code>, <code>SMTP_TO</code> 필요 (+ <code>npm i nodemailer</code>)</span>
+        <% } %>
+      </td>
+    </tr>
+    <tr>
+      <th>Slack Webhook</th>
+      <td>
+        <% if (config.slack_configured) { %>
+          <span style="color:#27ae60;">● 설정됨</span>
+        <% } else { %>
+          <span class="muted">미설정 — <code>SLACK_WEBHOOK_URL</code> 환경변수 필요</span>
+        <% } %>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- 알림 이력 -->
+<div class="section-box">
+  <h3>발송 이력 (최근 <%= notifications.length %>건)</h3>
+  <% if (!notifications.length) { %>
+    <p class="muted">발송된 알림이 없습니다. 진단을 실행하거나 위 [테스트 알림 발송] 버튼을 눌러보세요.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>발송 시각</th>
+          <th>심각도</th>
+          <th>이벤트</th>
+          <th>제목</th>
+          <th>채널 결과</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% notifications.forEach(n => { %>
+          <tr>
+            <td class="mono small"><%= n.sent_at %></td>
+            <td>
+              <% var color = n.severity === 'error' ? '#c0392b'
+                           : n.severity === 'warning'  ? '#e67e22'
+                           : n.severity === 'success'  ? '#27ae60'
+                           : '#2c5fb8'; %>
+              <% var icon = n.severity === 'error' ? '🚨'
+                          : n.severity === 'warning'  ? '⚠'
+                          : n.severity === 'success'  ? '✓'
+                          : 'ℹ'; %>
+              <span style="color:<%= color %>;font-weight:600;"><%= icon %> <%= n.severity %></span>
+            </td>
+            <td><code class="small"><%= n.event %></code></td>
+            <td>
+              <strong><%= n.title %></strong>
+              <% if (n.body) { %>
+                <div class="muted small" style="max-width:500px;">
+                  <%= n.body.split('\n')[0].substring(0, 120) %><% if (n.body.length > 120) { %>...<% } %>
+                </div>
+              <% } %>
+            </td>
+            <td class="small">
+              <% (n.results || []).forEach(r => { %>
+                <div>
+                  <code><%= r.channel %></code>
+                  <% if (r.ok) { %>
+                    <span style="color:#27ae60;">✓</span>
+                  <% } else { %>
+                    <span style="color:#c0392b;">✗</span>
+                    <% if (r.error) { %>
+                      <span class="muted"><%= (r.error || '').substring(0, 60) %></span>
+                    <% } %>
+                  <% } %>
+                </div>
+              <% }) %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<script>
+function testNotify() {
+  const severity = prompt('심각도 (info / warning / error / success):', 'info');
+  if (!severity) return;
+  const title = prompt('제목:', '테스트 알림');
+  if (!title) return;
+  fetch('/notifications/test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ severity, title, body: 'UI에서 트리거된 테스트 알림' }),
+  })
+    .then(r => r.json())
+    .then(j => {
+      if (j.status === 'success') {
+        const summary = (j.results || []).map(r => r.channel + ' ' + (r.ok ? '✓' : '✗')).join(', ');
+        alert('발송 결과: ' + summary);
+        location.reload();
+      } else {
+        alert('실패: ' + (j.error || '오류'));
+      }
+    });
+}
+</script>
+
+<%- include('../_footer') %>

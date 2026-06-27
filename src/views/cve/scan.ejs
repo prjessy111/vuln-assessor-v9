@@ -1,0 +1,258 @@
+<%- include('../_header', { title: 'CVE 자동 진단', activeMenu: 'diagnosis' }) %>
+
+<div class="page-header">
+  <h1>CVE 자동 진단 #<%= assessment_id %></h1>
+  <p class="muted small">
+    설치된 <strong><%= result.packages_count %>개 패키지</strong>를 알려진 CVE 데이터베이스와 자동 매칭한 결과입니다.
+    버전 매칭은 결정론적 알고리즘으로 수행되며, AI(LLM)가 환경 컨텍스트를 평가하여 실제 영향도를 판단합니다.
+  </p>
+  <div class="header-actions">
+    <a href="/diagnosis/<%= assessment_id %>/ai" class="btn" style="background:#6c5ce7;color:#fff;">🤖 AI 결과로</a>
+    <a href="/diagnosis/<%= assessment_id %>/validate" class="btn">정합성 검증</a>
+    <a href="/cve/sync" class="btn">CVE Feed 동기화</a>
+  </div>
+</div>
+
+<% if (typeof enrichment !== 'undefined' && enrichment && enrichment.stats) { %>
+  <% if (enrichment.stats.sync_available) { %>
+    <div class="info-box" style="background:#e8f4fd; border-left:4px solid #2c7ddb; padding:0.75rem 1rem; margin:0 0 1rem; border-radius:4px;">
+      <strong>📡 CVE Feed 동기화 적용됨</strong>
+      <span class="muted small">
+        — 최근 동기화 <%= enrichment.last_sync ? enrichment.last_sync.timestamp : '-' %>
+        · 보강된 CVE <strong><%= enrichment.stats.enriched %></strong>건
+        (CVSS 갱신 <%= enrichment.stats.cvss_updated %>건, 신규 KEV <%= enrichment.stats.kev_newly_added %>건)
+        · <a href="/cve/sync">상세</a>
+      </span>
+    </div>
+  <% } else { %>
+    <div class="info-box" style="background:#fff8e1; border-left:4px solid #f39c12; padding:0.75rem 1rem; margin:0 0 1rem; border-radius:4px;">
+      <strong>⚠ CVE Feed 동기화 미실행</strong>
+      <span class="muted small">
+        — 현재 큐레이션 CVE DB(25건)만 사용 중. 최신 NVD/KEV 반영 안 됨.
+        <a href="/cve/sync">동기화 페이지로 이동</a>
+      </span>
+    </div>
+  <% } %>
+  <% if (enrichment.untracked_kev && enrichment.untracked_kev.length > 0) { %>
+    <div class="info-box" style="background:#fce8e6; border-left:4px solid #c0392b; padding:0.75rem 1rem; margin:0 0 1rem; border-radius:4px;">
+      <strong>🚨 큐레이션 미등록 KEV CVE <%= enrichment.untracked_kev.length %>건</strong>
+      <div class="small muted" style="margin-top:0.3rem;">
+        CISA KEV에는 등재됐으나 우리 큐레이션 DB에 없어 자동 매칭 대상이 아닙니다. 큐레이션 검토 필요:
+        <% enrichment.untracked_kev.slice(0, 5).forEach((u, i) => { %>
+          <%= i > 0 ? ', ' : '' %><code><%= u.cve_id %></code> (<%= u.product %>)
+        <% }) %>
+        <% if (enrichment.untracked_kev.length > 5) { %>… 외 <%= enrichment.untracked_kev.length - 5 %>건<% } %>
+        — <a href="/cve/sync">전체 보기</a>
+      </div>
+    </div>
+  <% } %>
+<% } %>
+
+<% if (result.error) { %>
+  <div class="alert alert-warning">
+    <strong>⚠ 오류:</strong> <%= result.error %>
+    <div class="muted small" style="margin-top:8px;">
+      SecuMS Agent 점검 정책에 다음 명령을 포함해야 합니다:
+      <code>rpm -qa</code> (Linux/CentOS) 또는 <code>dpkg -l</code> (Ubuntu/Debian)
+    </div>
+  </div>
+<% } else { %>
+
+<!-- 환경 정보 -->
+<table class="info-table">
+  <tr>
+    <th>호스트명</th><td><%= result.env.hostname %></td>
+    <th>OS</th><td><%= result.env.os_distro %> <%= result.env.os_version %></td>
+  </tr>
+  <tr>
+    <th>설치 패키지</th><td><strong><%= result.packages_count %>개</strong></td>
+    <th>매칭된 CVE</th><td><strong><%= result.summary.total %>건</strong></td>
+  </tr>
+</table>
+
+<!-- KPI 카드 -->
+<div class="kpi-grid kpi-5col" style="margin-top:16px;">
+  <div class="kpi-card kpi-critical">
+    <div class="kpi-label">CRITICAL</div>
+    <div class="kpi-num"><%= result.summary.by_severity.critical %></div>
+    <div class="kpi-sub">CVSS 9.0+</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">HIGH</div>
+    <div class="kpi-num"><%= result.summary.by_severity.high %></div>
+    <div class="kpi-sub">CVSS 7.0~8.9</div>
+  </div>
+  <div class="kpi-card kpi-warning">
+    <div class="kpi-label">MEDIUM</div>
+    <div class="kpi-num"><%= result.summary.by_severity.medium %></div>
+    <div class="kpi-sub">CVSS 4.0~6.9</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">CISA KEV</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= result.summary.kev_count %></div>
+    <div class="kpi-sub">활성 익스플로잇 (즉시 조치)</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">백포팅 패치됨</div>
+    <div class="kpi-num"><%= result.summary.patched_count %></div>
+    <div class="kpi-sub">CentOS Errata 적용</div>
+  </div>
+</div>
+
+<!-- 우선순위 KPI -->
+<div class="kpi-grid kpi-4col" style="margin-top:12px;">
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">IMMEDIATE</div>
+    <div class="kpi-num" style="color:#c0392b;"><%= result.summary.by_priority.IMMEDIATE || 0 %></div>
+    <div class="kpi-sub">즉시 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#e67e22;">
+    <div class="kpi-label">URGENT</div>
+    <div class="kpi-num" style="color:#e67e22;"><%= result.summary.by_priority.URGENT || 0 %></div>
+    <div class="kpi-sub">긴급 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#f39c12;">
+    <div class="kpi-label">SCHEDULED</div>
+    <div class="kpi-num" style="color:#f39c12;"><%= result.summary.by_priority.SCHEDULED || 0 %></div>
+    <div class="kpi-sub">정기 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#7f8c8d;">
+    <div class="kpi-label">MONITOR</div>
+    <div class="kpi-num" style="color:#7f8c8d;"><%= result.summary.by_priority.MONITOR || 0 %></div>
+    <div class="kpi-sub">모니터링</div>
+  </div>
+</div>
+
+<!-- CVE 목록 -->
+<div class="section-box" style="margin-top:20px;">
+  <h3>매칭된 CVE 목록 (우선순위 정렬)</h3>
+  <table class="data-table cve-table">
+    <thead>
+      <tr>
+        <th width="100">CVE ID</th>
+        <th>이름</th>
+        <th width="60">CVSS</th>
+        <th width="50">KEV</th>
+        <th width="60">EPSS</th>
+        <th>설치 패키지</th>
+        <th width="100">우선순위</th>
+        <th width="80">실제 위험</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% result.matches.forEach(m => { 
+        const j = m.ai_judgment || {};
+        const isPatched = m.backport.isPatched;
+      %>
+        <tr class="row-priority-<%= (j.patch_priority || 'monitor').toLowerCase() %>">
+          <td class="mono">
+            <strong><%= m.cve_id %></strong>
+          </td>
+          <td class="small">
+            <%= m.cve_name %>
+            <% if (m.exploit_public) { %>
+              <span class="badge-exploit">PoC</span>
+            <% } %>
+          </td>
+          <td>
+            <span class="sev-badge sev-<%= m.severity.toLowerCase() %>">
+              <%= m.cvss_v3 %>
+            </span>
+          </td>
+          <td class="text-center">
+            <% if (m.cisa_kev) { %>
+              <span class="kev-badge">🔴</span>
+            <% } else { %>
+              <span class="muted">·</span>
+            <% } %>
+          </td>
+          <td class="text-center small">
+            <%= (m.epss * 100).toFixed(1) %>%
+          </td>
+          <td class="mono small">
+            <%= m.pkg_full %>
+            <% if (isPatched) { %>
+              <div class="muted small" style="color:#27ae60;">✓ 백포팅 적용됨</div>
+            <% } else if (m.backport.patchRelease) { %>
+              <div class="muted small" style="color:#c0392b;">
+                ⚠ 패치 미적용 (현재: <%= m.backport.ourRelease %>, 필요: <%= m.backport.patchRelease %>)
+              </div>
+            <% } %>
+          </td>
+          <td>
+            <% if (j.patch_priority === 'IMMEDIATE') { %>
+              <span class="prio-badge prio-immediate">🚨 IMMEDIATE</span>
+            <% } else if (j.patch_priority === 'URGENT') { %>
+              <span class="prio-badge prio-urgent">⚠ URGENT</span>
+            <% } else if (j.patch_priority === 'SCHEDULED') { %>
+              <span class="prio-badge prio-scheduled">SCHEDULED</span>
+            <% } else { %>
+              <span class="prio-badge prio-monitor">MONITOR</span>
+            <% } %>
+          </td>
+          <td class="text-center">
+            <% if (j.is_vulnerable) { %>
+              <span class="status-cell st-vuln">취약</span>
+            <% } else { %>
+              <span class="status-cell st-safe">안전</span>
+            <% } %>
+          </td>
+        </tr>
+        <tr class="cve-detail-row">
+          <td colspan="8" class="cve-detail">
+            <div class="cve-detail-grid">
+              <div class="cve-detail-block">
+                <div class="detail-label">📝 AI 판정 근거</div>
+                <div class="detail-text"><%= j.rationale_ko %></div>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">💀 공격 시나리오</div>
+                <div class="detail-text"><%= j.exploit_scenario %></div>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">🔧 권장 조치</div>
+                <ul class="detail-list">
+                  <% (j.recommended_actions || []).forEach(a => { %>
+                    <li><%= a %></li>
+                  <% }); %>
+                </ul>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">📋 패치 정보</div>
+                <div class="detail-text">
+                  <strong>업스트림:</strong> <%= m.patches?.upstream || '-' %><br>
+                  <strong>CentOS 7:</strong> <%= m.patches?.centos_7 || '-' %><br>
+                  <strong>RHSA:</strong> <%= m.patches?.rhsa || '-' %>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      <% }); %>
+      <% if (!result.matches.length) { %>
+        <tr><td colspan="8" class="empty" style="padding:32px;text-align:center;">
+          매칭된 CVE가 없습니다. (큐레이션된 CVE DB 기준)
+        </td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<div class="info-box" style="margin-top:20px;">
+  <h4>CVE 자동 진단 동작 방식</h4>
+  <ul>
+    <li><strong>Stage 1 — 패키지 추출:</strong> rpm -qa 결과에서 <%= result.packages_count %>개 패키지 정규화</li>
+    <li><strong>Stage 2 — CVE 매칭:</strong> 큐레이션된 CentOS 7 CVE DB와 결정론적 버전 비교</li>
+    <li><strong>Stage 3 — 백포팅 확인:</strong> CentOS release 번호로 패치 적용 여부 자동 판단</li>
+    <li><strong>Stage 4 — AI 평가:</strong> LLM이 환경 컨텍스트로 실제 영향도 + 우선순위 판단</li>
+    <li><strong>Stage 5 — 우선순위 정렬:</strong> CISA KEV → 미패치 → CVSS → EPSS 순</li>
+  </ul>
+  <p class="small muted" style="margin-top:12px;">
+    ※ 본 PoC는 큐레이션된 26개 CVE만 포함합니다. 실제 운영 시에는 NVD JSON 피드를 일일 동기화하여
+    수만 건의 CVE를 자동 추적해야 합니다.
+  </p>
+</div>
+
+<% } %>
+
+<%- include('../_footer') %>

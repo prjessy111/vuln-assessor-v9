@@ -1,0 +1,925 @@
+# =============================================================================
+# KISA 주요정보통신기반시설 기술적 취약점 분석·평가 방법 상세가이드 (2021년 4월)
+# Unix 서버 - 위험도 "상" 항목 30개
+#
+# 평가 방식: SecuMS Unix Agent raw DB의 U_*_TB 테이블 활용
+# 작성일: 2026-05-23
+# =============================================================================
+
+ruleset_ver: "kisa-unix-v1.0"
+ruleset_name: "KISA Unix 서버 기술적 취약점 점검 (위험도 상)"
+ruleset_source: "한국인터넷진흥원(KISA) 2021년 4월 가이드"
+target_adapter: "SecuMS Unix Agent"
+policy_name: "KISA Unix 점검 - 위험도 상"
+
+rules:
+  # =========================================================================
+  # 1. 계정 관리 (U-01 ~ U-05)
+  # =========================================================================
+  
+  - rule_id: U-01
+    title: root 계정 원격 접속 제한
+    description: |
+      시스템 정책에 root 계정의 원격 터미널 접속 차단 설정이 적용되어 있는지 점검한다.
+      root 계정은 시스템의 모든 권한을 가지고 있어 직접 원격 접속 시 외부 공격자가 패스워드
+      추측 공격을 통해 root 권한을 획득할 수 있는 위험이 존재하므로, root 계정의 직접 접속을
+      차단하고 일반 사용자로 접속 후 su 명령을 통해 권한을 상승시켜 사용하도록 해야 한다.
+    category: 계정 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-01
+    check_method: |
+      [SSH 사용 시]
+      /etc/ssh/sshd_config 에서 PermitRootLogin no 확인
+      [Telnet 사용 시 — 권장하지 않음]
+      /etc/securetty 또는 /etc/pam.d/login 에서 ttyp 항목 주석 처리 여부
+    check_criteria: |
+      양호 - SSH PermitRootLogin이 'no' 또는 'prohibit-password'
+      취약 - PermitRootLogin이 'yes' 이거나 항목 자체가 없음 (기본값 yes 적용)
+    context_sql: |
+      SELECT NAME, VALUE, EXIST FROM U_NAMESPACEVALUE_TB
+      WHERE NAME = 'PermitRootLogin'
+    evaluation_prompt: |
+      위 raw 데이터에서 PermitRootLogin 설정을 분석하세요.
+      판단 규칙:
+      - VALUE가 'no' 또는 'prohibit-password' → 양호
+      - VALUE가 'yes' → 취약
+      - EXIST='NO' 또는 결과 비어있음 → 취약 (PermitRootLogin 미설정 시 기본값 yes)
+    recommend: |
+      /etc/ssh/sshd_config 편집:
+        PermitRootLogin no
+      적용:
+        systemctl restart sshd
+    enabled: true
+
+  - rule_id: U-02
+    title: 패스워드 복잡성 설정
+    description: |
+      시스템 정책에 사용자 계정(root 및 일반계정 모두 해당) 패스워드 복잡성 관련 설정이
+      되어 있는지 점검한다. 단순한 패스워드는 사전 공격(dictionary attack), 무차별 대입 공격
+      (brute force attack)을 통해 쉽게 노출될 수 있으므로 영문, 숫자, 특수문자를 조합하여
+      8자리 이상으로 설정해야 한다.
+    category: 계정 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-02
+    check_method: |
+      /etc/security/pwquality.conf 또는 /etc/pam.d/system-auth 에서
+      minlen, dcredit, ucredit, lcredit, ocredit 설정 확인
+    check_criteria: |
+      양호 - minlen >= 8 + 복잡도(대/소/숫자/특수) 중 일부 강제
+      취약 - 복잡도 설정 없음 또는 minlen < 8
+    context_sql: |
+      SELECT TYPE, FLAGE, FILE, KEY, VALUE, FILEPATH FROM U_PAM_TB
+      WHERE FILE LIKE '%pam_cracklib%' OR FILE LIKE '%pam_pwquality%'
+         OR FILE LIKE '%pam_unity_uac%'
+    evaluation_prompt: |
+      위 PAM 모듈 설정에서 패스워드 복잡도 정책을 분석하세요.
+      양호 조건:
+      - minlen >= 8 (또는 minlen >= 9 — 공공기관)
+      - dcredit, ucredit, lcredit, ocredit 중 최소 1개 이상 설정
+      - 또는 minclass >= 3
+      취약 조건:
+      - pam_cracklib/pam_pwquality 모듈 자체가 없음
+      - minlen 설정이 없거나 8 미만
+      결과가 비어있으면 취약 (복잡도 정책 미설정).
+    recommend: |
+      /etc/security/pwquality.conf 편집:
+        minlen = 8
+        dcredit = -1
+        ucredit = -1
+        lcredit = -1
+        ocredit = -1
+        minclass = 3
+    enabled: true
+
+  - rule_id: U-03
+    title: 계정 잠금 임계값 설정
+    description: |
+      사용자 계정 로그인 실패 시 계정 잠금 임계값이 설정되어 있는지 점검한다.
+      brute force 공격을 방지하기 위해 로그인 실패 횟수가 5회를 초과하면 계정을 자동 잠그도록
+      pam_faillock 또는 pam_tally2 모듈을 사용하여 설정해야 한다.
+    category: 계정 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-03
+    check_method: |
+      /etc/pam.d/system-auth, /etc/pam.d/password-auth 에서
+      pam_faillock.so 또는 pam_tally2.so 모듈의 deny 옵션 확인
+    check_criteria: |
+      양호 - deny <= 5, unlock_time >= 600 설정됨
+      취약 - deny 설정 없음 또는 deny > 5
+    context_sql: |
+      SELECT TYPE, FLAGE, FILE, KEY, VALUE, FILEPATH FROM U_PAM_TB
+      WHERE FILE LIKE '%faillock%' OR FILE LIKE '%tally%'
+    evaluation_prompt: |
+      PAM 계정 잠금 모듈 설정 분석.
+      양호 조건:
+      - pam_faillock.so 또는 pam_tally2.so 행 존재
+      - KEY='deny' 의 VALUE가 1~5 범위
+      취약 조건:
+      - 모듈 자체가 없음
+      - deny 옵션 없거나 0 또는 > 5
+      결과가 비어있으면 취약.
+    recommend: |
+      /etc/pam.d/system-auth, /etc/pam.d/password-auth 추가:
+        auth required pam_faillock.so preauth silent deny=5 unlock_time=600
+        auth [default=die] pam_faillock.so authfail deny=5 unlock_time=600
+    enabled: true
+
+  - rule_id: U-04
+    title: 패스워드 최대 사용 기간 설정
+    description: |
+      시스템 정책에 패스워드 최대 사용기간(90일 이하) 설정이 적용되어 있는지 점검한다.
+      동일한 패스워드를 장기간 사용 시 노출 가능성이 증가하므로 90일 이하로 설정해야 한다.
+    category: 계정 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-04
+    check_method: |
+      /etc/login.defs 의 PASS_MAX_DAYS 값 확인 (90 이하)
+    check_criteria: |
+      양호 - PASS_MAX_DAYS <= 90
+      취약 - PASS_MAX_DAYS > 90 또는 미설정 (기본값 99999)
+    context_sql: |
+      SELECT NAME, VALUE, EXIST FROM U_NAMESPACEVALUE_TB
+      WHERE NAME IN ('PASS_MAX_DAYS', 'PASS_MIN_DAYS', 'PASS_MIN_LEN', 'PASS_WARN_AGE')
+    evaluation_prompt: |
+      /etc/login.defs 설정 분석.
+      판단 규칙:
+      - PASS_MAX_DAYS VALUE가 1~90 → 양호
+      - PASS_MAX_DAYS VALUE가 90 초과 (예: 99999) → 취약 (장기 사용 위험)
+      - PASS_MAX_DAYS 항목 없음 → 취약 (기본값 99999 적용)
+    recommend: |
+      /etc/login.defs 편집:
+        PASS_MAX_DAYS  90
+        PASS_MIN_DAYS  1
+        PASS_WARN_AGE  7
+    enabled: true
+
+  - rule_id: U-05
+    title: 패스워드 파일 보호
+    description: |
+      시스템 정책에 사용자 패스워드를 안전하게 보호하기 위한 설정이 되어있는지 점검한다.
+      shadow 패스워드 시스템을 사용하여 암호화된 패스워드를 root만 읽을 수 있도록 보호하고,
+      빈 패스워드 계정이 없어야 한다.
+    category: 계정 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-05
+    check_method: |
+      1. /etc/shadow 파일 사용 여부 확인 (/etc/passwd 두 번째 필드가 'x')
+      2. /etc/shadow 의 패스워드 필드가 비어있는 계정 점검
+    check_criteria: |
+      양호 - shadow 사용 + 빈 패스워드 계정 없음
+      취약 - shadow 미사용 또는 빈 패스워드 계정 존재 (각 계정을 소항목으로 분리)
+    context_sql: |
+      SELECT USERNAME, NULLPW, CKPASSWD FROM U_PASSWD_STRENGTH_TB
+      WHERE NULLPW = 'YES'
+    simple_check:
+      type: per_row
+      sub_key: USERNAME
+      sub_label_template: "계정 {USERNAME}"
+      each_status: 취약
+      if_empty: 양호
+    recommend: |
+      빈 패스워드 계정 처리:
+        passwd <username>          # 패스워드 부여
+        passwd -l <username>       # 또는 계정 잠금
+        usermod -s /sbin/nologin <username>  # 로그인 차단
+    enabled: true
+
+  # =========================================================================
+  # 2. 파일 및 디렉터리 관리 (위험도 상 항목)
+  # =========================================================================
+  
+  - rule_id: U-06
+    title: 파일 및 디렉터리 소유자 설정
+    description: |
+      소유자가 존재하지 않는 파일 및 디렉토리가 있으면, 임의의 사용자가 해당 파일/디렉토리를
+      소유하여 보안 위협이 발생할 수 있으므로 점검 및 조치가 필요하다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-06
+    check_method: |
+      find / -nouser -o -nogroup -print 명령으로 소유자/그룹 없는 파일 검색
+    check_criteria: |
+      양호 - 소유자/그룹이 없는 파일/디렉토리가 존재하지 않음
+      취약 - 소유자/그룹이 없는 파일/디렉토리가 1개 이상 존재
+    context_sql: |
+      SELECT FILEPATH, UID, GID FROM U_DIRPERMISSIONWORKER_TB
+      WHERE UID = '' OR GID = '' OR UID IS NULL OR GID IS NULL
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      소유자가 없는 파일 검색:
+        find / -nouser -o -nogroup -print 2>/dev/null
+      처리:
+        chown root:root <파일경로>   # 소유자 부여
+        rm <파일경로>                 # 또는 불필요 시 삭제
+    enabled: true
+
+  - rule_id: U-07
+    title: /etc/passwd 파일 소유자 및 권한 설정
+    description: |
+      /etc/passwd 파일에 대한 접근 권한이 적절한지 점검한다.
+      /etc/passwd 파일은 모든 사용자가 접근할 수 있으나, root 사용자만 변경할 수 있도록
+      권한이 적절히 설정되어야 한다 (소유자 root, 권한 644).
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-08
+    check_method: |
+      ls -al /etc/passwd 실행하여 소유자 root, 권한 644 확인
+    check_criteria: |
+      양호 - 소유자 root, 권한 644 이하
+      취약 - 소유자가 root가 아니거나 권한이 644보다 큼
+    context_sql: |
+      SELECT FILEPATH, PERMISSION, OWR, GRP, OTR, UID, GID
+      FROM U_FILEATTR_TB
+      WHERE FILEPATH = '/etc/passwd' AND EXIST = 'YES'
+    simple_check:
+      type: perm_le
+      field: PERMISSION
+      max: "0644"
+    recommend: |
+      chown root:root /etc/passwd
+      chmod 644 /etc/passwd
+    enabled: true
+
+  - rule_id: U-08
+    title: /etc/shadow 파일 소유자 및 권한 설정
+    description: |
+      /etc/shadow 파일은 암호화된 사용자 패스워드를 저장하므로 root 사용자만 읽을 수 있어야
+      한다. 권한이 400 이하로 설정되어야 하며, 일반 사용자에게 어떤 권한이라도 부여되면
+      취약으로 판정한다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-09
+    check_method: |
+      ls -al /etc/shadow 실행하여 소유자 root, 권한 400 확인
+    check_criteria: |
+      양호 - 소유자 root, 권한 400 이하 (또는 000)
+      취약 - 소유자가 root가 아니거나 권한이 400보다 큼
+    context_sql: |
+      SELECT FILEPATH, PERMISSION, OWR, GRP, OTR FROM U_FILEATTR_TB
+      WHERE FILEPATH = '/etc/shadow' AND EXIST = 'YES'
+    simple_check:
+      type: perm_le
+      field: PERMISSION
+      max: "0400"
+    recommend: |
+      chown root:root /etc/shadow
+      chmod 400 /etc/shadow
+    enabled: true
+
+  - rule_id: U-09
+    title: /etc/hosts 파일 소유자 및 권한 설정
+    description: |
+      /etc/hosts 파일에 대한 접근 권한이 적절한지 점검한다.
+      root 소유, 권한 600 이하로 설정해야 한다. 일반 사용자가 쓰기 권한을 가질 경우
+      네트워크 트래픽을 임의 호스트로 우회시키는 공격에 악용될 수 있다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-10
+    check_method: |
+      ls -al /etc/hosts 실행하여 소유자 root, 권한 600 확인
+    check_criteria: |
+      양호 - 소유자 root, 권한 600 이하
+      취약 - 소유자가 root가 아니거나 권한이 600보다 큼
+    context_sql: |
+      SELECT FILEPATH, PERMISSION, OWR, GRP, OTR FROM U_FILEATTR_TB
+      WHERE FILEPATH = '/etc/hosts' AND EXIST = 'YES'
+    simple_check:
+      type: perm_le
+      field: PERMISSION
+      max: "0600"
+    recommend: |
+      chown root:root /etc/hosts
+      chmod 600 /etc/hosts
+    enabled: true
+
+  - rule_id: U-10
+    title: /etc/(x)inetd.conf 파일 소유자 및 권한 설정
+    description: |
+      /etc/inetd.conf 또는 /etc/xinetd.conf 파일은 inetd 서비스 데몬의 설정 파일이다.
+      이 파일에 대한 접근 권한을 적절히 설정하지 않을 경우 비인가자에 의한 서비스 변경 등의
+      위협이 발생할 수 있으므로, root 소유, 600 이하 권한으로 설정해야 한다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-11
+    check_method: |
+      ls -al /etc/(x)inetd.conf 실행하여 소유자 root, 권한 600 확인
+    check_criteria: |
+      양호 - 파일 없음(미사용) 또는 소유자 root + 권한 600 이하
+      취약 - 권한이 600보다 큼
+    context_sql: |
+      SELECT FILEPATH, EXIST, PERMISSION, OWR, GRP, OTR FROM U_FILEATTR_TB
+      WHERE FILEPATH IN ('/etc/inetd.conf', '/etc/xinetd.conf')
+    evaluation_prompt: |
+      inetd 설정 파일 권한 분석.
+      판단:
+      - 모든 항목 EXIST='NO' → 양호 (inetd 미사용)
+      - EXIST='YES' 인데 PERMISSION이 0600 이하 → 양호
+      - EXIST='YES' 이고 PERMISSION이 0600 초과 → 취약
+    recommend: |
+      chown root:root /etc/(x)inetd.conf
+      chmod 600 /etc/(x)inetd.conf
+    enabled: true
+
+  - rule_id: U-11
+    title: /etc/(r)syslog.conf 파일 소유자 및 권한 설정
+    description: |
+      /etc/rsyslog.conf (또는 /etc/syslog.conf) 파일에 대한 접근 권한이 적절한지 점검한다.
+      이 파일은 시스템 로깅 설정을 담고 있으므로 root 소유, 644 이하 권한으로 설정해야 한다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-12
+    check_method: |
+      ls -al /etc/rsyslog.conf 실행하여 소유자 root, 권한 644 확인
+    check_criteria: |
+      양호 - 소유자 root + 권한 644 이하
+      취약 - 권한이 644 초과
+    context_sql: |
+      SELECT FILEPATH, EXIST, PERMISSION FROM U_FILEATTR_TB
+      WHERE FILEPATH IN ('/etc/rsyslog.conf', '/etc/syslog.conf') AND EXIST = 'YES'
+    simple_check:
+      type: perm_le
+      field: PERMISSION
+      max: "0644"
+    recommend: |
+      chown root:root /etc/rsyslog.conf
+      chmod 644 /etc/rsyslog.conf
+    enabled: true
+
+  - rule_id: U-12
+    title: /etc/services 파일 소유자 및 권한 설정
+    description: |
+      /etc/services 파일은 네트워크 서비스 포트 매핑 정보를 담고 있다. 비인가자에 의해
+      수정될 경우 서비스 이용에 혼란이 생길 수 있으므로, root 소유 + 644 이하로 설정한다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-13
+    check_method: |
+      ls -al /etc/services 실행하여 소유자 root, 권한 644 확인
+    check_criteria: |
+      양호 - 소유자 root + 권한 644 이하
+      취약 - 권한이 644 초과
+    context_sql: |
+      SELECT FILEPATH, PERMISSION FROM U_FILEATTR_TB
+      WHERE FILEPATH = '/etc/services' AND EXIST = 'YES'
+    simple_check:
+      type: perm_le
+      field: PERMISSION
+      max: "0644"
+    recommend: |
+      chown root:root /etc/services
+      chmod 644 /etc/services
+    enabled: true
+
+  - rule_id: U-13
+    title: SUID, SGID, Sticky bit 설정 파일 점검
+    description: |
+      SUID/SGID가 설정된 파일은 실행 시 파일 소유자의 권한으로 실행됨. 표준 시스템 경로
+      외에 SUID/SGID가 설정된 파일이 존재하면 권한 상승 공격에 악용될 수 있으므로,
+      비표준 경로의 SUID/SGID 파일은 제거 또는 SUID bit 해제가 필요하다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-14
+    check_method: |
+      find / -perm -4000 -o -perm -2000 -type f 명령으로 SUID/SGID 파일 검색
+    check_criteria: |
+      양호 - SUID/SGID 파일이 모두 표준 시스템 경로 (/bin, /usr/bin, /sbin, /usr/sbin)
+      취약 - 비표준 경로 (/tmp, /home 등)에 SUID/SGID 파일 존재
+    context_sql: |
+      SELECT FILEPATH, PERMISSION FROM U_FILEATTR_TB
+      WHERE EXIST = 'YES'
+        AND (PERMISSION LIKE '4%' OR PERMISSION LIKE '2%' OR PERMISSION LIKE '6%')
+        AND LENGTH(PERMISSION) >= 4
+    evaluation_prompt: |
+      SUID/SGID 비트가 설정된 파일 목록 분석.
+      판단:
+      - 모든 파일이 /bin, /usr/bin, /sbin, /usr/sbin, /usr/libexec 등 표준 경로 → 양호
+      - /tmp, /home, /var 같은 사용자 영역에 SUID 파일 → 즉시 취약
+      - 알려진 표준 바이너리(/bin/su, /usr/bin/passwd, /usr/bin/sudo 등)는 정상
+      취약 항목이 있으면 evidence에 해당 파일 경로 명시.
+    recommend: |
+      비표준 SUID/SGID 파일 점검:
+        find / -perm -4000 -o -perm -2000 -type f 2>/dev/null
+      불필요한 경우 SUID 제거:
+        chmod u-s <파일경로>
+        chmod g-s <파일경로>
+    related_cves:
+      - id: CVE-2021-3156
+        cvss: "7.8"
+        severity_class: high
+      - id: CVE-2022-2588
+        cvss: "7.8"
+        severity_class: high
+    enabled: true
+
+  - rule_id: U-14
+    title: 사용자, 시스템 시작파일 및 환경파일 소유자 및 권한 설정
+    description: |
+      홈디렉토리 내의 환경변수 파일 (.profile, .bashrc, .bash_profile 등)은 해당 사용자
+      소유, 권한 644 이하로 설정해야 한다. 그렇지 않으면 비인가자가 임의로 변경하여
+      특정 명령 실행 등 의도하지 않은 동작을 유도할 수 있다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-15
+    check_method: |
+      각 계정의 홈 디렉토리에서 시작 파일 (.profile, .bashrc 등) 권한 확인
+    check_criteria: |
+      양호 - 모든 시작 파일이 사용자 소유 + 권한 644 이하
+      취약 - 한 파일이라도 사용자 외 소유이거나 권한 644 초과
+    context_sql: |
+      SELECT USERNAME, FILEPATH, PERMISSION, OWR, GRP, OTR FROM U_USERFILEATTR_TB
+      WHERE EXIST = 'YES'
+        AND (FILEPATH LIKE '%/.profile' OR FILEPATH LIKE '%/.bashrc'
+             OR FILEPATH LIKE '%/.bash_profile' OR FILEPATH LIKE '%/.cshrc'
+             OR FILEPATH LIKE '%/.kshrc' OR FILEPATH LIKE '%/.login')
+    evaluation_prompt: |
+      사용자 시작 파일 권한 점검.
+      판단:
+      - 모든 행의 PERMISSION이 0644 이하 + OTR <= 4 → 양호
+      - OTR (others 권한)이 6 이상 (쓰기 가능) → 즉시 취약
+      - PERMISSION이 0644 초과 → 취약
+      취약 항목이 있으면 evidence에 USERNAME과 FILEPATH 명시.
+    recommend: |
+      각 시작 파일에 대해:
+        chown <user>:<user> <파일>
+        chmod 644 <파일>
+    enabled: true
+
+  - rule_id: U-15
+    title: world writable 파일 점검
+    description: |
+      모든 사용자가 쓰기 가능한 (world writable) 파일이 있는지 점검한다.
+      이러한 파일은 비인가자에 의해 임의로 변경/삭제될 수 있어 보안 위협이 발생한다.
+      필요한 경우 sticky bit (디렉토리는 1777, 파일은 즉시 제거 권장).
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-16
+    check_method: |
+      find / -type f -perm -2 -print 명령으로 world writable 파일 검색
+    check_criteria: |
+      양호 - world writable 파일이 없거나 sticky bit 설정됨
+      취약 - sticky bit 없는 world writable 파일 존재
+    context_sql: |
+      SELECT FILEPATH, PERMISSION, OTR, STICKY FROM U_DIRPERMISSIONWORKER_TB
+      WHERE OTR IN ('2', '3', '6', '7') AND STICKY = '0'
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      world writable 파일 검색:
+        find / -type f \( -perm -o+w \) -print 2>/dev/null
+      처리:
+        chmod o-w <파일>           # 쓰기 권한 제거
+        # 또는 디렉토리는: chmod +t <디렉토리>  (sticky bit)
+    enabled: true
+
+  - rule_id: U-16
+    title: $HOME/.rhosts, hosts.equiv 사용 금지
+    description: |
+      r 계열 서비스 (rlogin, rsh, rexec) 사용 시 .rhosts 또는 /etc/hosts.equiv 파일이
+      있으면 패스워드 없이 인증되므로 보안 위협이 발생한다. r 서비스 자체를 사용하지
+      않거나, 사용하는 경우 권한 설정과 + (모두 허용) 라인 점검이 필요하다.
+    category: 파일 및 디렉토리 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-17
+    check_method: |
+      각 사용자 홈디렉토리의 .rhosts 파일과 /etc/hosts.equiv 파일 존재 여부 확인
+    check_criteria: |
+      양호 - .rhosts, hosts.equiv 파일이 존재하지 않음
+      취약 - .rhosts 또는 hosts.equiv 파일 존재 (특히 '+' 라인 포함 시)
+    context_sql: |
+      SELECT USERNAME, FILEPATH, EXIST, USINGPLUS FROM U_USERRHOSTS_TB
+      WHERE EXIST = 'YES'
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      .rhosts, hosts.equiv 파일 삭제:
+        rm /home/*/.rhosts
+        rm /root/.rhosts
+        rm /etc/hosts.equiv
+      r 계열 서비스 자체 비활성화 권장 (SSH 사용)
+    enabled: true
+
+  # =========================================================================
+  # 3. 서비스 관리 (위험도 상)
+  # =========================================================================
+  
+  - rule_id: U-17
+    title: 접속 IP 및 포트 제한 (TCP Wrappers)
+    description: |
+      TCP Wrapper 또는 iptables/firewalld를 이용하여 특정 IP에서의 접속만 허용하는 정책이
+      적용되어 있는지 점검한다. /etc/hosts.allow, /etc/hosts.deny 또는 방화벽 설정으로
+      접속 IP를 제한해야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-18
+    check_method: |
+      /etc/hosts.allow, /etc/hosts.deny 파일 설정 확인
+      또는 iptables/firewalld 규칙 확인
+    check_criteria: |
+      양호 - hosts.deny 에 ALL:ALL 후 hosts.allow 에 허용 IP 명시
+      취약 - hosts.deny 미설정 또는 빈 파일
+    context_sql: |
+      SELECT NUM, LINE, PATH FROM U_ACTIVEFILEREADER_TB
+      WHERE PATH IN ('/etc/hosts.allow', '/etc/hosts.deny')
+    evaluation_prompt: |
+      TCP Wrapper 설정 분석.
+      양호 조건:
+      - /etc/hosts.deny 에 'ALL:ALL' 라인 존재 (모두 거부)
+      - /etc/hosts.allow 에 허용 IP가 명시됨
+      취약 조건:
+      - hosts.deny 비어있거나 ALL:ALL 없음 → 모든 접속 허용 위험
+      결과가 비어있거나 양쪽 다 미설정 → 취약
+    recommend: |
+      /etc/hosts.deny:
+        ALL: ALL
+      /etc/hosts.allow:
+        sshd: 192.168.1.0/24    # 허용할 IP 대역만 명시
+    enabled: true
+
+  - rule_id: U-18
+    title: finger 서비스 비활성화
+    description: |
+      finger 서비스는 사용자 정보를 외부에 노출시키므로 비활성화해야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-19
+    check_method: |
+      netstat -an | grep 79 또는 systemctl is-active finger 로 서비스 동작 여부 확인
+    check_criteria: |
+      양호 - 79번 포트가 LISTEN 상태가 아님
+      취약 - 79번 포트가 LISTEN 중
+    context_sql: |
+      SELECT PORT, IPADDR FROM U_LISTENINGPORT_TB WHERE PORT = '79'
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      systemctl disable --now finger
+      yum remove finger-server
+    enabled: true
+
+  - rule_id: U-19
+    title: Anonymous FTP 비활성화
+    description: |
+      익명 FTP는 패스워드 없이 접속이 가능하므로 보안 위협이 크다.
+      vsftpd, proftpd 등의 설정에서 anonymous_enable = NO 로 설정하거나
+      FTP 서비스 자체를 중단해야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-20
+    check_method: |
+      /etc/vsftpd/vsftpd.conf 의 anonymous_enable 값 확인
+      또는 21번 포트 LISTEN 여부 확인
+    check_criteria: |
+      양호 - 21번 포트가 LISTEN 아니거나 anonymous_enable=NO
+      취약 - 21번 포트 LISTEN + anonymous_enable=YES (또는 미설정 기본값 YES)
+    context_sql: |
+      SELECT NAME, VALUE, FILE_PATH FROM U_NAMEEQUALVALUE_TB
+      WHERE FILE_PATH LIKE '%vsftpd.conf%' AND NAME = 'anonymous_enable'
+    evaluation_prompt: |
+      vsftpd 설정 분석.
+      양호:
+      - VALUE = 'NO' (소문자 'no' 도 양호로 처리)
+      - 또는 결과 비어있음 (vsftpd 미설치)
+      취약:
+      - VALUE = 'YES' (또는 'yes')
+    related_cves:
+      - id: CVE-2021-3618
+        cvss: "7.4"
+        severity_class: high
+      - id: CVE-2011-2523
+        cvss: "10.0"
+        severity_class: critical
+    recommend: |
+      /etc/vsftpd/vsftpd.conf:
+        anonymous_enable=NO
+      서비스 재시작:
+        systemctl restart vsftpd
+      또는 FTP 자체 비활성화:
+        systemctl disable --now vsftpd
+    enabled: true
+
+  - rule_id: U-20
+    title: r 계열 서비스 비활성화
+    description: |
+      rlogin, rsh, rexec 등 r 계열 서비스는 평문 통신과 .rhosts 기반 인증으로 보안에 매우
+      취약하다. 모두 SSH로 대체하고 서비스를 비활성화해야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-21
+    check_method: |
+      netstat -an 으로 512, 513, 514번 포트 LISTEN 확인
+      또는 /etc/xinetd.d/ 디렉토리에서 rlogin, rsh, rexec 활성화 여부 확인
+    check_criteria: |
+      양호 - 512, 513, 514번 포트 모두 LISTEN 아님
+      취약 - 어느 하나라도 LISTEN 중
+    context_sql: |
+      SELECT PORT, IPADDR FROM U_LISTENINGPORT_TB
+      WHERE PORT IN ('512', '513', '514')
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      r 서비스 비활성화:
+        systemctl disable --now rlogin.socket rsh.socket rexec.socket
+      또는 패키지 제거:
+        yum remove rsh-server
+    enabled: true
+
+  - rule_id: U-21
+    title: cron 파일 소유자 및 권한 설정
+    description: |
+      crontab 명령어와 cron 관련 설정 파일에 대한 접근 권한이 적절히 설정되어야 한다.
+      /etc/crontab 은 root 소유, 권한 640 이하.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-22
+    check_method: |
+      ls -al /etc/crontab /usr/bin/crontab 확인
+    check_criteria: |
+      양호 - /etc/crontab 권한 640 이하, root 소유
+      취약 - 권한 640 초과
+    context_sql: |
+      SELECT FILEPATH, PERMISSION, OWR FROM U_FILEATTR_TB
+      WHERE FILEPATH IN ('/etc/crontab', '/etc/cron.allow', '/etc/cron.deny')
+        AND EXIST = 'YES'
+    simple_check:
+      type: perm_le
+      field: PERMISSION
+      max: "0640"
+    recommend: |
+      chown root:root /etc/crontab
+      chmod 640 /etc/crontab
+    enabled: true
+
+  - rule_id: U-22
+    title: DoS 공격에 취약한 서비스 비활성화 (echo, discard, daytime, chargen)
+    description: |
+      echo, discard, daytime, chargen 등 inetd/xinetd 기본 서비스는 DoS 공격에 악용될 수
+      있으므로 비활성화해야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-23
+    check_method: |
+      netstat -an 으로 echo(7), discard(9), daytime(13), chargen(19) 포트 확인
+    check_criteria: |
+      양호 - 위 포트들이 LISTEN 아님
+      취약 - 하나라도 LISTEN 중
+    context_sql: |
+      SELECT PORT FROM U_LISTENINGPORT_TB
+      WHERE PORT IN ('7', '9', '13', '19')
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      xinetd 사용 시:
+        /etc/xinetd.d/echo 등에서 disable = yes
+      systemd 사용 시:
+        systemctl disable --now echo.socket discard.socket daytime.socket chargen.socket
+    enabled: true
+
+  - rule_id: U-23
+    title: NFS 서비스 비활성화
+    description: |
+      NFS 서비스를 사용하지 않는다면 비활성화해야 한다. 사용해야 한다면 접근 통제가
+      적절히 설정되어야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-24
+    check_method: |
+      netstat -an 으로 NFS 포트 (2049) LISTEN 여부 확인
+      또는 ps -ef | grep nfs 로 NFS 프로세스 확인
+    check_criteria: |
+      양호 - NFS 서비스 미사용 또는 access control 설정됨
+      취약 - NFS 서비스 사용 중 + 접근 통제 미설정
+    context_sql: |
+      SELECT PSNAME, CMD FROM U_PROCESS_TB
+      WHERE PSNAME LIKE '%nfs%' OR PSNAME LIKE '%mountd%'
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      NFS 서비스 미사용 시:
+        systemctl disable --now nfs-server nfs-lock nfs-idmap
+      사용 필요 시 /etc/exports 에 접근 통제 명시:
+        /share 192.168.1.0/24(ro,sync,no_root_squash)
+    enabled: true
+
+  - rule_id: U-24
+    title: NFS 접근 통제 (everyone share 금지)
+    description: |
+      NFS 서비스 사용 시 /etc/exports 에 everyone 공유 (* 또는 IP 미지정)가 없어야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-25
+    check_method: |
+      /etc/exports 파일 확인 — 호스트 미지정 또는 '*' 공유 점검
+    check_criteria: |
+      양호 - everyone 공유 없음
+      취약 - '*' 또는 호스트 미지정 공유 존재
+    context_sql: |
+      SELECT NUM, LINE FROM U_ACTIVEFILEREADER_TB
+      WHERE PATH = '/etc/exports'
+    evaluation_prompt: |
+      /etc/exports 라인 분석.
+      취약 패턴:
+      - LINE에 ' * ' 또는 LINE 끝이 호스트/IP 없이 끝남 (예: '/share' 만)
+      - 0.0.0.0/0 같은 전체 허용
+      양호:
+      - 모든 export 라인에 특정 IP 또는 호스트명 명시
+      - 결과 비어있음 (NFS 미사용)
+    recommend: |
+      /etc/exports 편집:
+        /share  192.168.1.0/24(ro,sync,no_root_squash)
+      적용:
+        exportfs -ra
+    enabled: true
+
+  - rule_id: U-25
+    title: automountd 제거
+    description: |
+      automountd 서비스는 디렉토리를 자동 마운트하는 서비스이나 보안 취약점 (CVE-1999-0093 등)
+      이 다수 존재하므로 사용하지 않는 경우 비활성화해야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-26
+    check_method: |
+      ps -ef | grep automount 명령으로 automountd 프로세스 확인
+    check_criteria: |
+      양호 - automountd 프로세스 동작 안 함
+      취약 - 동작 중
+    context_sql: |
+      SELECT PSNAME, CMD FROM U_PROCESS_TB
+      WHERE PSNAME LIKE '%automount%'
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      systemctl disable --now autofs
+    enabled: true
+
+  - rule_id: U-26
+    title: RPC 서비스 비활성화
+    description: |
+      불필요한 RPC 서비스는 다양한 취약점을 가지고 있어 비활성화해야 한다.
+      111번 포트 (rpcbind/portmapper)가 LISTEN 중이면 RPC 서비스가 동작 중이다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-27
+    check_method: |
+      netstat -an | grep 111 명령으로 RPC 서비스 동작 확인
+    check_criteria: |
+      양호 - 111번 포트가 LISTEN 아니거나 127.0.0.1 만 LISTEN
+      취약 - 0.0.0.0 으로 111번 포트 LISTEN (외부 노출)
+    context_sql: |
+      SELECT PORT, IPADDR FROM U_LISTENINGPORT_TB WHERE PORT = '111'
+    evaluation_prompt: |
+      RPC 서비스 LISTEN 상태 분석.
+      판단:
+      - 결과 비어있음 → 양호 (RPC 미동작)
+      - IPADDR = '127.0.0.1' 만 → 양호 (로컬만)
+      - IPADDR = '0.0.0.0' → 취약 (외부 노출)
+    related_cves:
+      - id: CVE-2017-8779
+        cvss: "7.5"
+        severity_class: high
+    recommend: |
+      RPC 미사용 시:
+        systemctl disable --now rpcbind
+      필수 시 firewalld 로 111 포트 차단:
+        firewall-cmd --permanent --remove-port=111/tcp
+        firewall-cmd --reload
+    enabled: true
+
+  - rule_id: U-27
+    title: NIS/NIS+ 서비스 비활성화
+    description: |
+      NIS (Network Information Service)는 인증 정보가 평문으로 전송되는 취약점이 있으므로,
+      반드시 사용해야 하는 경우가 아니면 비활성화해야 한다. (NIS+ 또는 LDAP 권장)
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-28
+    check_method: |
+      ps -ef | grep ypserv 또는 systemctl is-active ypserv 명령으로 NIS 동작 확인
+    check_criteria: |
+      양호 - ypserv, ypbind, yppasswdd 등 NIS 데몬 동작 안 함
+      취약 - NIS 데몬 동작 중
+    context_sql: |
+      SELECT PSNAME, CMD FROM U_PROCESS_TB
+      WHERE PSNAME IN ('ypserv', 'ypbind', 'yppasswdd', 'ypupdated', 'ypxfrd')
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      systemctl disable --now ypserv ypbind yppasswdd ypupdated ypxfrd
+    enabled: true
+
+  - rule_id: U-28
+    title: tftp, talk 서비스 비활성화
+    description: |
+      tftp (69번)는 인증 없이 파일 전송이 가능하고, talk (517/518번)는 평문 통신으로
+      보안에 취약하므로 사용하지 않을 시 비활성화해야 한다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-29
+    check_method: |
+      netstat -an 으로 69, 517, 518 포트 LISTEN 여부 확인
+    check_criteria: |
+      양호 - 69, 517, 518 포트 모두 LISTEN 아님
+      취약 - 하나라도 LISTEN 중
+    context_sql: |
+      SELECT PORT FROM U_LISTENINGPORT_TB WHERE PORT IN ('69', '517', '518')
+    simple_check:
+      type: row_count_zero
+    recommend: |
+      systemctl disable --now tftp.socket talk.socket
+      yum remove tftp-server talk-server
+    enabled: true
+
+  - rule_id: U-29
+    title: Sendmail 버전 점검
+    description: |
+      Sendmail 사용 시 최신 보안 패치가 적용된 안전한 버전을 사용해야 한다.
+      과거 버전 (8.x 초기 등)은 다수의 RCE 취약점이 알려져 있다.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-30
+    check_method: |
+      sendmail -d0.4 -bv root | grep Version 명령으로 버전 확인
+    check_criteria: |
+      양호 - Sendmail 미설치 또는 최신 버전 (8.15+)
+      취약 - 구버전 Sendmail 사용 중
+    context_sql: |
+      SELECT CMD, RESULT FROM U_COMMANDVALUE_TB
+      WHERE CMD LIKE '%sendmail%' AND CMD LIKE '%Version%'
+    evaluation_prompt: |
+      Sendmail 버전 분석.
+      판단:
+      - 결과 비어있음 또는 ISSUCESS='NO' → 양호 (Sendmail 미설치)
+      - Version 8.15 이상 → 양호
+      - Version 8.14 이하 → 취약 (RCE 위험)
+    recommend: |
+      Sendmail 미사용 시:
+        systemctl disable --now sendmail
+        yum remove sendmail
+      사용 시 최신 버전 업그레이드:
+        yum update sendmail
+    enabled: true
+
+  - rule_id: U-30
+    title: 스팸 메일 릴레이 제한
+    description: |
+      메일 서버 사용 시 외부에서 임의로 메일을 보내는 릴레이를 차단해야 한다.
+      Sendmail 의 경우 /etc/mail/access 또는 sendmail.cf 에서 릴레이 제한 설정.
+    category: 서비스 관리
+    severity: 상
+    os_target: linux
+    kisa_id: U-31
+    check_method: |
+      /etc/mail/sendmail.cf 에 'R$* $#error $@ 5.7.1 $: "550 Relaying denied"' 라인 확인
+      또는 /etc/postfix/main.cf 의 smtpd_relay_restrictions 확인
+    check_criteria: |
+      양호 - 릴레이 차단 설정됨 또는 메일 서버 미사용
+      취약 - 릴레이 차단 미설정
+    context_sql: |
+      SELECT NUM, LINE FROM U_ACTIVEFILEREADER_TB
+      WHERE PATH IN ('/etc/mail/sendmail.cf', '/etc/postfix/main.cf')
+        AND (LINE LIKE '%Relaying denied%' OR LINE LIKE '%smtpd_relay_restrictions%')
+    evaluation_prompt: |
+      메일 서버 릴레이 제한 설정 분석.
+      판단:
+      - 결과 비어있음 → 메일 서버 미사용 가능성 → 양호 (별도 확인 필요)
+      - 'Relaying denied' 또는 'reject_unauth_destination' 포함 라인 존재 → 양호
+      - 메일 서버 동작 중인데 차단 설정 없음 → 취약
+    recommend: |
+      Sendmail:
+        /etc/mail/sendmail.cf 에 추가:
+        R$* $#error $@ 5.7.1 $: "550 Relaying denied"
+      Postfix:
+        /etc/postfix/main.cf:
+        smtpd_relay_restrictions = permit_mynetworks, reject_unauth_destination
+    enabled: true
+

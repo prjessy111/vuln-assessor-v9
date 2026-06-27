@@ -1,0 +1,128 @@
+<meta charset="utf-8">
+<title>경영진 보고 — AI 기반 보안 취약점 진단 정합성 자동화</title>
+<style>
+  :root{ --ink:#1a2332; --muted:#5b6675; --line:#e3e8ef; --brand:#0b5fff; --good:#1aa260; --warn:#c0392b; --bg:#f7f9fc; }
+  *{box-sizing:border-box;}
+  body{font-family:'Malgun Gothic','맑은 고딕',system-ui,sans-serif; color:var(--ink); margin:0; background:var(--bg); line-height:1.6;}
+  .page{max-width:980px; margin:0 auto; padding:36px 28px 64px; background:#fff;}
+  .doc-tag{font-size:12px; letter-spacing:2px; color:var(--brand); font-weight:700;}
+  h1{font-size:26px; margin:6px 0 4px; letter-spacing:-0.5px;}
+  .sub{color:var(--muted); font-size:14px; margin-bottom:6px;}
+  .meta{font-size:12.5px; color:var(--muted); border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:8px 0; margin:14px 0 24px; display:flex; flex-wrap:wrap; gap:18px;}
+  h2{font-size:18px; margin:30px 0 10px; padding-left:10px; border-left:4px solid var(--brand);}
+  .lead{background:#eef4ff; border:1px solid #d4e2ff; border-radius:10px; padding:16px 18px; font-size:15px;}
+  .lead b{color:var(--brand);}
+  .kpis{display:flex; flex-wrap:wrap; gap:12px; margin:18px 0;}
+  .kpi{flex:1 1 150px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; text-align:center; box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .kpi .n{font-size:26px; font-weight:800; color:var(--brand); line-height:1.1;}
+  .kpi .n.good{color:var(--good);}
+  .kpi .l{font-size:12.5px; color:var(--muted); margin-top:4px;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin:10px 0;}
+  th,td{border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:#f1f5fb; font-weight:700;}
+  .before{color:var(--warn);} .after{color:var(--good); font-weight:700;}
+  ul{margin:8px 0; padding-left:20px;} li{margin:4px 0;}
+  .note{font-size:12.5px; color:var(--muted);}
+  .box{background:#fafbfd; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:10px 0;}
+  .tag{display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:10px; background:#eef4ff; color:var(--brand); margin-right:6px;}
+</style>
+
+<div class="page">
+
+  <div class="doc-tag">EXECUTIVE REPORT · 경영진 보고</div>
+  <h1>AI 기반 보안 취약점 진단 — 정합성 자동 검증</h1>
+  <div class="sub">고객사 보안점검(SecuMS) 결과의 정합성 확인을 사람 수작업에서 AI 자동 검증으로 전환</div>
+  <div class="meta">
+    <span>제품전략팀</span><span>대상 시스템 · Vuln Assessor v9</span>
+    <span>점검 표준 · 금융보안원 전자금융기반시설 2026 OS 점검</span>
+    <span>대상 OS · Windows / Linux</span>
+  </div>
+
+  <div class="lead">
+    고객사가 요청하는 <b>SecuMS 점검 결과의 정합성 확인</b>을, 담당자가 항목별로 일일이 대조하던 수작업에서
+    <b>AI/LLM 자동 검증</b>으로 전환했습니다. 결과적으로 <b>SecuMS 정답지 대비 정합성 84~88%(사내 LLM 기준)</b>를 달성하고,
+    자동 판정 불가(N/A) 항목을 <b>대부분 제거</b>하여 사람 개입 없는 자동 검증 체계를 확보했습니다.
+  </div>
+
+  <h2>1. 핵심 성과 (한눈에)</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="n good">84~88%</div><div class="l">SecuMS 정답지 대비 정합성<br>(사내 LLM·실측)</div></div>
+    <div class="kpi"><div class="n good">N/A 0~2</div><div class="l">자동판정 불가 제거<br>(Win 20→0 · Linux 16→2)</div></div>
+    <div class="kpi"><div class="n">전과정<br>자동</div><div class="l">수집→판정→정합성<br>수작업 → 자동</div></div>
+    <div class="kpi"><div class="n">₩0</div><div class="l">사내 LLM·CVE<br>추가 비용 없음</div></div>
+  </div>
+
+  <h2>2. 배경 — 왜 필요했나 (비즈니스 문제)</h2>
+  <ul>
+    <li><b>고객 정합성 확인 요청이 전부 수작업</b> — 담당자가 70여 개 항목을 일일이 대조, 서버마다 반복 → 인력·시간 과다.</li>
+    <li><b>정합성 판단 기준의 부재</b> — 판정이 맞는지 검증할 표준·방법이 없어 매번 즉흥적, 품질 편차 발생.</li>
+    <li><b>신규 점검 항목 대응 지연</b> — 새 항목 요청 시 정합성 확인에도 큰 시간 소요.</li>
+  </ul>
+
+  <h2>3. 무엇을 했나 (솔루션 요약)</h2>
+  <p>세 가지 점검 결과를 항목 단위로 비교해 정합성을 자동 검증하는 체계를 구축했습니다.</p>
+  <table>
+    <tr><th>구성</th><th>내용</th></tr>
+    <tr><td>① SecuMS raw 데이터 AI 진단</td><td>SecuMS 원본 데이터를 AI가 독립 판정</td></tr>
+    <tr><td>② 자체 수집 스크립트 AI 진단</td><td>자체 수집(Windows/Linux)을 AI가 판정</td></tr>
+    <tr><td>③ SecuMS 자체 판정(정답지)</td><td>SecuMS 제품의 점검 결과 — 비교 기준</td></tr>
+  </table>
+  <p class="note">핵심 설계: <b>수집과 판정을 분리</b>하고, 판정 기준을 코드가 아닌 <b>금융보안원 공식 기준표·프롬프트로 외부화</b> → 기준 변경·고도화·재현이 용이합니다.</p>
+
+  <h2>4. 성과 — Before / After (정량)</h2>
+  <table>
+    <tr><th>항목</th><th>Before (기존)</th><th>After (AI 도입)</th></tr>
+    <tr><td>정합성 확인 방식</td><td class="before">담당자 수작업 (항목별)</td><td class="after">AI 자동 검증</td></tr>
+    <tr><td>정합성 기준</td><td class="before">없음 (정량화 불가)</td><td class="after">표준화 + 정량 측정 (사내 LLM 실측)</td></tr>
+    <tr><td>3-way 정합성<br>(정답지 대비, 실측)</td><td class="before">측정 불가</td><td class="after">① SecuMS-AI 84.5% (58개 중 49개)<br>② 자체수집 AI 88.3% (60개 중 53개)</td></tr>
+    <tr><td>자동 판정 불가(N/A)</td><td class="before">룰 기반 61% / 스크립트 16~20건</td><td class="after">AI 적용 후 1~2건 (대부분 제거)</td></tr>
+    <tr><td>소요 시간</td><td class="before">장시간 수작업</td><td class="after">서버당 수 분, 자동</td></tr>
+    <tr><td>비용</td><td class="before">담당 인력 투입</td><td class="after">사내 LLM·CVE 무료 (추가비용 0)</td></tr>
+  </table>
+
+  <h2>5. 비즈니스 가치</h2>
+  <ul>
+    <li><b>고객 대응 속도·품질</b> — 정합성 확인 요청을 즉시·일관된 기준으로 처리.</li>
+    <li><b>인력 효율</b> — 반복 수작업 제거, 담당자는 예외·고난도 항목에 집중.</li>
+    <li><b>비용 효율</b> — 사내 LLM(무료)과 결정론적 CVE 진단으로 추가 비용 없이 운영.</li>
+    <li><b>에이전트리스(Agentless)</b> — 대상 서버에 에이전트 설치 없이 SSH/WinRM로 수집·검증. 도입 부담·운영 리스크 최소화 (핵심 강점).</li>
+    <li><b>확장 기반</b> — 검증된 체계를 SecuMS 미커버 신규 항목·타 OS로 확장 가능.</li>
+  </ul>
+
+  <h2>6. 정합성에 대한 이해 (경영진 참고)</h2>
+  <div class="box">
+    AI 기반 자동 판정은 <b>단일 고정 수치가 아닌 "관리 지표"</b>로 보는 것이 정확합니다. 이유:
+    <ul>
+      <li><b>측정 층위가 여러 개</b> — 판정불가율 / AI↔정답지(2-way) / 세 결과 모두일치(3-way). 엄격한 지표일수록 수치가 낮게 보입니다.</li>
+      <li><b>AI 고유의 미세 변동</b> — 경계 항목은 실행마다 ±수% 흔들립니다(룰과 달리 100% 동일 재현은 불가).</li>
+      <li><b>의도된 엄격 판정</b> — 일부 항목은 안전을 위해 SecuMS보다 엄격히 봅니다(놓침 방지). 무조건 일치시키면 오히려 위험.</li>
+    </ul>
+    <b>→ 운영 방침:</b> 100% 고정이 아니라 <b>판정불가 최소화 + 정답지 대비 정합성 84~88%(사내 LLM) 안정 유지</b>를 목표로,
+    리포트 화면에 <b>정합성(모수 N개 중 M개)</b>을 상시 표시해 수치로 관리합니다.
+    <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);">
+      <b>현재 측정 기준선(실측):</b>
+      ① SecuMS raw AI <b style="color:var(--good)">84.5%</b> (정답지 58개 중 49개 일치) ·
+      ② 자체수집 AI <b style="color:var(--good)">88.3%</b> (60개 중 53개 일치).
+      <span class="note">— 실행별 ±수% 변동(LLM 특성). 리포트 화면 수치 기준.</span>
+    </div>
+  </div>
+
+  <h2>7. 향후 방향 (로드맵)</h2>
+  <table>
+    <tr><th>단계</th><th>내용</th></tr>
+    <tr><td><span class="tag">달성</span></td><td>정합성 84~88%(사내 LLM), 자동판정불가 제거, 정합성 리포트화</td></tr>
+    <tr><td><span class="tag">단기</span></td><td>경계 항목 안정화(N회 다수결), 수집 완전성 보강</td></tr>
+    <tr><td><span class="tag">중기</span></td><td>신규 항목 자동 점검 AI Agent(점검 절차 자동 생성→수집→판정)</td></tr>
+    <tr><td><span class="tag">확산</span></td><td>타 OS(AIX/HP-UX/Solaris)·CVE 확산, 스케줄 자동 진단, 정합성 SLA·회귀 모니터링</td></tr>
+  </table>
+  <p class="note">※ 본 과제는 수집·AI·백엔드·보안·검증을 아우르는 범위로, 안정적 운영·확산을 위해서는 단계적 리소스 배분을 권고합니다.</p>
+
+  <h2>8. 첨부 (기술 근거 자료)</h2>
+  <ul class="note">
+    <li>산출물_3 — 프롬프트/판정 규칙 정의</li>
+    <li>산출물_4 — 동작 예시(화면 캡처)</li>
+    <li>산출물_5 — Before/After 상세 수치 · 정합성 해석</li>
+    <li>산출물_6 — 평가 관점별 성과 요약</li>
+  </ul>
+
+</div>

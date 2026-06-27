@@ -1,0 +1,45 @@
+<%- include('../_header', { title: '진단 비교' }) %>
+
+<h1>진단 비교: #<%= sessA.assessment_id %> vs #<%= sessB.assessment_id %></h1>
+
+<table class="meta-table">
+  <tr>
+    <th>A</th>
+    <td><%= sessA.executed_at %> | 취약 <%= sessA.vuln_count %> / 양호 <%= sessA.safe_count %> / N/A <%= sessA.na_count %></td>
+  </tr>
+  <tr>
+    <th>B</th>
+    <td><%= sessB.executed_at %> | 취약 <%= sessB.vuln_count %> / 양호 <%= sessB.safe_count %> / N/A <%= sessB.na_count %></td>
+  </tr>
+</table>
+
+<%
+  const counts = { 개선: 0, 악화: 0, 유지: 0, '신규(B)': 0, '제거(A)': 0 };
+  rows.forEach(r => counts[r.change]++);
+%>
+<div class="summary-cards">
+  <div class="summary-card safe"><div>개선</div><div class="num"><%= counts.개선 %></div></div>
+  <div class="summary-card vuln"><div>악화</div><div class="num"><%= counts.악화 %></div></div>
+  <div class="summary-card total"><div>유지</div><div class="num"><%= counts.유지 %></div></div>
+  <div class="summary-card na"><div>신규(B)</div><div class="num"><%= counts['신규(B)'] %></div></div>
+  <div class="summary-card na"><div>제거(A)</div><div class="num"><%= counts['제거(A)'] %></div></div>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr><th>항목ID</th><th>중요도</th><th>A 판정</th><th>B 판정</th><th>변화</th></tr>
+  </thead>
+  <tbody>
+    <% rows.forEach(r => { %>
+      <tr class="change-<%= r.change %>">
+        <td><%= r.rule_id %></td>
+        <td><span class="sev sev-<%= r.severity %>"><%= r.severity %></span></td>
+        <td><%= r.status_a || '-' %></td>
+        <td><%= r.status_b || '-' %></td>
+        <td><strong><%= r.change %></strong></td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<%- include('../_footer') %>

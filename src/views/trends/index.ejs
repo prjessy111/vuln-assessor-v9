@@ -1,0 +1,94 @@
+<%- include('../_header', { title: '추이 / 비교', activeMenu: 'trends' }) %>
+
+<style>
+  .tr-bars { display:flex; align-items:flex-end; gap:10px; height:180px; padding:10px 4px; border:1px solid #e1e5ea; border-radius:8px; overflow-x:auto; background:#fff; }
+  .tr-col { display:flex; flex-direction:column; align-items:center; min-width:54px; }
+  .tr-stack { display:flex; flex-direction:column-reverse; width:30px; height:150px; justify-content:flex-start; }
+  .tr-seg { width:100%; }
+  .tr-seg.vuln { background:#e74c3c; } .tr-seg.safe { background:#27ae60; } .tr-seg.na { background:#bdc3c7; }
+  .tr-x { font-size:10px; color:#666; margin-top:4px; text-align:center; white-space:nowrap; }
+  .tr-rate { font-size:11px; font-weight:700; color:#0b5fff; }
+  .tr-legend span { font-size:12px; margin-right:14px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+  table.tr { width:100%; border-collapse:collapse; font-size:13px; }
+  table.tr th, table.tr td { border:1px solid #e1e5ea; padding:6px 9px; text-align:left; }
+  table.tr th { background:#f1f5fb; }
+  .added { color:#c0392b; font-weight:700; } .resolved { color:#27ae60; font-weight:700; }
+</style>
+
+<div class="page-header">
+  <h1>진단 추이 / 비교</h1>
+  <p class="muted small">진단 결과의 시계열 추이와, 최근 2회 진단 간 신규/해소 취약점을 비교합니다.</p>
+</div>
+
+<div class="section-box">
+  <form method="get" style="margin-bottom:10px;">
+    <label>호스트</label>
+    <select name="host" onchange="this.form.submit()">
+      <option value="">전체</option>
+      <% (hosts || []).forEach(h => { %>
+        <option value="<%= h %>" <%= host === h ? 'selected' : '' %>><%= h %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <h3>① 진단 추이 (취약/양호/판정불가 + 정합성)</h3>
+  <div class="tr-legend" style="margin:6px 0;">
+    <span><i class="dot" style="background:#e74c3c;"></i>취약</span>
+    <span><i class="dot" style="background:#27ae60;"></i>양호</span>
+    <span><i class="dot" style="background:#bdc3c7;"></i>판정불가</span>
+    <span><i class="dot" style="background:#0b5fff;"></i>정합성율(%)</span>
+  </div>
+  <% if (!series || !series.length) { %>
+    <p class="muted">표시할 진단 이력이 없습니다.</p>
+  <% } else {
+       var maxTotal = Math.max.apply(null, series.map(function(s){return s.total||1;})); %>
+    <div class="tr-bars">
+      <% series.slice(-20).forEach(function(s){
+           var h = function(n){ return Math.round((n / maxTotal) * 150); }; %>
+        <div class="tr-col" title="#<%= s.assessment_id %> <%= s.hostname %> / <%= s.source %>&#10;취약<%= s.vuln %> 양호<%= s.safe %> N/A<%= s.na %>">
+          <div class="tr-rate"><%= s.agreement_rate != null ? s.agreement_rate + '%' : '-' %></div>
+          <div class="tr-stack">
+            <div class="tr-seg vuln" style="height:<%= h(s.vuln) %>px;"></div>
+            <div class="tr-seg safe" style="height:<%= h(s.safe) %>px;"></div>
+            <div class="tr-seg na"   style="height:<%= h(s.na) %>px;"></div>
+          </div>
+          <div class="tr-x"><%= (s.date || '').slice(5) %><br><%= s.hostname %></div>
+        </div>
+      <% }) %>
+    </div>
+    <p class="muted small">최근 <%= Math.min(series.length, 20) %>개 진단. 막대 높이=항목수 비율, 상단 숫자=SecuMS 정합성율.</p>
+  <% } %>
+</div>
+
+<div class="section-box">
+  <h3>② 진단 간 비교 (신규 / 해소 취약점)</h3>
+  <% if (!diff) { %>
+    <p class="muted">비교할 2회 이상의 진단이 없습니다. (같은 호스트·소스 기준)</p>
+  <% } else { %>
+    <p class="small">
+      <b><%= diff.hostname %></b> · <%= diff.source %> &nbsp;|&nbsp;
+      이전 <code>#<%= diff.prev_id %></code> (<%= diff.prev_date %>) → 현재 <code>#<%= diff.cur_id %></code> (<%= diff.cur_date %>)
+    </p>
+    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+      <div style="flex:1 1 320px;">
+        <h4 class="added">🔺 신규 발생 취약 (<%= diff.added.length %>)</h4>
+        <% if (!diff.added.length) { %><p class="muted small">없음</p><% } else { %>
+          <table class="tr"><tr><th>점검항목</th><th>이전</th></tr>
+          <% diff.added.forEach(function(a){ %><tr><td class="mono"><%= a.chk_id %></td><td><%= a.was %></td></tr><% }) %>
+          </table>
+        <% } %>
+      </div>
+      <div style="flex:1 1 320px;">
+        <h4 class="resolved">✅ 해소된 취약 (<%= diff.resolved.length %>)</h4>
+        <% if (!diff.resolved.length) { %><p class="muted small">없음</p><% } else { %>
+          <table class="tr"><tr><th>점검항목</th><th>현재</th></tr>
+          <% diff.resolved.forEach(function(r){ %><tr><td class="mono"><%= r.chk_id %></td><td><%= r.now %></td></tr><% }) %>
+          </table>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../_footer') %>
