@@ -1,0 +1,277 @@
+<%- include('../_header', { title: '자율 진단 에이전트', activeMenu: 'agent' }) %>
+
+<style>
+  .agent-flow { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 18px; font-size:12px; color:#667; }
+  .agent-flow span { background:#f1f3f7; border-radius:4px; padding:3px 8px; }
+  .agent-flow .gate { background:#fff3cd; color:#8a6d00; font-weight:600; }
+  .st-badge { display:inline-block; padding:2px 9px; border-radius:11px; font-size:12px; font-weight:600; }
+  .st-draft{background:#eef;color:#446;} .st-script_generated{background:#fff3cd;color:#8a6d00;}
+  .st-approved{background:#d9ecff;color:#1456a8;} .st-rejected{background:#fde2e2;color:#a33;}
+  .st-collected{background:#e7f4ea;color:#256b3a;} .st-judged{background:#e7f4ea;color:#1c6b2e;}
+  .st-needs_review{background:#ffe0b8;color:#9a4d00;} .st-confirmed{background:#d7f5dd;color:#0f7a2e;}
+  .risk-safe{color:#1c7a3a;font-weight:600;} .risk-warning{color:#b07400;font-weight:600;} .risk-blocked{color:#b00;font-weight:700;}
+  .agent-card { border:1px solid #e3e6ee; border-radius:8px; padding:14px 16px; margin-bottom:12px; background:#fff; }
+  .agent-card.gate { border-left:4px solid #f0ad4e; }
+  .agent-card.review { border-left:4px solid #e8821a; }
+  .agent-card h4 { margin:0 0 4px; }
+  .agent-meta { font-size:12px; color:#778; margin-bottom:8px; }
+  .agent-code { background:#1e1e2e; color:#d4d4e8; padding:10px; border-radius:6px; font-family:ui-monospace,Consolas,monospace; font-size:12px; white-space:pre-wrap; max-height:240px; overflow:auto; }
+  .agent-actions { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start; }
+  .agent-actions form { display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .agent-banner { padding:9px 14px; border-radius:6px; margin-bottom:14px; }
+  .agent-banner.ok { background:#e7f4ea; color:#1c6b2e; }
+  .agent-banner.err { background:#fde2e2; color:#a33; }
+  .safety-hit { font-size:11px; color:#a33; margin:2px 0; }
+  .verdict-양호{color:#1c7a3a;font-weight:700;} .verdict-취약{color:#c0392b;font-weight:700;} .verdict-점검불가{color:#888;font-weight:600;}
+  textarea.agent-ta { width:100%; min-height:90px; font-family:ui-monospace,monospace; font-size:12px; }
+  details.gen summary { cursor:pointer; color:#446; font-size:12px; }
+</style>
+
+<div class="page-header">
+  <h1>자율 진단 에이전트</h1>
+  <p class="muted">자연어로 정의한 점검 항목을 <strong>스크립트 생성 → 사람 승인 → 수집 → 자동 판정</strong>까지 한 흐름으로 처리합니다. 사람 확인 게이트가 두 곳에 강제됩니다.</p>
+</div>
+
+<div class="agent-flow">
+  <span>① 항목 편입(자연어)</span>→
+  <span>② 스크립트 생성</span>→
+  <span class="gate">🚦 게이트1: 실행 승인</span>→
+  <span>③ raw 수집</span>→
+  <span>④ 자동 판정</span>→
+  <span class="gate">🚦 게이트2: 불일치·애매 검토</span>→
+  <span>⑤ 확정</span>
+</div>
+
+<% if (msg) { %><div class="agent-banner ok"><%= msg %></div><% } %>
+<% if (err) { %><div class="agent-banner err">⚠ <%= err %></div><% } %>
+
+<div class="agent-banner" style="background:#eef3fb; color:#33506e;">
+  🔒 판정·생성은 <strong>사내 LLM(LSAP)</strong>로 처리됩니다.
+  외부 전송(Claude)은 <%= externalAllowed ? '<strong style="color:#a33">허용됨 (AGENT_ALLOW_EXTERNAL=true)</strong>' : '<strong>차단됨 (보안 기본값)</strong>' %>.
+</div>
+
+<% if (!backendConfigured.lsap) { %>
+  <div class="agent-banner err">사내 LLM(LSAP)이 설정되지 않았습니다 (<code>LLM_ENDPOINT</code>). 스크립트는 <strong>템플릿 폴백</strong>, 자동 판정은 <strong>점검불가(보류)</strong>로 처리됩니다.</div>
+<% } %>
+
+<!-- KPI -->
+<div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
+  <div class="kpi-card"><div class="kpi-label">전체 항목</div><div class="kpi-num"><%= summary.total %></div></div>
+  <div class="kpi-card kpi-warning"><div class="kpi-label">🚦 승인 대기 (게이트1)</div><div class="kpi-num"><%= summary.pending_approval %></div></div>
+  <div class="kpi-card kpi-fail"><div class="kpi-label">🚦 검토 필요 (게이트2)</div><div class="kpi-num"><%= summary.needs_review %></div></div>
+  <div class="kpi-card kpi-success"><div class="kpi-label">확정</div><div class="kpi-num"><%= summary.confirmed %></div></div>
+</div>
+
+<!-- 3-1: 신규 항목 편입 -->
+<div class="section-box">
+  <h3>① 신규 진단 항목 편입 (자연어)</h3>
+  <p class="muted small">신규 CVE / 보안 가이드 / 고객 커스텀 기준을 자연어 설명만으로 등록합니다.</p>
+  <form method="post" action="/agent/items">
+    <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px; margin-bottom:8px;">
+      <input type="text" name="title" placeholder="제목 (비우면 설명 앞부분 사용)">
+      <select name="os_target">
+        <option value="linux">Linux</option>
+        <option value="windows">Windows</option>
+        <option value="all">공통</option>
+      </select>
+      <select name="severity">
+        <option value="상">중요도: 상</option>
+        <option value="중" selected>중요도: 중</option>
+        <option value="하">중요도: 하</option>
+      </select>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 2fr; gap:8px; margin-bottom:8px;">
+      <select name="source">
+        <option value="custom">출처: 커스텀</option>
+        <option value="cve">출처: CVE</option>
+        <option value="guide">출처: 보안 가이드</option>
+      </select>
+      <input type="text" name="source_ref" placeholder="근거 ID (예: CVE-2021-3156, KISA U-01)">
+      <input type="text" name="category" placeholder="카테고리 (예: 계정 관리)">
+    </div>
+    <textarea class="agent-ta" name="description" placeholder="점검 기준을 자연어로 설명하세요. 예) /etc/passwd 파일의 권한이 644 이하인지 확인. 그보다 크면 일반 사용자가 수정 가능하여 취약." required></textarea>
+    <div style="margin-top:8px;"><button type="submit" class="btn primary">항목 편입</button></div>
+  </form>
+</div>
+
+<!-- 항목 목록 -->
+<div class="section-box">
+  <h3>진단 항목 (<%= items.length %>건)</h3>
+  <% if (!items.length) { %>
+    <p class="muted">아직 등록된 항목이 없습니다. 위에서 항목을 편입하세요.</p>
+  <% } %>
+
+  <% items.forEach(function(it){ %>
+    <div class="agent-card <%= it.status==='script_generated' ? 'gate' : (it.status==='needs_review' ? 'review' : '') %>" id="<%= it.item_id %>">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div style="flex:1;">
+          <h4><%= it.title %> <span class="st-badge st-<%= it.status %>"><%= it.status %></span></h4>
+          <div class="agent-meta">
+            <span class="mono"><%= it.item_id %></span> ·
+            <%= it.os_target %> · 중요도 <%= it.severity %> · 출처 <%= it.source %><%= it.source_ref ? ' ('+it.source_ref+')' : '' %> ·
+            <%= it.category %> · 편입 <%= it.created_by %> <%= it.created_at %>
+          </div>
+          <div style="font-size:13px; color:#445; white-space:pre-wrap; margin-bottom:6px;"><%= it.description %></div>
+        </div>
+        <form method="post" action="/agent/items/<%= it.item_id %>/delete" onsubmit="return confirm('삭제할까요?');">
+          <button class="btn-sm" type="submit">삭제</button>
+        </form>
+      </div>
+
+      <!-- 스크립트 영역 -->
+      <% if (it.script) { %>
+        <div style="margin-top:8px;">
+          <div class="agent-meta">
+            ② 스크립트 (<%= it.script.lang %>) · 생성 <%= it.script.generated_by %><%= it.script.model ? ' / '+it.script.model : '' %> ·
+            안전도 <span class="risk-<%= it.script.safety.risk %>"><%= it.script.safety.risk %></span>
+          </div>
+          <% if (it.script.explanation) { %><div class="muted small" style="margin-bottom:4px;"><%= it.script.explanation %></div><% } %>
+          <div class="agent-code"><%= it.script.code %></div>
+          <% if (it.script.safety.hits && it.script.safety.hits.length) { %>
+            <div style="margin-top:6px;">
+              <% it.script.safety.hits.forEach(function(h){ %>
+                <div class="safety-hit">[<%= h.level %>] L<%= h.line %>: <%= h.why %> — <code><%= h.snippet %></code></div>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+
+      <!-- 판정 영역 -->
+      <% if (it.judgment) { %>
+        <div style="margin-top:8px; padding:8px 10px; background:#f7f8fb; border-radius:6px;">
+          <div class="agent-meta">④ 자동 판정 · <%= it.judgment.backend %><%= it.judgment.model ? ' / '+it.judgment.model : '' %> · <%= it.judgment.judged_at %></div>
+          <div>판정: <span class="verdict-<%= it.judgment.verdict %>"><%= it.judgment.verdict %></span>
+            · 신뢰도 <%= (it.judgment.confidence ?? 0).toFixed(2) %>
+            <% if (it.judgment.needs_review) { %><span class="st-badge st-needs_review">검토필요: <%= it.judgment.review_reason %></span><% } %>
+          </div>
+          <div class="small" style="margin-top:4px;"><strong>사유:</strong> <%= it.judgment.reason %></div>
+          <% if (it.judgment.evidence) { %><div class="small"><strong>근거:</strong> <span class="mono"><%= it.judgment.evidence %></span></div><% } %>
+          <% if (it.judgment.recommend) { %><div class="small"><strong>조치:</strong> <%= it.judgment.recommend %></div><% } %>
+        </div>
+      <% } %>
+
+      <!-- 교차검증 + 3소스 합의 (§4-4 하이브리드) -->
+      <% if (it.agreement) { %>
+        <div style="margin-top:8px; padding:8px 10px; background:#eef3fb; border-radius:6px;">
+          <div class="agent-meta">3소스 합의:
+            <strong style="color:<%= it.agreement.status==='agree' ? '#1c7a3a' : (it.agreement.status==='mismatch' ? '#c0392b' : '#888') %>"><%= it.agreement.status %></strong>
+            (결정적 <%= it.agreement.decisive_count %>/3)
+          </div>
+          <div class="small">
+            ① 1차(<%= it.judgment ? it.judgment.backend : '-' %>): <span class="verdict-<%= it.agreement.sources.primary %>"><%= it.agreement.sources.primary || '—' %></span> ·
+            ② 교차(<%= it.cross ? it.cross.backend : '-' %>): <span class="verdict-<%= it.agreement.sources.cross %>"><%= it.agreement.sources.cross || '—' %></span> ·
+            ③ SecuMS: <span class="verdict-<%= it.agreement.sources.secums %>"><%= it.agreement.sources.secums || '—' %></span>
+          </div>
+          <% if (it.cross && it.cross.reason) { %><div class="small" style="margin-top:3px;"><strong>교차 사유:</strong> <%= it.cross.reason %></div><% } %>
+        </div>
+      <% } %>
+
+      <!-- 확정 영역 -->
+      <% if (it.review) { %>
+        <div class="small" style="margin-top:6px; color:#0f7a2e;">⑤ 확정: <span class="verdict-<%= it.review.verdict %>"><%= it.review.verdict %></span> (<%= it.review.decision %>) by <%= it.review.by %> <%= it.review.at %><%= it.review.note ? ' — '+it.review.note : '' %>
+          · <a href="/agent/items/<%= it.item_id %>/export-rule">📥 룰 YAML 내보내기</a>
+        </div>
+      <% } %>
+
+      <!-- 상태별 액션 -->
+      <div class="agent-actions">
+        <% if (it.status === 'draft' || it.status === 'rejected') { %>
+          <form method="post" action="/agent/items/<%= it.item_id %>/generate">
+            <% if (backendConfigured.lsap || backendConfigured.claude) { %>
+              <select name="backend">
+                <% if (backendConfigured.lsap) { %><option value="lsap">LSAP(사내)</option><% } %>
+                <% if (backendConfigured.claude) { %><option value="claude">Claude</option><% } %>
+              </select>
+            <% } %>
+            <button class="btn-sm primary" type="submit">② 스크립트 생성</button>
+          </form>
+        <% } %>
+
+        <% if (it.status === 'script_generated') { %>
+          <form method="post" action="/agent/items/<%= it.item_id %>/review-script">
+            <input type="hidden" name="decision" value="approve">
+            <input type="text" name="note" placeholder="승인 메모(선택)">
+            <button class="btn-sm primary" type="submit" <%= it.script && it.script.safety.risk==='blocked' ? 'disabled title="blocked 스크립트는 승인 불가"' : '' %>>🚦 실행 승인</button>
+          </form>
+          <form method="post" action="/agent/items/<%= it.item_id %>/review-script">
+            <input type="hidden" name="decision" value="reject">
+            <button class="btn-sm" type="submit">거부</button>
+          </form>
+          <form method="post" action="/agent/items/<%= it.item_id %>/generate">
+            <button class="btn-sm" type="submit">재생성</button>
+          </form>
+        <% } %>
+
+        <% if (it.status === 'approved' || it.status === 'collected' || it.status === 'judged' || it.status === 'needs_review') { %>
+          <details class="gen" style="width:100%;">
+            <summary>③-A 대상에서 자동 실행 (Linux=SSH / Windows=WinRM)</summary>
+            <form method="post" action="/agent/items/<%= it.item_id %>/run-on-target" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;"
+                  onsubmit="return confirm('승인된 스크립트를 대상 서버에서 실행합니다. 진행할까요?');">
+              <select name="server_id" required>
+                <option value="">— 대상 서버 선택 —</option>
+                <% (servers||[]).filter(function(s){ var win=String(s.os_type||'').toLowerCase().includes('win'); return it.os_target==='all' || (it.os_target==='windows' ? win : !win); }).forEach(function(s){ %>
+                  <option value="<%= s.server_id %>"><%= s.hostname %> (<%= s.ip_address %>, <%= s.os_type %>)</option>
+                <% }); %>
+              </select>
+              <label class="small"><input type="checkbox" name="auto_judge" value="on" checked> 실행 후 자동 판정</label>
+              <button class="btn-sm primary" type="submit">▶ 실행+수집</button>
+            </form>
+            <div class="muted small" style="margin-top:3px;">서버 관리에 인증정보(자격증명)가 등록된 대상만 실행됩니다.</div>
+          </details>
+          <details class="gen" style="width:100%;">
+            <summary>③-B raw 출력 붙여넣기 / 재수집</summary>
+            <form method="post" action="/agent/items/<%= it.item_id %>/ingest" style="display:block; margin-top:6px;">
+              <textarea class="agent-ta" name="output" placeholder="대상 시스템에서 승인된 스크립트를 실행한 결과(raw)를 붙여넣으세요."><%= it.raw ? it.raw.output : '' %></textarea>
+              <input type="hidden" name="source" value="manual">
+              <button class="btn-sm primary" type="submit" style="margin-top:6px;">raw 수집</button>
+            </form>
+          </details>
+        <% } %>
+
+        <% if (it.status === 'collected' || it.status === 'judged' || it.status === 'needs_review') { %>
+          <form method="post" action="/agent/items/<%= it.item_id %>/judge">
+            <input type="text" name="secums_verdict" placeholder="SecuMS 판정(선택, 교차검증)">
+            <button class="btn-sm primary" type="submit">④ 자동 판정<%= it.judgment ? ' 재실행' : '' %></button>
+          </form>
+        <% } %>
+
+        <% if ((it.status === 'collected' || it.status === 'judged' || it.status === 'needs_review') && it.judgment) { %>
+          <form method="post" action="/agent/items/<%= it.item_id %>/cross-verify">
+            <button class="btn-sm" type="submit" <%= backendConfigured.lsap ? '' : 'disabled title="LSAP 미설정"' %>>⚖ 교차검증(사내 재검토)</button>
+          </form>
+          <% if (externalAllowed && backendConfigured.claude) { %>
+            <form method="post" action="/agent/items/<%= it.item_id %>/cross-verify" onsubmit="return confirm('raw 데이터가 외부(Claude)로 전송됩니다. 진행할까요?');">
+              <input type="hidden" name="backend" value="claude">
+              <button class="btn-sm" type="submit" title="외부 전송">⚖ 교차검증(Claude·외부)</button>
+            </form>
+          <% } %>
+        <% } %>
+
+        <% if (it.judgment && (it.status === 'judged' || it.status === 'needs_review' || it.status === 'confirmed')) { %>
+          <form method="post" action="/agent/items/<%= it.item_id %>/notify-hermes">
+            <button class="btn-sm" type="submit" <%= hermesConfigured ? '' : 'disabled title="Hermes 미설정 (HERMES_SSH_HOST 등)"' %>>📨 Hermes 보고</button>
+          </form>
+        <% } %>
+
+        <% if (it.status === 'judged' || it.status === 'needs_review') { %>
+          <form method="post" action="/agent/items/<%= it.item_id %>/confirm">
+            <input type="hidden" name="decision" value="confirm">
+            <button class="btn-sm primary" type="submit">🚦 판정 확정</button>
+          </form>
+          <form method="post" action="/agent/items/<%= it.item_id %>/confirm">
+            <input type="hidden" name="decision" value="override">
+            <select name="verdict">
+              <option value="양호">양호</option>
+              <option value="취약">취약</option>
+              <option value="점검불가">점검불가</option>
+            </select>
+            <button class="btn-sm" type="submit">번복 확정</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  <% }); %>
+</div>
+
+<%- include('../_footer') %>

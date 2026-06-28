@@ -3429,6 +3429,229 @@ app.post('/cve/sync/run', auth.requireRole('admin', 'operator'), (req, res) => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────
+// 자율 진단 에이전트 (VULN_ASSESSOR_TODO.md §3)
+//   3-1 항목 편입 → 3-2 스크립트 생성 → [게이트1 승인] → 수집 →
+//   3-3 자동 판정 → [게이트2 검토 확정]
+// 모듈은 storage(kvStorage)를 주입받아 'agent_items' KV에 적재한다.
+// ─────────────────────────────────────────────────────────────────
+const agentRegistry = require('./src/agent/itemRegistry');
+const agentPipeline = require('./src/agent/pipeline');
+
+function _agentBack(res, msg) {
+  // 액션 결과를 쿼리로 전달하고 목록으로 복귀
+  const q = msg ? ('?msg=' + encodeURIComponent(msg)) : '';
+  res.redirect('/agent' + q);
+}
+function _agentErr(res, e) {
+  res.redirect('/agent?err=' + encodeURIComponent(e.message || String(e)));
+}
+
+// 목록 + 검토 큐
+app.get('/agent', (req, res) => {
+  const items = agentRegistry.list(kvStorage);
+  const summary = agentPipeline.summary(kvStorage);
+  // 대상 실행용 서버 목록 (간략 필드만)
+  const servers = (loadMock('servers') || []).map(s => ({
+    server_id: s.server_id, hostname: s.hostname, ip_address: s.ip_address, os_type: s.os_type,
+  }));
+  res.render('agent/index', {
+    activeMenu: 'agent',
+    items,
+    servers,
+    summary,
+    msg: req.query.msg || null,
+    err: req.query.err || null,
+    backendConfigured: {
+      lsap: require('./src/agent/llmClient').isBackendConfigured('lsap'),
+      claude: require('./src/agent/llmClient').isBackendConfigured('claude'),
+    },
+    externalAllowed: require('./src/agent/llmClient').isExternalAllowed(),
+    hermesConfigured: require('./src/agent/hermesNotify').isConfigured(),
+  });
+});
+
+// 3-1: 신규 항목 편입 (자연어)
+app.post('/agent/items', auth.requireRole('admin', 'operator'), (req, res) => {
+  try {
+    const b = req.body || {};
+    agentRegistry.create(kvStorage, {
+      title: b.title,
+      description: b.description,
+      category: b.category,
+      severity: b.severity,
+      os_target: b.os_target,
+      source: b.source,
+      source_ref: b.source_ref,
+      created_by: req.session?.username || 'operator',
+    });
+    _agentBack(res, '항목이 편입되었습니다.');
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 3-2: 점검 스크립트 생성 (또는 재생성)
+app.post('/agent/items/:id/generate', auth.requireRole('admin', 'operator'), async (req, res) => {
+  try {
+    const item = await agentPipeline.generateScript(kvStorage, req.params.id, {
+      backend: req.body?.backend || undefined,
+      by: req.session?.username || 'operator',
+    });
+    _agentBack(res, `스크립트 생성됨 (안전도: ${item.script?.safety?.risk}).`);
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 게이트1: 스크립트 실행 승인/거부
+app.post('/agent/items/:id/review-script', auth.requireRole('admin', 'operator'), (req, res) => {
+  try {
+    agentPipeline.reviewScript(kvStorage, req.params.id, {
+      decision: req.body?.decision,
+      by: req.session?.username || 'operator',
+      note: req.body?.note,
+    });
+    _agentBack(res, req.body?.decision === 'approve' ? '스크립트 실행이 승인되었습니다.' : '스크립트가 거부되었습니다.');
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 수집: 승인된 항목에 raw 출력 적재 (붙여넣기/업로드)
+app.post('/agent/items/:id/ingest', auth.requireRole('admin', 'operator'), (req, res) => {
+  try {
+    agentPipeline.ingestRaw(kvStorage, req.params.id, {
+      output: req.body?.output,
+      source: req.body?.source || 'manual',
+      by: req.session?.username || 'operator',
+    });
+    _agentBack(res, 'raw 출력이 수집되었습니다.');
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 3-2(실행): 승인된 스크립트를 대상 서버에서 실행 → raw 자동 수집 (+옵션 판정)
+app.post('/agent/items/:id/run-on-target', auth.requireRole('admin', 'operator'), async (req, res) => {
+  try {
+    const servers = loadMock('servers') || [];
+    const server = servers.find(s => String(s.server_id) === String(req.body?.server_id));
+    if (!server) throw new Error('대상 서버를 선택하세요');
+    const item = await agentPipeline.runOnTarget(kvStorage, req.params.id, server, {
+      autoJudge: req.body?.auto_judge === 'on' || req.body?.auto_judge === 'true',
+      backend: req.body?.backend || undefined,
+      by: req.session?.username || 'operator',
+    });
+    _agentBack(res, `${server.hostname} 실행 완료 → raw 수집${item.judgment ? ' + 판정(' + item.judgment.verdict + ')' : ''}.`);
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 3-3: 자동 판정
+app.post('/agent/items/:id/judge', auth.requireRole('admin', 'operator'), async (req, res) => {
+  try {
+    const item = await agentPipeline.runJudge(kvStorage, req.params.id, {
+      backend: req.body?.backend || undefined,
+      secums_verdict: req.body?.secums_verdict || undefined,
+    });
+    const j = item.judgment || {};
+    _agentBack(res, `판정: ${j.verdict}${j.needs_review ? ' (검토 필요)' : ''}.`);
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 게이트2: 판정 사람 검토 확정/번복
+app.post('/agent/items/:id/confirm', auth.requireRole('admin', 'operator'), (req, res) => {
+  try {
+    agentPipeline.confirmJudgment(kvStorage, req.params.id, {
+      decision: req.body?.decision,
+      verdict: req.body?.verdict,
+      by: req.session?.username || 'operator',
+      note: req.body?.note,
+    });
+    _agentBack(res, '판정이 확정되었습니다.');
+  } catch (e) { _agentErr(res, e); }
+});
+
+// §4-4 하이브리드: 교차 검증 → 3소스 합의 (기본 사내 LSAP 재검토, 외부는 명시 시에만)
+app.post('/agent/items/:id/cross-verify', auth.requireRole('admin', 'operator'), async (req, res) => {
+  try {
+    const item = await agentPipeline.crossVerify(kvStorage, req.params.id, {
+      backend: req.body?.backend || undefined, // 미지정 → 사내 LSAP
+      secums_verdict: req.body?.secums_verdict || undefined,
+    });
+    _agentBack(res, `교차검증(${item.cross?.backend}): ${item.cross?.verdict} → 3소스 합의 ${item.agreement?.status}.`);
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 확정 항목 → v2 룰 YAML export (운영자가 rules/*.yaml에 편입)
+app.get('/agent/items/:id/export-rule', auth.requireRole('admin', 'operator'), (req, res) => {
+  try {
+    const item = agentRegistry.get(kvStorage, req.params.id);
+    if (!item) return res.status(404).send('항목 없음');
+    const yamlText = require('./src/agent/ruleExport').toYaml(item);
+    res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="agent-rule-${item.item_id}.yaml"`);
+    res.send(yamlText);
+  } catch (e) { _agentErr(res, e); }
+});
+
+// Hermes(메신저 게이트웨이)로 판정 요약 보고 (Option A — raw 미전송)
+app.post('/agent/items/:id/notify-hermes', auth.requireRole('admin', 'operator'), async (req, res) => {
+  try {
+    const hermes = require('./src/agent/hermesNotify');
+    const item = agentRegistry.get(kvStorage, req.params.id);
+    if (!item) throw new Error('항목 없음');
+    const r = await hermes.send(hermes.formatItem(item), { subject: 'Vuln Assessor 진단 보고' });
+    _agentBack(res, `Hermes(${r.target})로 보고 전송 완료.`);
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 항목 삭제 (admin)
+app.post('/agent/items/:id/delete', auth.requireRole('admin'), (req, res) => {
+  try {
+    agentRegistry.remove(kvStorage, req.params.id);
+    _agentBack(res, '항목이 삭제되었습니다.');
+  } catch (e) { _agentErr(res, e); }
+});
+
+/**
+ * 자율 루프 raw 자동 수집 (토큰 인증).
+ * 승인된 점검 스크립트를 대상에서 실행한 래퍼가 결과(raw 텍스트)를 item_id로 push.
+ *   POST /api/agent/check-result
+ *   Headers: X-Agent-Token: <서버 토큰>
+ *   Body(JSON): { item_id, output, auto_judge?:bool, backend? }
+ * → 승인(approved) 항목이면 raw 수집(collected), auto_judge면 자동 판정까지.
+ */
+app.post('/api/agent/check-result', express.json({ limit: '5mb' }), async (req, res) => {
+  try {
+    const token = req.headers['x-agent-token'];
+    if (!token) return res.status(401).json({ status: 'error', error: 'X-Agent-Token 헤더 필요' });
+    const server = agentToken.findServerByToken(kvStorage, token);
+    if (!server) return res.status(401).json({ status: 'error', error: '유효하지 않은 토큰' });
+
+    const { item_id, output, auto_judge, backend } = req.body || {};
+    if (!item_id || !String(output || '').trim()) {
+      return res.status(400).json({ status: 'error', error: 'item_id, output 필수' });
+    }
+    const item = agentRegistry.get(kvStorage, item_id);
+    if (!item) return res.status(404).json({ status: 'error', error: `항목 없음: ${item_id}` });
+    if (item.status !== 'approved' && item.status !== 'collected' && item.status !== 'judged' && item.status !== 'needs_review') {
+      return res.status(409).json({ status: 'error', error: `승인(approved) 이후에만 수집 가능 (현재: ${item.status})` });
+    }
+
+    let updated = agentPipeline.ingestRaw(kvStorage, item_id, {
+      output, source: `agent-push:${server.hostname}`, by: 'agent-token',
+    });
+    agentToken.recordPush(kvStorage, server.server_id, { source_type: 'agent-check', item_id });
+
+    let judgment = null;
+    if (auto_judge) {
+      updated = await agentPipeline.runJudge(kvStorage, item_id, { backend });
+      judgment = updated.judgment;
+    }
+    res.json({
+      status: 'success', item_id, item_status: updated.status,
+      judged: !!auto_judge,
+      verdict: judgment?.verdict || null,
+      needs_review: judgment?.needs_review || false,
+    });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: e.message });
+  }
+});
+
 async function startServer() {
   // Storage 초기화 (MySQL 모드인 경우 연결 + 테이블 확인)
   const storageStatus = await kvStorage.initialize();

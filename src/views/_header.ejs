@@ -13,7 +13,7 @@
   </div>
   <%
     // 활성 메뉴 → 그룹 매핑 (부모 하이라이트용)
-    var _g = { diagnosis:'diag', collection:'diag', schedules:'diag',
+    var _g = { diagnosis:'diag', collection:'diag', schedules:'diag', agent:'diag',
                reports:'rpt', 'inspection-status':'rpt', 'security-grade':'rpt', 'cve-sync':'rpt',
                vuln:'vuln', remediation:'vuln', exceptions:'vuln', exclusions:'vuln',
                notifications:'ops', audit:'ops', users:'ops' };
@@ -29,6 +29,7 @@
         <a href="/diagnosis" class="<%= activeMenu === 'diagnosis' ? 'active' : '' %>">진단 관리</a>
         <a href="/collection" class="<%= activeMenu === 'collection' ? 'active' : '' %>">수집 관리</a>
         <a href="/schedules" class="<%= activeMenu === 'schedules' ? 'active' : '' %>">예약 진단</a>
+        <a href="/agent" class="<%= activeMenu === 'agent' ? 'active' : '' %>">자율 에이전트</a>
       </div>
     </div>
 

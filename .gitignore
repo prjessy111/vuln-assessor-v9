@@ -9,6 +9,14 @@ servers.csv
 *.pem
 *.key
 *token*
+!src/agent/token.js
+# VPS/Hermes 접속·점검 메모 (IP·키·경로 등 — 커밋 금지)
+info.txt
+info*.txt
+*.vps
+hermes_key*
+id_rsa*
+id_ed25519*
 
 # ── 런타임/수집 데이터 (자격증명·비번 해시·서버 raw 포함) ──
 data/mock/
