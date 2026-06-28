@@ -14,6 +14,7 @@ servers.csv
 info.txt
 info*.txt
 *.vps
+data/agent-credentials.json
 hermes_key*
 id_rsa*
 id_ed25519*

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자율 진단 에이전트 — Claude Skill 기반 자율 진단 루프</title>
+<style>
+  :root{--bg:#0e141b;--line:#2b3744;--ink:#eaf0f6;--muted:#9bafc1;--accent:#4aa3ff;--good:#2ecc71;--bad:#e74c3c;--warn:#f1c40f;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI","Malgun Gothic",system-ui,sans-serif;line-height:1.65;}
+  .wrap{max-width:920px;margin:0 auto;padding:34px 22px 80px;}
+  .hero{text-align:center;padding:10px 0 24px;border-bottom:1px solid var(--line);}
+  .hero .tag{font-size:12px;letter-spacing:1px;color:var(--accent);}
+  .hero .core{display:inline-block;margin-left:8px;font-size:11px;font-weight:800;color:#0e141b;background:var(--warn);border-radius:10px;padding:2px 9px;letter-spacing:.5px;}
+  .hero h1{font-size:26px;margin:10px 0 12px;line-height:1.35;}
+  .hero .lead{color:var(--muted);font-size:15px;max-width:700px;margin:0 auto;}
+  .chips{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:22px;}
+  .chip{background:#0b1320;border:1px solid var(--line);border-radius:12px;padding:12px 22px;min-width:150px;}
+  .chip .big{font-size:20px;font-weight:800;color:var(--good);}
+  .chip .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+  .meta{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:20px;font-size:13px;color:var(--muted);}
+  .meta span{border:1px solid var(--line);border-radius:7px;padding:4px 12px;}
+  .why{background:linear-gradient(135deg,#13283f,#0e141b);border:1px solid var(--accent);border-radius:14px;padding:18px 22px;margin:26px 0;}
+  .why h2{margin:0 0 6px;font-size:17px;color:var(--accent);border:0;padding:0;}
+  .why p{margin:0;font-size:15px;}
+  section{background:#131a23;border:1px solid var(--line);border-radius:12px;padding:18px 24px;margin-top:16px;}
+  section h2{font-size:17px;margin:0 0 12px;padding-left:11px;border-left:4px solid var(--accent);}
+  ul{margin:6px 0;padding-left:20px;} li{margin:6px 0;}
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0;}
+  .flow .step{background:#0b1320;border:1px solid var(--line);border-radius:9px;padding:9px 13px;font-size:13.5px;}
+  .flow .gate{border-color:var(--warn);color:var(--warn);}
+  .flow .sep{color:var(--accent);font-weight:700;}
+  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:10px 0;}
+  @media(max-width:680px){.three{grid-template-columns:1fr;}}
+  .three .c{background:#0b1320;border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-size:13.5px;}
+  .three .c b{color:var(--accent);}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px;}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;}
+  th{background:#0b1320;color:var(--muted);}
+  .g{color:var(--good);font-weight:600;} .b{color:var(--bad);} .w{color:var(--warn);font-weight:600;}
+  code{background:#0b1320;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:#cfe3ff;}
+  .demo{background:#0b1320;border:1px dashed var(--line);border-radius:10px;padding:14px;color:var(--muted);font-size:13px;margin-top:10px;}
+  .muted{color:var(--muted);font-size:13px;}
+  pre{background:#0b1320;border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow:auto;font-size:12.5px;color:#cfe3ff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="tag">AI 자동화 과제 · 신규 차별 기능<span class="core">CORE</span></div>
+    <h1>자율 진단 에이전트<br><span style="font-size:18px;color:var(--muted);font-weight:500;">Claude Skill 기반 자율 진단 루프</span></h1>
+    <p class="lead">신규 점검 항목을 <b>자연어 설명만으로</b> 정의하면, 에이전트가 <b>점검 스크립트 생성 → 실행 → 판정·검증</b>까지 자동 수행. 사람은 <b>두 개의 게이트(실행 승인·판정 확정)</b>만 검수한다.</p>
+    <div class="chips">
+      <div class="chip"><div class="big">자연어 → 자동</div><div class="lbl">신규 항목 편입·점검</div></div>
+      <div class="chip"><div class="big">사내 LLM</div><div class="lbl">LSAP(qwen)·외부 전송 차단</div></div>
+      <div class="chip"><div class="big">게이트 2</div><div class="lbl">실행 승인 · 판정 확정</div></div>
+    </div>
+    <div class="meta">
+      <span>대상 · Vuln Assessor v9</span>
+      <span>판정 LLM · 사내 LSAP(qwen3.5-122b)</span>
+      <span>보고 · Hermes 메신저 게이트웨이</span>
+    </div>
+  </div>
+
+  <div class="why">
+    <h2>왜 핵심인가 — "공장" 위에 "작업반장"</h2>
+    <p>기존 진단 시스템이 <b>공장</b>이라면, 자율 에이전트는 <b>작업반장</b>이다. 신규 종목(CVE·가이드·고객 기준)이 들어와도 사람이 룰·스크립트를 일일이 짜지 않는다. <b>자연어로 "이걸 점검해"라고만 하면</b> 에이전트가 스크립트와 판정을 만들고, 사람은 예외(불일치·애매)만 검수한다. → <b>검증 시스템의 가치(전수 자동 + 예외만 사람)를 그대로 구현.</b></p>
+  </div>
+
+  <section>
+    <h2>1. 파이프라인 — 5단계 + 사람 게이트 2개</h2>
+    <div class="flow">
+      <span class="step">① 자연어 항목 편입</span><span class="sep">→</span>
+      <span class="step">② 스크립트 자동 생성<br><span class="muted">+ 안전게이트(위험명령 차단)</span></span><span class="sep">→</span>
+      <span class="step gate">🚦 게이트1<br>실행 승인</span><span class="sep">→</span>
+      <span class="step">③ 대상 실행·수집<br><span class="muted">SSH / WinRM</span></span><span class="sep">→</span>
+      <span class="step">④ raw 자동 판정<br><span class="muted">근거·조치·신뢰도</span></span><span class="sep">→</span>
+      <span class="step">⚖ 교차검증<br><span class="muted">3소스 합의</span></span><span class="sep">→</span>
+      <span class="step gate">🚦 게이트2<br>판정 확정</span><span class="sep">→</span>
+      <span class="step">⑤ 룰 편입 · 보고</span>
+    </div>
+    <p class="muted">사람 확인 게이트는 <b>코드로 강제</b> — 승인 전 실행 불가, 위험(blocked) 스크립트 승인 불가, 애매 판정은 확정 전 통과 불가.</p>
+  </section>
+
+  <section>
+    <h2>2. 과제 요구(§3·§4-4) 대비 구현</h2>
+    <table>
+      <tr><th>요구</th><th>구현</th><th>상태</th></tr>
+      <tr><td>3-1 신규 항목 자동 편입 (자연어만으로)</td><td><code>itemRegistry</code></td><td class="g">완료</td></tr>
+      <tr><td>3-2 점검 스크립트 자동 생성·실행 + [실행 전 사람 승인]</td><td><code>scriptGenerator</code> · <code>safetyGate</code> · <code>scriptRunner</code></td><td class="g">완료</td></tr>
+      <tr><td>3-3 raw 자동 판정 + 근거·조치 + [불일치 사람 검토]</td><td><code>autoJudge</code></td><td class="g">완료</td></tr>
+      <tr><td>3-4 파이프라인 통합 (mock/LSAP 위에)</td><td><code>pipeline</code></td><td class="g">완료</td></tr>
+      <tr><td>4-4 하이브리드 검증 (전수=LSAP, 핵심만 교차)</td><td><code>crossVerify</code> 3소스 합의</td><td class="g">완료</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>3. 보안 설계 — 사내 우선·외부 차단</h2>
+    <div class="three">
+      <div class="c"><b>사내 LLM 전수</b><br>생성·판정 전부 LSAP(qwen, 무료·내부). raw 외부 유출 없음.</div>
+      <div class="c"><b>외부 LLM 차단</b><br>Claude 등은 <code>AGENT_ALLOW_EXTERNAL</code> 명시 없이는 코드 레벨 거부.</div>
+      <div class="c"><b>요약만 보고</b><br>메신저(Hermes)엔 판정 요약만 전송(raw 비포함). 폐쇄망=결과 붙여넣기.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 실측 결과 (사내 LSAP 실연결)</h2>
+    <table>
+      <tr><th>시나리오</th><th>결과</th></tr>
+      <tr><td>스크립트 자동 생성 (SSH root 점검)</td><td><code>/etc/ssh/sshd_config</code> 조회 <b>읽기전용 sh</b> 생성, 안전도 <span class="g">safe</span></td></tr>
+      <tr><td><b>jessy207 실제 SSH 실행</b> (192.168.159.207)</td><td><code>permitrootlogin yes</code> 수집 → <b class="b">취약</b> (신뢰도 1.00) + 조치 자동 작성</td></tr>
+      <tr><td>/etc/passwd 권한 점검</td><td><code>644 SECURE</code> → <b class="g">양호</b>(1.00) · <code>777</code> → <b class="b">취약</b> (정탐)</td></tr>
+      <tr><td>교차검증 (§4-4)</td><td>3소스 합의 <span class="g">agree</span> 산출</td></tr>
+      <tr><td>메신저 보고 (Hermes)</td><td>판정 요약 텔레그램 전송 성공 (요약만, raw 비전송)</td></tr>
+      <tr><td>회귀 테스트</td><td>자동 테스트 <b class="g">20케이스</b> 통과 (흐름·게이트·안전검사·합의·보안차단·룰출력)</td></tr>
+    </table>
+    <p class="muted">속도: 사내 122B 모델 추론 특성상 LLM 호출당 약 30초. 정탐 정확도는 위와 같이 안정적.</p>
+    <div class="demo">📹 <b>데모 영상</b> — jessy207(Linux·SSH) 자율 진단 단일 영상 + 자막(SRT) 첨부. 흐름: 자연어 편입 → ② 생성 → 🚦승인 → ③-A 대상 실행 → ④ 판정 → ⚖ 합의 → 🚦확정 → 📨 Hermes 보고.</div>
+
+    <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px;">
+      <figure style="margin:0;background:#0b1320;border:1px solid var(--line);border-radius:10px;overflow:hidden;">
+        <img src="img/자율진단_1.PNG" alt="자율 에이전트 화면 — 항목 편입" style="display:block;width:100%;height:auto;border-bottom:1px solid var(--line);background:#fff;">
+        <figcaption style="padding:9px 13px;font-size:13px;color:var(--muted);"><b style="color:var(--accent);">① 자율 에이전트 — 자연어 항목 편입</b> · 파이프라인 흐름(①~⑤ + 게이트 2)과 게이트 대기 현황, 사내 LLM·외부 차단 배너, 자연어 점검 항목 입력 폼</figcaption>
+      </figure>
+      <figure style="margin:0;background:#0b1320;border:1px solid var(--line);border-radius:10px;overflow:hidden;">
+        <img src="img/자율진단_2.PNG" alt="자율 에이전트 화면 — 생성 스크립트와 판정" style="display:block;width:100%;height:auto;border-bottom:1px solid var(--line);background:#fff;">
+        <figcaption style="padding:9px 13px;font-size:13px;color:var(--muted);"><b style="color:var(--accent);">② 스크립트 자동 생성 + 판정</b> · 사내 LLM(qwen)이 생성한 읽기전용 sh(안전도 safe), ④ 자동 판정 <b class="g">양호·신뢰도 1.00</b> + 사유·근거, ③-A 대상(jessy207) 실행·교차검증·Hermes 보고·확정 버튼</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. 구성 모듈 (<code>src/agent/</code>)</h2>
+    <table>
+      <tr><th>모듈</th><th>역할</th></tr>
+      <tr><td><code>itemRegistry</code></td><td>자연어 항목 편입 + 상태머신(draft→…→confirmed)</td></tr>
+      <tr><td><code>scriptGenerator</code></td><td>항목 설명 → sh/PowerShell 읽기전용 점검 스크립트 (LSAP)</td></tr>
+      <tr><td><code>safetyGate</code></td><td>생성 스크립트 위험명령 정적 차단(blocked/warning/safe)</td></tr>
+      <tr><td><code>scriptRunner</code></td><td>승인 스크립트 원격 실행(SSH/WinRM), 자격증명=servers.csv</td></tr>
+      <tr><td><code>autoJudge</code></td><td>raw → 양호/취약/점검불가 + 근거·조치·신뢰도, 저신뢰·불일치 검토 플래그</td></tr>
+      <tr><td><code>crossVerify</code></td><td>사내 재검토 → LSAP/재검토/SecuMS 3소스 합의(§4-4)</td></tr>
+      <tr><td><code>ruleExport</code></td><td>확정 항목 → v2 룰 YAML(룰셋 편입)</td></tr>
+      <tr><td><code>hermesNotify</code></td><td>결과 요약 메신저(Hermes) 보고</td></tr>
+      <tr><td><code>pipeline</code></td><td>단계 연결 + 사람 게이트 강제</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>6. 의의 / 확장</h2>
+    <ul>
+      <li><b>사람의 일이 "전수 작성"에서 "예외 검수"로 축소</b> — 합의된 항목은 통과, 엇갈린 것만 사람이 본다.</li>
+      <li><b>확장 비용 절감</b> — 신규 CVE/가이드/고객 기준을 자연어로만 추가 → DBMS·WEB·네트워크·클라우드로 동일 구조 확장.</li>
+      <li><b>하이브리드 검증</b> — 전수는 무료 사내 LSAP, 핵심·애매 항목만 선택적 2차 검증으로 정확도·비용 동시 확보.</li>
+    </ul>
+    <p class="muted">※ 본 기능은 핵심 차별 요소로, 시간 관계상 메인 발표에서 빠졌던 부분을 보강 제출한다.</p>
+  </section>
+
+  <section style="border-color:var(--accent);">
+    <h2>7. 에이전트로 구현 가능한 아이디어</h2>
+    <p class="muted">핵심 메커니즘(자연어 항목 → 스크립트 생성 → 실행 → 판정 → 보고, 사람 게이트)을 그대로 적용해 확장 가능한 시나리오.</p>
+
+    <p style="margin:14px 0 4px;"><b class="g">A. 점검 범위 확장</b> — 자연어 한 줄로 신규 대상</p>
+    <table>
+      <tr><th>아이디어</th><th>에이전트가 하는 일</th><th>가치</th></tr>
+      <tr><td>DBMS 점검 (MySQL/PostgreSQL/MS-SQL/Oracle)</td><td>"익명 계정 없는지 점검" → 조회 쿼리·명령 생성·판정</td><td>OS 외 DB로 확장 (§2-1)</td></tr>
+      <tr><td>WEB/WAS (Apache/Nginx/IIS/Tomcat)</td><td>설정파일 조회 스크립트 자동 생성</td><td>설정 기반 점검 최적 (§2-2)</td></tr>
+      <tr><td>네트워크 장비 (스위치/라우터/방화벽)</td><td>SSH/SNMP 조회 명령 생성 — Agentless</td><td>인프라 전체 커버 (§2-3)</td></tr>
+      <tr><td>컨테이너/클라우드 (Docker/K8s·AWS/Azure/GCP)</td><td>CLI/API 조회 스크립트 생성</td><td>차별화 영역 (§2-4)</td></tr>
+    </table>
+
+    <p style="margin:14px 0 4px;"><b class="g">B. 위협 대응 속도</b></p>
+    <table>
+      <tr><th>아이디어</th><th>에이전트가 하는 일</th><th>가치</th></tr>
+      <tr><td>신규 CVE 즉시 점검</td><td>CVE 공개 시 자연어 등록 → 영향 버전·패치 확인 생성·판정</td><td>긴급 대응 단축 (§3-1)</td></tr>
+      <tr><td>고객 커스텀 기준 즉시 항목화</td><td>고객 보안정책 문장 → 점검 항목 자동 정의</td><td>요청 즉시 반영</td></tr>
+    </table>
+
+    <p style="margin:14px 0 4px;"><b class="g">C. 검증·품질 강화</b></p>
+    <table>
+      <tr><th>아이디어</th><th>에이전트가 하는 일</th><th>가치</th></tr>
+      <tr><td>3-way 불일치 자동 재점검</td><td>엇갈린 항목만 재점검 스크립트 생성·재판정</td><td>오탐 재검토 자동화 (§4-1)</td></tr>
+      <tr><td>멀티 LLM 합의 확장</td><td>LSAP + Claude + … N개 교차판정 다수결</td><td>경계 항목 신뢰도↑ (§4-4)</td></tr>
+      <tr><td>적응형 스크립트</td><td>OS/배포판 차이 시 대안 자동(<code>stat -c</code> ↔ <code>stat -f</code>)</td><td>스크립트 깨짐 보정</td></tr>
+    </table>
+
+    <p style="margin:14px 0 4px;"><b class="g">D. 운영 자동화</b></p>
+    <table>
+      <tr><th>아이디어</th><th>에이전트가 하는 일</th><th>가치</th></tr>
+      <tr><td>점검 → 조치 가이드/스크립트 제안</td><td>취약 시 조치 명령 생성(실행은 사람 승인 게이트)</td><td>점검~조치 루프 완성 (§5)</td></tr>
+      <tr><td>컴플라이언스 다중 매핑</td><td>동일 점검을 KISA/ISMS-P/CSAP/PCI-DSS로 동시 표기</td><td>규정별 리포트 자동 (§5-1)</td></tr>
+      <tr><td>정기 자동 회귀 + 보고</td><td>스케줄러로 신규 항목 자동 점검 → 텔레그램 보고</td><td>무인 운영</td></tr>
+      <tr><td>자연어 Ad-hoc 임시 점검</td><td>"이 서버 telnet 열렸나?" 즉석 질의 → 즉시 점검</td><td>운영자 즉답</td></tr>
+    </table>
+    <p class="muted">공통: 모든 아이디어가 <b>사내 LLM 전수 + 사람 게이트 2개 + 외부 전송 차단</b>이라는 동일 안전·보안 골격 위에서 동작한다.</p>
+  </section>
+
+</div>
+</body>
+</html>

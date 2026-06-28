@@ -47,7 +47,7 @@
 
 <div class="agent-banner" style="background:#eef3fb; color:#33506e;">
   🔒 판정·생성은 <strong>사내 LLM(LSAP)</strong>로 처리됩니다.
-  외부 전송(Claude)은 <%= externalAllowed ? '<strong style="color:#a33">허용됨 (AGENT_ALLOW_EXTERNAL=true)</strong>' : '<strong>차단됨 (보안 기본값)</strong>' %>.
+  외부 전송(Claude)은 <%- externalAllowed ? '<strong style="color:#a33">허용됨 (AGENT_ALLOW_EXTERNAL=true)</strong>' : '<strong>차단됨 (보안 기본값)</strong>' %>.
 </div>
 
 <% if (!backendConfigured.lsap) { %>

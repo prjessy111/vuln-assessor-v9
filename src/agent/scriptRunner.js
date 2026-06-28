@@ -12,34 +12,72 @@
  *  - Windows(WinRM) 자동 실행은 아직 미지원 → 운영자가 결과 붙여넣기.
  */
 
+const fs = require('fs');
+const path = require('path');
 const sshClient = require('../engine/sshClient');
 
+// 자격증명 폴백 파일 (gitignore 대상, 재시작·시드에도 유지)
+//   { "<server_id>": { "password": "...", "ssh_user": "root", "key_path": "...", "use_sudo": true } }
+const CRED_FILE = path.resolve(__dirname, '../../data/agent-credentials.json');
+
+function _loadCredFile() {
+  try {
+    if (!fs.existsSync(CRED_FILE)) return {};
+    return JSON.parse(fs.readFileSync(CRED_FILE, 'utf8')) || {};
+  } catch (_) { return {}; }
+}
+
+// servers.csv 자격증명 (단일 소스: hostname,ip,os,username,password,asset_no,server_id)
+function _csvCreds() {
+  try {
+    const { getTargetServersFromFile } = require('../services/scheduler');
+    return getTargetServersFromFile() || [];
+  } catch (_) { return []; }
+}
+
+function credFor(server) {
+  // 1) 폴백 파일(override) 우선
+  const all = _loadCredFile();
+  const f = all[String(server.server_id)] || all[server.hostname] || all[server.ip_address];
+  if (f) return f;
+  // 2) servers.csv 에서 server_id/ip/hostname 매칭
+  const csv = _csvCreds().find(c =>
+    String(c.server_id) === String(server.server_id) ||
+    c.ip === server.ip_address || c.hostname === server.hostname);
+  if (csv && csv.password) return { password: csv.password, ssh_user: csv.username };
+  return null;
+}
+
 /**
- * 서버 레코드에서 비밀번호 복호화 (connectionTester.js와 동일 규약).
+ * 서버 비밀번호 해석.
+ *  1) 서버 레코드의 암호화 비번(connectionTester 규약)  2) 폴백 파일(평문, gitignore)
  */
 function resolvePassword(server) {
   if (server.ssh_auth_type === 'password' && server.ssh_password_enc) {
     const { decrypt } = require('../util/crypto');
     return decrypt(server.ssh_password_enc);
   }
-  return null;
+  const c = credFor(server);
+  return c && c.password ? c.password : null;
 }
 
 /**
- * 서버 레코드 → SSH 접속 옵션 (connectionTester.js와 동일 규약).
+ * 서버 레코드 → SSH 접속 옵션. 접속 호스트는 IP 우선(이름 미해석 방지).
  */
 function buildSshOpts(server) {
+  const c = credFor(server) || {};
   const password = resolvePassword(server);
+  const privateKeyPath = (server.ssh_auth_type === 'key' ? server.ssh_key_path : null) || c.key_path || null;
   const opts = {
-    host: server.hostname || server.ip_address,
-    port: server.ssh_port || 22,
-    username: server.ssh_user,
-    privateKeyPath: server.ssh_auth_type === 'key' ? server.ssh_key_path : null,
+    host: server.ip_address || server.hostname,
+    port: server.ssh_port || c.ssh_port || 22,
+    username: server.ssh_user || c.ssh_user,
+    privateKeyPath,
     password,
     readyTimeout: 15000,
   };
   if (!opts.privateKeyPath && !opts.password) {
-    throw new Error(`서버 SSH 자격증명 없음 (server_id=${server.server_id}). 서버 관리에서 인증정보를 등록하세요.`);
+    throw new Error(`서버 SSH 자격증명 없음 (server_id=${server.server_id}). data/agent-credentials.json 또는 서버 관리에 인증정보를 등록하세요.`);
   }
   return opts;
 }
@@ -68,7 +106,7 @@ async function runLinux(server, code, { timeout = 60000, useSudo = false } = {})
 async function runWindows(server, code, { timeout = 120000 } = {}) {
   const winrm = require('nodejs-winrm');
   const password = resolvePassword(server);
-  const host = server.hostname || server.ip_address;
+  const host = server.ip_address || server.hostname;  // IP 우선 (호스트명 미해석 방지)
   const username = server.ssh_user || server.winrm_user;
   const port = Number(server.winrm_port || server.ssh_port || 5985);
   if (!password) {

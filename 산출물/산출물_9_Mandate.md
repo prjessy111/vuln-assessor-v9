@@ -25,11 +25,13 @@
 | 판정 흐름 | **2-pass** — 1차 AI(빠른 분류) → 2차 LLM(정밀 재검토) |
 | CVE | rpm 패키지(Linux)/핫픽스(Windows) 기반 **결정론적** 매칭 (KEV 포함) |
 | 정합성 | ①SecuMS-AI ②Script-AI ③SecuMS 자체판정(정답지) 3-way 정합성 비교 (정답지 N개 중 M개 = X%) |
+| 자율 진단 | 신규 항목 **자연어 편입 → 스크립트 자동 생성 → 실행(SSH/WinRM) → 판정 → Hermes 보고** (Claude Skill 에이전트, 사람 게이트 2개) — [산출물_12](산출물_12_자율진단에이전트.md) |
 
 ## 4. 범위 밖 (Out of Scope — 향후 과제)
-- 자동 조치(remediation) 실행 — 현재는 조치 **관리/기록**만.
+- 자동 조치(remediation) **실행** — 미지원. 현재는 조치 관리/기록 + (판정 시 **조치 가이드 텍스트** 제시)까지.
 - 타 OS(AIX·HP-UX·Solaris) 확장.
-- 신규 점검 항목 자동 생성 AI Agent (Claude Skill 기반).
+
+> ※ "신규 점검 항목 자동 생성 AI Agent(Claude Skill)"는 당초 범위 밖이었으나 **본 과제 내 구현·실측 완료** → [산출물_12](산출물_12_자율진단에이전트.md). (자연어 항목→스크립트 생성→실행(SSH/WinRM)→판정→Hermes 보고, 사람 게이트 2개)
 
 ## 5. 운영 제약 (Harness)
 - **판정 LLM**: 사내 LLM(qwen, 무료) — 사내 운영.

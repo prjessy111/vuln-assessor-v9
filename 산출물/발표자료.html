@@ -168,9 +168,40 @@
       <span class="step"><b>2단계</b><br>신규 항목 요청 시<br>스크립트로 배포·수집·AI 진단</span><span class="sep">→</span>
       <span class="step"><b>활용</b><br>SecuMS 미커버 항목 점검<br>+ SecuMS 검증 데이터로 활용</span>
     </div>
-    <p class="muted"><b>추가 달성:</b> 수집 스크립트 AI친화화로 N/A 제거(Script Linux 16→2·Win 20→0), 3-way 정합성 리포트화(① SecuMS-AI 84.5% · ② Script-AI 88.3%, 정답지 대비 모수 표시).</p>
-    <p class="muted"><b>향후 방향:</b> ① 경계 항목 안정화(N회 다수결) ② 신규 항목 자동 점검 AI Agent(Claude Skill — 점검절차 자동 생성) ③ 수집 완전성·항목↔명령 매핑(crosswalk) 정기 검증 ④ 정합성 기준선(SLA)·회귀 모니터링. + CVE 보강·타 OS(AIX/HP-UX/Solaris)·DB/WAS/네트워크 점검 확산.</p>
+    <p class="muted"><b>추가 달성:</b> 수집 스크립트 AI친화화로 N/A 제거(Script Linux 16→2·Win 20→0), 3-way 정합성 리포트화(① SecuMS-AI 84.5% · ② Script-AI 88.3%, 정답지 대비 모수 표시). <b class="g">+ 신규 항목 자동 점검 AI Agent(Claude Skill) 구현·실측 완료 — 산출물_12.</b></p>
+    <p class="muted"><b>향후 방향:</b> ① 경계 항목 안정화(N회 다수결) ② 자율 에이전트 정확도 정량 벤치(재현율·정밀도·오탐율, LSAP vs Claude) ③ 수집 완전성·항목↔명령 매핑(crosswalk) 정기 검증 ④ 정합성 기준선(SLA)·회귀 모니터링. + CVE 보강·타 OS(AIX/HP-UX/Solaris)·DB/WAS/네트워크 점검 확산.</p>
     <p class="muted" style="font-size:12px;">※ LLM 기반 판정은 단일 고정 정합성이 아니라 지표(N/A율·2-way·3-way)·LLM 변동·소스 독립성을 고려해 <b>정합성 수치로 상시 관리</b>한다.</p>
+  </section>
+
+  <section style="border-color:var(--accent);">
+    <h2>9. 핵심 차별 — 자율 진단 에이전트 (Claude Skill, 구현 완료)</h2>
+    <p>위 정합성 검증 체계(<b>공장</b>) 위에, 신규 점검 항목을 자동 처리하는 자율 에이전트(<b>작업반장</b>)를 얹었다. <b>자연어로 점검 항목을 정의</b>하면 스크립트 생성→실행→판정·검증까지 자동 수행하고, 사람은 <b class="w">두 개의 게이트(실행 승인·판정 확정)</b>만 검수한다. <span class="muted">상세 — 산출물_12.</span></p>
+    <div class="flow">
+      <span class="step">① 자연어 항목 편입</span><span class="sep">→</span>
+      <span class="step">② 스크립트 자동 생성</span><span class="sep">→</span>
+      <span class="step" style="border-color:var(--warn);color:var(--warn);">🚦 실행 승인</span><span class="sep">→</span>
+      <span class="step">③ 실행·수집<br>(SSH/WinRM)</span><span class="sep">→</span>
+      <span class="step">④ 자동 판정</span><span class="sep">→</span>
+      <span class="step">⚖ 3소스 합의</span><span class="sep">→</span>
+      <span class="step" style="border-color:var(--warn);color:var(--warn);">🚦 판정 확정</span><span class="sep">→</span>
+      <span class="step">⑤ Hermes 보고</span>
+    </div>
+    <div class="three">
+      <div class="c"><b>사내 LLM 전수·외부 차단</b><br>생성·판정 모두 LSAP(qwen), raw 외부 유출 없음. 보고는 요약만.</div>
+      <div class="c"><b>안전·사람 게이트</b><br>위험명령 정적 차단 + 승인 전 실행 불가 + 애매 판정 사람 확정.</div>
+      <div class="c"><b>실측</b><br>jessy207 SSH 실행→취약(1.00)·조치 가이드 자동, <b>Hermes 메신저(텔레그램)</b> 요약 보고(raw 미전송), 자동 테스트 20케이스 통과.</div>
+    </div>
+    <div class="shots">
+      <figure class="wide">
+        <img src="img/자율진단_1.PNG" alt="자율 에이전트 — 자연어 항목 편입">
+        <figcaption><b>① 자율 에이전트 화면</b> — 파이프라인(①~⑤ + 사람 게이트 2개)·사내 LLM/외부차단 보안 배너·자연어 점검 항목 편입 폼</figcaption>
+      </figure>
+      <figure class="wide">
+        <img src="img/자율진단_2.PNG" alt="자율 에이전트 — 생성 스크립트와 판정">
+        <figcaption><b>② 스크립트 자동 생성 + 판정</b> — LSAP가 생성한 읽기전용 sh(안전도 safe), 자동 판정 <b>양호·신뢰도 1.00</b> + 사유·근거, ③-A 대상(jessy207) 실행·교차검증·Hermes 보고·확정 버튼</figcaption>
+      </figure>
+    </div>
+    <p class="muted">의의: 신규 종목을 사람이 일일이 룰·스크립트로 짜던 것 → <b>자연어로만 추가</b>. 사람의 일이 "전수 작성"에서 "예외 검수"로 축소. DBMS·WEB·네트워크·클라우드로 동일 구조 확장.</p>
   </section>
 
 </div>
