@@ -150,7 +150,7 @@
             <a href="/vulnerabilities/<%= v.result_id %>" class="btn-sm">상세</a>
             <a href="/remediation#<%= v.result_id %>" class="btn-sm primary">조치</a>
             <% if (v.fix_status !== '예외') { %>
-              <a class="btn-sm" href="/exceptions/new?result_id=<%= encodeURIComponent(v.result_id) %>&rule_id=<%= encodeURIComponent(v.rule_id) %>&hostname=<%= encodeURIComponent(v.hostname || '') %>&server_id=<%= encodeURIComponent(v.server_id || '') %>"
+              <a class="btn-sm" href="/exceptions/new?result_id=<%= encodeURIComponent(v.result_id) %>&rule_id=<%= encodeURIComponent(v.rule_id) %>&hostname=<%= encodeURIComponent(v.hostname || '') %>&server_id=<%= encodeURIComponent(v.server_id || '') %>&title=<%= encodeURIComponent(v.title || '') %>"
                  style="background:#8e44ad;color:#fff;">예외(사후)</a>
             <% } %>
           </td>

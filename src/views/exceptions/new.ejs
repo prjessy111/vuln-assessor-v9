@@ -12,7 +12,7 @@
 <form id="exceptionForm" class="form-container">
 <% var isPost = !!(prefill && prefill.result_id); %>
 <% if (isPost) { %>
-  <!-- 사후 예외: 항목·서버 고정, 체크박스(서버단위)/계정명(계정단위)만 -->
+  <!-- 사후 예외: 항목·서버 고정. 호스트 단위=체크박스 / 그 외 단위(계정 등)=자유 입력 -->
   <div class="form-section">
     <h3>사후 예외 대상</h3>
     <input type="hidden" name="result_id" value="<%= prefill.result_id %>">
@@ -22,12 +22,19 @@
     <input type="hidden" name="policy" value="전자금융기반시설_2026_OS">
     <input type="hidden" name="related_basis" value="진단결과 <%= prefill.result_id %> 사후 예외">
     <input type="hidden" id="postRuleId" value="<%= prefill.rule_id || '' %>">
-    <p class="muted small">점검항목 <code><%= prefill.rule_id || '-' %></code> · 서버 <b><%= prefill.hostname || '-' %></b></p>
-    <label style="display:block;margin:8px 0;"><input type="checkbox" id="serverScope" checked> <b>이 서버 전체</b>에 예외 적용 <span class="muted">(서버 단위)</span></label>
+    <input type="hidden" id="postItemTitle" value="<%= prefill.title || '' %>">
+    <p class="muted small">점검항목 <code><%= prefill.rule_id || '-' %></code> <%= prefill.title ? ('· ' + prefill.title) : '' %> · 서버 <b><%= prefill.hostname || '-' %></b></p>
+
+    <!-- 호스트 단위: 체크박스 (편하게) -->
+    <label style="display:block;margin:8px 0;"><input type="checkbox" id="serverScope" checked> <b>이 서버(호스트) 전체</b>에 예외 적용 <span class="muted">(호스트 단위)</span></label>
+
+    <!-- 그 외 단위(계정 등): 자유 입력 -->
     <div class="form-row inline">
-      <label>계정 단위면 계정명</label>
-      <input type="text" name="username" id="postUser" placeholder="계정 단위일 때만 입력 (비우면 서버 전체)">
+      <label>대상 단위 <span class="muted small">(계정 등)</span></label>
+      <input type="text" name="username" id="postUser"
+             placeholder="호스트 전체면 비움 · 계정 등 특정 대상이면 입력 (예: root, jessy72)">
     </div>
+    <p id="scopeHint" class="muted small" style="margin-top:4px;"></p>
   </div>
 <% } else { %>
 
@@ -188,6 +195,39 @@ function toggleAllItems(on){
   });
   refreshItemCount();
 }
+
+// 사후 예외 — 대상 단위 자동감지(B) + 체크박스/입력 연동
+(function(){
+  var ss = document.getElementById('serverScope');
+  var pu = document.getElementById('postUser');
+  var ti = document.getElementById('postItemTitle');
+  var hint = document.getElementById('scopeHint');
+  if (!ss || !pu) return;  // 사후 모드에서만 존재
+
+  // 계정 등 "대상 단위"로 흔히 다루는 항목 키워드 (호스트 단위가 아님)
+  var ACCOUNT_KW = ['패스워드','비밀번호','암호','계정','사용자','유저','로그온','로그인','세션','잠금','만료','변경주기','권한','소유자','홈디렉','쉘','shell','password','passwd','account','user','login','uid','lockout','expire'];
+  var title = (ti && ti.value || '').toLowerCase();
+  var looksAccount = ACCOUNT_KW.some(function(k){ return title.indexOf(k.toLowerCase()) >= 0; });
+
+  function paint(){
+    if (ss.checked) {
+      pu.value = ''; pu.disabled = true;
+      hint.textContent = '→ 이 호스트의 모든 대상에 예외 적용 (호스트 단위)';
+    } else {
+      pu.disabled = false;
+      hint.textContent = pu.value.trim()
+        ? '→ "' + pu.value.trim() + '" 대상에만 예외 적용 (대상 단위)'
+        : '→ 대상명을 입력하세요 (비우면 호스트 단위와 동일)';
+    }
+  }
+  // 자동감지: 계정성 항목이면 호스트 체크 해제 + 입력 유도
+  if (looksAccount) { ss.checked = false; }
+  paint();
+  if (looksAccount) { try { pu.focus(); } catch(e){} }
+
+  ss.addEventListener('change', paint);
+  pu.addEventListener('input', function(){ if (pu.value.trim()) ss.checked = false; paint(); });
+})();
 
 // 무기한 토글
 var indef = document.getElementById('indefinite'), effUntil = document.getElementById('effUntil');
