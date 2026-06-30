@@ -1,0 +1,54 @@
+<%- include('../_header', { title: '조치 가이드', activeMenu: 'reports' }) %>
+<style>
+  .rm-item { background:#fff; border:1px solid #e1e5ea; border-radius:8px; margin:8px 0; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .rm-item summary { list-style:none; cursor:pointer; padding:12px 16px; display:flex; align-items:center; gap:10px; font-size:14px; }
+  .rm-item summary::-webkit-details-marker { display:none; }
+  .rm-item summary::before { content:'▶'; color:#888; font-size:11px; transition:transform .15s; }
+  .rm-item[open] summary::before { transform:rotate(90deg); }
+  .rm-code { font-family:Consolas,monospace; color:#2980b9; font-weight:700; }
+  .rm-sev { margin-left:auto; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:700; color:#fff; }
+  .sev-상{background:#c0392b;} .sev-중{background:#e67e22;} .sev-하{background:#f1c40f;color:#333;}
+  .rm-body { padding:0 16px 14px 34px; font-size:13px; border-top:1px solid #f0f0f0; }
+  .rm-body .lbl { color:#888; font-size:12px; margin-top:8px; }
+  .rm-fix { background:#eafaf1; border-left:3px solid #27ae60; padding:8px 12px; border-radius:0 4px 4px 0; margin-top:4px; color:#1e6e3c; }
+  .rm-toolbar { margin:10px 0; }
+</style>
+
+<div class="report-header">
+  <h1>조치 가이드 #<%= session.assessment_id %> <span class="muted" style="font-size:0.6em;">— 취약 항목만</span></h1>
+  <div class="report-actions">
+    <a href="/reports/<%= session.assessment_id %>/fsi" class="btn">리포트1</a>
+    <a href="/reports/<%= session.assessment_id %>/fsi/vuln/xlsx" class="btn primary">XLSX(조치법 시트 포함)</a>
+    <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
+    <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
+  </div>
+</div>
+<p class="muted small"><%= session.hostname || session.server_name %> · 취약 <%= vulnRows.length %>건 · <b>항목을 클릭하면 조치법이 펼쳐집니다</b> (기본 접힘)</p>
+
+<div class="rm-toolbar">
+  <button type="button" class="btn-sm" onclick="document.querySelectorAll('.rm-item').forEach(d=>d.open=true)">모두 펼치기</button>
+  <button type="button" class="btn-sm" onclick="document.querySelectorAll('.rm-item').forEach(d=>d.open=false)">모두 접기</button>
+</div>
+
+<% if (!vulnRows.length) { %>
+  <div class="section-box" style="text-align:center;color:#27ae60;padding:24px;">✓ 취약 항목이 없습니다.</div>
+<% } else { %>
+  <% vulnRows.forEach(function (r) { %>
+    <details class="rm-item">
+      <summary>
+        <span class="rm-code"><%= r.rule_id %></span>
+        <span><%= r.title %></span>
+        <span class="rm-sev sev-<%= r.severity %>"><%= r.severity %></span>
+      </summary>
+      <div class="rm-body">
+        <div class="lbl">취약 사유</div>
+        <div><%= r.reason || '-' %></div>
+        <% if (r.evidence) { %><div class="lbl">증거</div><div class="muted"><%= r.evidence %></div><% } %>
+        <div class="lbl">조치법</div>
+        <div class="rm-fix">🔧 <%= r.recommend || '(조치법 데이터 없음)' %></div>
+      </div>
+    </details>
+  <% }); %>
+<% } %>
+
+<%- include('../_footer') %>

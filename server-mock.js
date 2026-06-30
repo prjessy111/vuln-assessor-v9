@@ -3096,6 +3096,14 @@ app.get('/reports/:id/policy3', (req, res) => {
   });
 });
 
+// 조치 가이드 — 취약 항목만, 펼치면 조치법 표시 (기본 접힘)
+app.get('/reports/:id/remediation', (req, res) => {
+  const data = buildAiReportData(req.params.id);
+  if (!data) return res.status(404).send('진단 결과를 찾을 수 없습니다.');
+  if (data._notAi) return res.status(400).send('AI/LLM 진단 결과만 지원합니다. <a href="/diagnosis">진단 관리</a>');
+  res.render('reports/view_remediation', { activeMenu: 'reports', session: data.session, vulnRows: data.vulnRows || [] });
+});
+
 // 취약점 리포트1 — 취약 항목만
 app.get('/reports/:id/fsi/vuln', (req, res) => {
   const data = buildAiReportData(req.params.id);
@@ -3329,6 +3337,26 @@ async function buildReportXlsx(rows, session, sheetName) {
   ws.autoFilter = { from: 'A1', to: `L${rows.length + 1}` };
   // 첫 행 고정
   ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+
+  // === 조치법 시트 — 취약 항목만 (사유 + 조치법) ===
+  const vulnOnly = rows.filter(r => r.status === '취약');
+  if (vulnOnly.length) {
+    const fix = wb.addWorksheet('조치법');
+    fix.columns = [
+      { header: '항목ID', key: 'id', width: 14 },
+      { header: '취약 항목', key: 'title', width: 40 },
+      { header: '위험도', key: 'sev', width: 8 },
+      { header: '취약 사유', key: 'reason', width: 50 },
+      { header: '조치법', key: 'recommend', width: 64 },
+    ];
+    fix.getRow(1).font = { bold: true };
+    fix.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAFAF1' } };
+    for (const r of vulnOnly) {
+      fix.addRow({ id: r.rule_id, title: r.title, sev: r.severity, reason: r.reason || '', recommend: r.recommend || '' });
+    }
+    fix.eachRow((row, n) => { if (n > 1) row.alignment = { wrapText: true, vertical: 'top' }; });
+    fix.views = [{ state: 'frozen', ySplit: 1 }];
+  }
 
   return wb.xlsx.writeBuffer();
 }
