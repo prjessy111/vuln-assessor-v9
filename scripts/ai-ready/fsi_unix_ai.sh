@@ -1900,6 +1900,10 @@ fDumpS "SRV-075"
 		echo "$ awk -F: '(\$2==\"\"){print \$1\" : EMPTY_PASSWORD\"}' /etc/shadow"
 		awk -F: '($2==""){print $1" : EMPTY_PASSWORD"}' /etc/shadow 2>/dev/null
 		fHR
+		# 2026: 계정 단위 password aging — 최소/최대 사용기간 (login.defs 기본값은 신규계정만 적용, 기존계정은 shadow별 값)
+		echo "$ awk -F: per-account aging (min=4 max=5 warn=6 inactive=7) /etc/shadow"
+		awk -F: '!/^#/ && $1!="" && $2 !~ /^[*!]/ {print $1" : min="$4" max="$5" warn="$6" inactive="$7}' /etc/shadow 2>/dev/null | head -80
+		fHR
 		echo "$ cat /etc/security/pwquality.conf"
 		cat /etc/security/pwquality.conf 2>/dev/null  |  sed "s/&/\&amp;/g" |  sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
 	fi
@@ -3280,7 +3284,8 @@ fDumpE
 #------------------------------------------------------------
 fDumpS "SRV-069"
 	echo "$ password policy"
-	( grep -E "PASS_MAX_DAYS|PASS_MIN_LEN|PASS_MIN_DAYS|PASS_WARN_AGE" /etc/login.defs; cat /etc/security/pwquality.conf; grep -i minlen /etc/pam.d/common-password /etc/pam.d/system-auth ) 2>/dev/null | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+	( grep -E "PASS_MAX_DAYS|PASS_MIN_LEN|PASS_MIN_DAYS|PASS_WARN_AGE" /etc/login.defs; cat /etc/security/pwquality.conf; grep -i minlen /etc/pam.d/common-password /etc/pam.d/system-auth; \
+	  echo "--- 암호 기억(remember/pwhistory) ---"; grep -Eih 'remember=' /etc/pam.d/common-password /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null; grep -Ei '^[[:space:]]*remember' /etc/security/pwhistory.conf 2>/dev/null ) 2>/dev/null | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
 fDumpE
 #------------------------------------------------------------
 fDumpS "SRV-073"
@@ -3329,6 +3334,38 @@ fDumpE
 fDumpS "SRV-179"
 	echo "$ OS release / EoS evidence"
 	( cat /etc/os-release 2>/dev/null; lsb_release -a 2>/dev/null; uname -a ) 2>/dev/null | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-185"
+	# 2026 타사정책(SV01): 외부(아웃바운드) 인터넷 접속 차단 — 방화벽 기본 OUTPUT 정책/egress 룰 (CIS: default deny)
+	echo "$ outbound firewall default policy (iptables/nft/firewalld/ufw)"
+	( iptables -S 2>/dev/null | egrep -- '-P (INPUT|OUTPUT|FORWARD)'; iptables -L OUTPUT -n 2>/dev/null | head -40; \
+	  nft list ruleset 2>/dev/null | egrep -i 'chain (output|input)|policy|drop|reject' | head -40; \
+	  firewall-cmd --state 2>/dev/null; firewall-cmd --list-all 2>/dev/null; ufw status verbose 2>/dev/null ) 2>/dev/null \
+	  | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g" | fOrElse "(방화벽 도구 미설치/미설정 -> 정보제공: 외부 차단 정책 확인 불가)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-186"
+	# 2026 타사정책(AM01): 복합인증(MFA) 적용 여부 — PAM MFA 모듈 + sshd AuthenticationMethods (CIS/STIG)
+	echo "$ MFA modules in PAM + sshd AuthenticationMethods"
+	( egrep -ril 'pam_google_authenticator|pam_oath|pam_radius|pam_duo|pam_yubico|pam_u2f' /etc/pam.d/ 2>/dev/null; \
+	  egrep -i 'pam_google_authenticator|pam_oath|pam_radius|pam_duo|pam_yubico|pam_u2f' /etc/pam.d/sshd /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null; \
+	  for f in $FILE_SSHD_CONF; do egrep -i '^[[:space:]]*(AuthenticationMethods|ChallengeResponseAuthentication|KbdInteractiveAuthentication)' "$f" 2>/dev/null; done ) 2>/dev/null \
+	  | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g" | fOrElse "(MFA 모듈 미발견 -> 단일 인증, 복합인증 미적용)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-187"
+	# 2026 타사정책(AC04): 패스워드/보안 규칙 설정 파일 접근 권한 — stat 권한·소유자 (CIS: login.defs 644, root)
+	echo "$ stat password/security rule file permissions"
+	( for f in /etc/login.defs /etc/security/pwquality.conf /etc/security/pwhistory.conf /etc/security/opasswd /etc/pam.d/system-auth /etc/pam.d/password-auth /etc/pam.d/common-password; do [ -e "$f" ] && stat -c '%a %U %G %n' "$f" 2>/dev/null; done; ls -ld /etc/pam.d 2>/dev/null ) 2>/dev/null \
+	  | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g" | fOrElse "(규칙 설정 파일 권한 미수집)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-188"
+	# 2026 타사정책(AC04): 주요 백업 파일 접근 권한 — 정보제공(백업 경로 사이트별 가변, FSI_BACKUP_DIRS로 지정)
+	echo "$ backup file/dir permissions (정보제공: 경로 가변)"
+	( for d in /backup /backups /var/backups /etc/backup $FSI_BACKUP_DIRS; do [ -e "$d" ] && { ls -ldL "$d" 2>/dev/null; find "$d" -maxdepth 1 -type f -exec stat -c '%a %U %G %n' {} \; 2>/dev/null | head -40; }; done ) 2>/dev/null \
+	  | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g" | fOrElse "(백업 경로 미발견 -> 정보제공: 점검 대상 백업 경로 확인 필요)"
 fDumpE
 #============================================================
 ## End
