@@ -150,7 +150,7 @@ function getTargetServersFromFile() {
     .map(line => line.trim())
     .filter(line => line && !line.startsWith('#'))
     .map(line => line.split(',').map(part => part.trim()))
-    .filter(parts => parts.length >= 5)
+    .filter(parts => parts.length >= 5 && parts[0] && parts[1])
     .map(parts => ({
       hostname: parts[0],
       ip: parts[1],

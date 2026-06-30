@@ -23,7 +23,7 @@
         <option value="sonnet">Claude Sonnet ($$)</option>
       </select>
     </label>
-    <button class="btn primary" onclick="runAll('secums')" style="background:#27ae60;border-color:#27ae60;">SecuMS 전체 진단</button>
+    <button class="btn primary" onclick="runAll('secums')" style="background:#27ae60;border-color:#27ae60;">SecuMS Raw 전체 진단</button>
     <button class="btn primary" onclick="runAll('script')" style="background:#6c5ce7;border-color:#6c5ce7;">Script 전체 진단</button>
     <button id="retryFailedBtn" class="btn" onclick="retryFailed()" style="display:none;background:#e67e22;border-color:#e67e22;color:#fff;">🔁 실패 재점검</button>
     <button class="btn" onclick="cancelBatch()" style="background:#c0392b;border-color:#c0392b;color:#fff;">⏹ 진단 중지</button>
@@ -37,7 +37,7 @@
 <div id="collectionProgress" style="display:none;"></div>
 
 <div style="display:flex;gap:8px;margin:0 0 12px;">
-  <button type="button" class="btn primary collection-tab-btn" data-tab="secums" style="background:#27ae60;border-color:#27ae60;">SecuMS 진단</button>
+  <button type="button" class="btn primary collection-tab-btn" data-tab="secums" style="background:#27ae60;border-color:#27ae60;">SecuMS Raw 진단</button>
   <button type="button" class="btn collection-tab-btn" data-tab="script-diagnosis">Script 진단</button>
   <button type="button" class="btn collection-tab-btn" data-tab="script">Script 업로드</button>
   <button type="button" class="btn collection-tab-btn" data-tab="deploy">Script 배포</button>
@@ -252,7 +252,7 @@
 <div id="tab-secums" class="collection-tab">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;">
   <h2 style="margin:0;">📋 등록된 서버 (<%= csvServers.length %>개)</h2>
-  <button type="button" class="btn primary" onclick="runSelected('secums')" style="background:#27ae60;border-color:#27ae60;">✓ 선택 진단 (SecuMS)</button>
+  <button type="button" class="btn primary" onclick="runSelected('secums')" style="background:#27ae60;border-color:#27ae60;">✓ 선택 진단 (SecuMS Raw)</button>
 </div>
 <% if (csvServers.length === 0) { %>
   <p class="muted" style="padding:1rem;background:#fffbe6;border-left:3px solid #f1c40f;">
@@ -261,26 +261,23 @@
     형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
   </p>
 <% } else { %>
+  <input type="search" class="server-search" data-target="tab-secums" placeholder="🔍 호스트 / IP / OS / 사용자 / 자산번호 검색..." style="margin:8px 0;padding:6px 10px;border:1px solid #ccc;border-radius:6px;width:320px;">
   <table class="data-table">
     <thead>
       <tr>
         <th style="width:32px;"><input type="checkbox" class="diag-all" data-tab="tab-secums"></th>
         <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
-        <th style="width:160px;">SecuMS 실행</th>
       </tr>
     </thead>
     <tbody>
       <% csvServers.forEach(s => { %>
-        <tr>
+        <tr data-search="<%= (s.hostname + ' ' + s.ip + ' ' + s.os + ' ' + (s.username || '') + ' ' + (s.asset_no || '')).toLowerCase() %>">
           <td><input type="checkbox" class="diag-check" data-tab="tab-secums" value="<%= s.server_id || s.ip %>"></td>
           <td><strong><%= s.hostname %></strong></td>
           <td class="mono small"><%= s.ip %></td>
           <td><%= s.os %></td>
           <td class="small"><%= s.username %></td>
           <td class="small"><%= s.asset_no %></td>
-          <td>
-            <button class="btn-sm primary" onclick="fetchAndRun('<%= s.ip %>', '<%= s.hostname %>', 'secums')" style="background:#27ae60;">SecuMS 진단</button>
-          </td>
         </tr>
       <% }) %>
     </tbody>
@@ -300,26 +297,23 @@
     형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
   </p>
 <% } else { %>
+  <input type="search" class="server-search" data-target="tab-script-diagnosis" placeholder="🔍 호스트 / IP / OS / 사용자 / 자산번호 검색..." style="margin:8px 0;padding:6px 10px;border:1px solid #ccc;border-radius:6px;width:320px;">
   <table class="data-table">
     <thead>
       <tr>
         <th style="width:32px;"><input type="checkbox" class="diag-all" data-tab="tab-script-diagnosis"></th>
         <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
-        <th style="width:160px;">Script 실행</th>
       </tr>
     </thead>
     <tbody>
       <% csvServers.forEach(s => { %>
-        <tr>
+        <tr data-search="<%= (s.hostname + ' ' + s.ip + ' ' + s.os + ' ' + (s.username || '') + ' ' + (s.asset_no || '')).toLowerCase() %>">
           <td><input type="checkbox" class="diag-check" data-tab="tab-script-diagnosis" value="<%= s.server_id || s.ip %>"></td>
           <td><strong><%= s.hostname %></strong></td>
           <td class="mono small"><%= s.ip %></td>
           <td><%= s.os %></td>
           <td class="small"><%= s.username %></td>
           <td class="small"><%= s.asset_no %></td>
-          <td>
-            <button class="btn-sm primary" onclick="fetchAndRun('<%= s.ip %>', '<%= s.hostname %>', 'script')" style="background:#6c5ce7;">Script 진단</button>
-          </td>
         </tr>
       <% }) %>
     </tbody>
@@ -793,6 +787,17 @@ async function runAll(source) {
     btn.textContent = orig;
   }
 }
+
+// 서버 표 검색 (호스트/IP/OS/사용자/자산번호)
+document.addEventListener('input', function (e) {
+  if (!e.target.classList || !e.target.classList.contains('server-search')) return;
+  var tabId = e.target.getAttribute('data-target');
+  var q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('#' + tabId + ' tbody tr').forEach(function (tr) {
+    var hay = tr.getAttribute('data-search') || '';
+    tr.style.display = (!q || hay.indexOf(q) !== -1) ? '' : 'none';
+  });
+});
 
 async function runSelected(source) {
   source = source || 'secums';

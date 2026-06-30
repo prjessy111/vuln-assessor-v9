@@ -1,7 +1,7 @@
 {
-  "name": "vuln-assessor",
-  "version": "0.9.20",
-  "description": "취약점 진단 시스템 — AI 진단 + CSV 자동 수집 + 리포트 양식",
+  "name": "adv",
+  "version": "9.14.0",
+  "description": "ADV (AI Diagnosis Verify) — OS 컴플라이언스 + 설치자산/OSS 라이브러리 CVE + AI 정합성 검증",
   "main": "server-mock.js",
   "scripts": {
     "mock": "set NODE_OPTIONS=--openssl-legacy-provider && node server-mock.js",

@@ -725,9 +725,9 @@ function _withDatedDirs(filename) {
 // script XML 의 OS 판별 (헤더만 살짝 읽음).
 function _sniffScriptOs(xmlPath) {
   try {
-    const head = fs.readFileSync(xmlPath, 'utf8').slice(0, 600).toLowerCase();
-    if (/<os>\s*windows|os_family=windows|windows nt/.test(head)) return 'windows';
-    if (/<os>\s*(linux|unix)|os_family=linux/.test(head)) return 'linux';
+    const head = fs.readFileSync(xmlPath, 'utf8').slice(0, 1200).toLowerCase();
+    if (/<os>[^<]*windows|<os_family>\s*windows|os_family=windows|windows nt/.test(head)) return 'windows';
+    if (/<os>[^<]*(linux|unix)|<os_family>\s*(linux|unix)|os_family=linux/.test(head)) return 'linux';
   } catch (_) {}
   return 'unknown';
 }
@@ -762,7 +762,9 @@ function resolveCveSource(diag, server) {
     );
     if (xml && fs.existsSync(xml)) {
       const os = _sniffScriptOs(xml);
-      if (os === 'windows') return { platform: 'windows', kind: 'script_xml', path: xml };
+      // 판별 실패(unknown) 시 서버 os_type 으로 폴백 — 윈도우를 linux 로 오판하지 않도록.
+      const platform = os === 'unknown' ? (osType.includes('win') ? 'windows' : 'linux') : os;
+      if (platform === 'windows') return { platform: 'windows', kind: 'script_xml', path: xml };
       // linux script XML 은 rpm 인벤토리가 없어 CVE 진단 불가(아래에서 안내).
       return { platform: 'linux', kind: 'script_xml', path: xml };
     }
@@ -3044,6 +3046,56 @@ app.get('/reports/:id/fsi', (req, res) => {
   res.render('reports/view_fsi', { activeMenu: 'reports', ...data });
 });
 
+// 리포트3 — 타사 정책 기준 점검 리포트 (금보원 superset 판정 → 타사 항목 매핑)
+app.get('/reports/:id/policy3', (req, res) => {
+  const data = buildAiReportData(req.params.id);
+  if (!data) return res.status(404).send('진단 결과를 찾을 수 없습니다.');
+  if (data._notAi) return res.status(400).send('AI/LLM 진단 결과만 지원합니다. <a href="/diagnosis">진단 관리</a>');
+  let policy;
+  try { policy = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/policies/타사정책.json'), 'utf8')); }
+  catch (e) { return res.status(500).send('정책 파일 로드 실패: ' + e.message); }
+
+  const rows = data.allRows || [];
+  const osRaw = String((data.session && (data.session.os_type || data.session.os)) || '').toLowerCase();
+  const targetOs = osRaw.includes('win') ? 'windows' : 'linux';
+
+  // 타사 항목 제목 키워드 ↔ 우리 진단 항목 제목/카테고리 매칭 (best-effort 크로스워크)
+  const STOP = /(설정이|설정|적용이|적용|되어|있는가|되었는가|제한이|제한|확인|파일에|파일|대한|접근|권한이|권한|수행|사용여부|사용|운영|점검|항목|입니다|있으며|하는가|하지|않는가|되는가|가능한가)/g;
+  const kw = s => String(s || '').replace(STOP, ' ').split(/[\s,.·\/\-_()'"\[\]]+/).filter(w => w.length >= 2);
+  const findVerdict = (item) => {
+    // 1) SRV/chk_id 정확 매칭 우선 (정책 항목에 srv 매핑이 있으면)
+    const srvList = [].concat(item.srv || []);
+    if (srvList.length) {
+      const hit = rows.find(r => srvList.includes(String(r.rule_id || '')));
+      if (hit) return { verdict: hit.status, matched: hit.title, reason: hit.reason, severity: hit.severity, recommend: hit.recommend, mscore: 99 };
+    }
+    // 2) 키워드 매칭 폴백 (점수 동률 시 더 구체적인 항목 선호)
+    const ik = kw(item.title);
+    let best = null, score = 0;
+    for (const r of rows) {
+      const rk = kw((r.title || '') + ' ' + (r.category || ''));
+      const s = ik.filter(w => rk.some(x => x.includes(w) || w.includes(x))).length;
+      if (s > score) { score = s; best = r; }
+    }
+    if (best && score >= 2) return { verdict: best.status, matched: best.title, reason: best.reason, severity: best.severity, recommend: best.recommend, mscore: score };
+    return { verdict: '미매핑', matched: null, reason: '', severity: '', recommend: '', mscore: 0 };
+  };
+
+  const items = policy.items.filter(i => i.os === targetOs).map(i => ({ ...i, ...findVerdict(i) }));
+  const good = items.filter(i => i.verdict === '양호').length;
+  const bad = items.filter(i => i.verdict === '취약').length;
+  const na = items.length - good - bad;
+  const denom = good + bad;
+  const rate = denom ? Math.round(good / denom * 100) : 0;
+  const g = policy.grade || { A: 95, B: 90, C: 80, D: 70 };
+  const grade = rate >= g.A ? 'A' : rate >= g.B ? 'B' : rate >= g.C ? 'C' : rate >= g.D ? 'D' : 'F';
+
+  res.render('reports/view_policy3', {
+    activeMenu: 'reports', session: data.session, policy, items, targetOs,
+    summary: { good, bad, na, rate, grade, total: items.length },
+  });
+});
+
 // 취약점 리포트1 — 취약 항목만
 app.get('/reports/:id/fsi/vuln', (req, res) => {
   const data = buildAiReportData(req.params.id);
@@ -3428,6 +3480,52 @@ app.post('/cve/sync/run', auth.requireRole('admin', 'operator'), (req, res) => {
     res.status(500).json({ status: 'error', error: e.message });
   });
 });
+
+// ─── CVE 자동갱신 (앱 내장 일일 스케줄러) ───────────────────────────
+// 별도 작업 스케줄러 없이 앱이 직접 매일 sync-cve.js 를 돌린다.
+// 끄려면 환경변수 CVE_AUTO_SYNC=0. 오프라인이면 실패 로그만 남기고 무시.
+function runCveSyncBackground(label) {
+  const { spawn } = require('child_process');
+  // NVD 1.1 피드 폐기(403) → API 2.0 스크립트 사용. (sync-cve.js는 구버전)
+  const script = path.join(ROOT, 'scripts', 'sync-nvd-api.js');
+  const child = spawn('node', [script], { cwd: ROOT, detached: false });
+  let out = '';
+  child.stdout.on('data', d => { out += d.toString(); });
+  child.stderr.on('data', d => { out += d.toString(); });
+  child.on('close', code => {
+    try { require('./src/cve/matcher').invalidateCveCache(); } catch (_) {}
+    try { require('./src/cve/winScanner').invalidateWinCveCache(); } catch (_) {}
+    console.log(`[CVE 자동갱신/${label}] 종료 (code=${code})`);
+  });
+  child.on('error', e => console.warn(`[CVE 자동갱신/${label}] 실행 실패: ${e.message} (인터넷 연결/폐쇄망 여부 확인)`));
+}
+
+function startCveAutoSync() {
+  if (String(process.env.CVE_AUTO_SYNC || '1') === '0') {
+    console.log('[CVE 자동갱신] 비활성화 (CVE_AUTO_SYNC=0)');
+    return;
+  }
+  const DAY = 24 * 60 * 60 * 1000;
+  // 부팅 시: 마지막 동기화가 24시간을 넘었으면 1회 갱신
+  try {
+    const last = (require('./src/cve/enrichment').getSyncHistory(1) || [])[0];
+    const lastTs = last && last.timestamp ? Date.parse(last.timestamp) : 0;
+    if (!lastTs || (Date.now() - lastTs) > DAY) {
+      console.log('[CVE 자동갱신] 마지막 동기화 24시간 초과 → 부팅 갱신 시작');
+      runCveSyncBackground('boot');
+    } else {
+      console.log(`[CVE 자동갱신] 최근 동기화 양호 (${last.timestamp}) — 다음 갱신은 24시간 주기`);
+    }
+  } catch (_) {
+    runCveSyncBackground('boot');
+  }
+  // 이후 매 24시간 자동
+  const timer = setInterval(() => {
+    console.log('[CVE 자동갱신] 일일 스케줄 갱신 시작');
+    runCveSyncBackground('daily');
+  }, DAY);
+  if (timer.unref) timer.unref();
+}
 
 // ─────────────────────────────────────────────────────────────────
 // 자율 진단 에이전트 (VULN_ASSESSOR_TODO.md §3)
@@ -4972,6 +5070,7 @@ app.listen(PORT, () => {
       seedMockData();
     }
     reconcileMockData();  // 모드 무관(MySQL 포함) — 가짜 예약/알림/실행이력 정리
+    startCveAutoSync();   // CVE 자동갱신 일일 스케줄러 (웹/앱 내장)
 
     const modeLabel = storageStatus.status === 'fallback' ? 'Mock (MySQL 폴백)' 
                     : kvStorage.mode === 'mysql' ? 'MySQL'

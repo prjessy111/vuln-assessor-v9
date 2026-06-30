@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>리포트3 — 타사 점검정책 커버리지 검토</title>
+<style>
+  body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;background:#f5f6fa;color:#222;margin:0;padding:24px;line-height:1.55;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;} h2{font-size:17px;margin:28px 0 10px;border-bottom:2px solid #ddd;padding-bottom:6px;}
+  .sub{color:#777;font-size:13px;margin-bottom:18px;}
+  table{width:100%;border-collapse:collapse;background:#fff;margin:10px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  th,td{border:1px solid #e1e5ea;padding:8px 10px;font-size:13px;text-align:left;vertical-align:top;}
+  th{background:#f5f6fa;font-weight:700;}
+  .ok{color:#27ae60;font-weight:700;} .warn{color:#d35400;font-weight:700;} .mono{font-family:Consolas,monospace;font-size:12px;}
+  .box{background:#fff;border:1px solid #e1e5ea;border-radius:8px;padding:14px 18px;margin:12px 0;}
+  .big{border-left:4px solid #27ae60;background:#eefaf0;} .fix{border-left:4px solid #2980b9;background:#eef5fc;}
+  .num{font-size:1.6rem;font-weight:800;}
+  .muted{color:#888;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>리포트3 — 타사 점검정책, 우리 스크립트로 커버 가능한가?</h1>
+  <div class="sub">대상: 리포트3.xlsx(타사 OS 보안 점검 카탈로그) vs vuln-assessor FSI/금보원 스크립트 · 2026-06-30</div>
+
+  <h2>1. 결론 — 가능 (우리가 superset)</h2>
+  <div class="box big">
+    타사 리포트3 점검항목은 <b>우리 스크립트의 부분집합</b>이다. 항목 수만 봐도 우리가 2~3배 많고,
+    타사 항목(UID 0·패스워드·파일권한·umask·SNMP·방화벽·기본공유·백신·로그·sshd·배너 등)은 전부 우리 FSI/금보원 baseline에 존재한다.
+    → <b>스크립트 재작성 없이</b>, 우리 항목을 <b>선택·매핑</b>해 타사 정책으로 산출 가능. 빠진 소수 항목만 자율에이전트로 추가.
+  </div>
+
+  <h2>2. 항목 수 비교</h2>
+  <table>
+    <thead><tr><th>OS</th><th>타사 리포트3</th><th>우리 스크립트</th><th>관계</th></tr></thead>
+    <tbody>
+      <tr><td>Windows</td><td class="num">47</td><td class="num ok">102</td><td>우리 ⊇ 타사</td></tr>
+      <tr><td>Linux</td><td class="num">42</td><td class="num ok">154</td><td>우리 ⊇ 타사</td></tr>
+      <tr><td>Solaris / AIX / HP-UX</td><td>지원</td><td class="ok">지원 (fsi_unix_ai.sh OS분기: instfix/swlist/showrev)</td><td>커버</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 항목 매핑 예시 (타사 → 우리)</h2>
+  <table>
+    <thead><tr><th>타사 점검항목</th><th>우리 항목(예)</th><th>커버</th></tr></thead>
+    <tbody>
+      <tr><td>root 외 UID 0 계정 점검</td><td>Linux UID 0 / passwd 점검</td><td class="ok">✓</td></tr>
+      <tr><td>패스워드 규칙/빈 패스워드</td><td>pam/login.defs/shadow 점검</td><td class="ok">✓</td></tr>
+      <tr><td>umask 설정</td><td>login.defs/profile umask</td><td class="ok">✓</td></tr>
+      <tr><td>SNMP Community String</td><td>SRV-001 SNMP / snmpd.conf</td><td class="ok">✓</td></tr>
+      <tr><td>기본 공유(AutoShare) 제거</td><td>SRV (Lanmanserver AutoShare)</td><td class="ok">✓</td></tr>
+      <tr><td>Windows 방화벽 사용</td><td>방화벽 상태 점검</td><td class="ok">✓</td></tr>
+      <tr><td>바이러스 백신 설치</td><td>W_VIRUSVACCINE / AV 점검</td><td class="ok">✓</td></tr>
+      <tr><td>원격/로컬 시스템 종료 권한</td><td>SRV-136/SeShutdown 권한</td><td class="ok">✓</td></tr>
+      <tr><td>로그파일 권한(wtmp/btmp/sulog)</td><td>로그 파일 ACL 점검</td><td class="ok">✓</td></tr>
+      <tr><td>경고 배너(/etc/issue)</td><td>SRV-163 LegalNotice / issue</td><td class="ok">✓</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">※ 항목 제목·기준 문구는 회사마다 달라도, <b>점검 대상·확인방법이 동일</b>하면 우리 수집 데이터로 그대로 판정 가능(매핑만 다름).</p>
+
+  <h2>4. 타사 정책 적용 방법 (재작성 불필요)</h2>
+  <div class="box fix">
+    <ol>
+      <li><b>매핑 테이블</b> 작성: 타사 항목ID ↔ 우리 SRV/수집키 (대부분 1:1)</li>
+      <li>우리 스크립트로 <b>전체 수집</b>(이미 superset) → 타사 항목만 <b>선택 출력</b></li>
+      <li>타사 고유 점수/등급(1~5점, A 95%+ 등) 룰을 <b>리포트 룰셋</b>으로 추가</li>
+      <li>우리에 없는 소수 항목만 <b>자율에이전트</b>로 description 주고 스크립트 생성</li>
+    </ol>
+  </div>
+
+  <h2>5. 정직한 한계</h2>
+  <ul class="muted" style="font-size:13px;">
+    <li>본 검토는 <b>항목 수·대표 항목 대조</b> 기준 — 47/42개 전 항목 1:1 매핑은 항목별 정밀 대조 작업 필요(제목/기준 표현 차이).</li>
+    <li>타사 고유 항목(있다면)·점수가중치·등급기준은 <b>리포트 룰셋으로 별도 반영</b>해야 함.</li>
+    <li>OS 버전 커버(Solaris 9~11, AIX 5.1~7.1, HP-UX 11.x)는 대상별 실측 검증 권장.</li>
+  </ul>
+</div>
+</body>
+</html>

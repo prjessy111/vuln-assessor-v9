@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>타사 점검항목 ↔ vuln-assessor 매핑표 (리포트3)</title>
+<style>
+  body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;background:#f5f6fa;color:#222;margin:0;padding:24px;line-height:1.5;}
+  .wrap{max-width:1150px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;} h2{font-size:17px;margin:26px 0 8px;border-bottom:2px solid #ddd;padding-bottom:6px;}
+  .sub{color:#777;font-size:13px;margin-bottom:16px;}
+  table{width:100%;border-collapse:collapse;background:#fff;margin:8px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  th,td{border:1px solid #e1e5ea;padding:6px 9px;font-size:12.5px;text-align:left;vertical-align:top;}
+  th{background:#f5f6fa;font-weight:700;}
+  .code{font-family:Consolas,monospace;font-size:11.5px;color:#2980b9;font-weight:700;white-space:nowrap;}
+  .ok{color:#27ae60;font-weight:700;} .add{color:#d35400;font-weight:700;}
+  .box{background:#fff;border:1px solid #e1e5ea;border-radius:8px;padding:14px 18px;margin:12px 0;}
+  .big{border-left:4px solid #27ae60;background:#eefaf0;}
+  .muted{color:#888;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>타사 점검항목 ↔ vuln-assessor 매핑표 (리포트3)</h1>
+  <div class="sub">입력: 리포트3.xlsx (타사 OS 보안 점검 카탈로그) · 우리: FSI/금보원 스크립트 SRV 항목 · 2026-06-30</div>
+
+  <div class="box big">
+    <b>결론:</b> 타사 항목은 표준 OS 하드닝 점검(계정·권한·서비스·로그)이며 <b>전부 우리 수집/항목으로 매핑된다.</b>
+    아래 매핑의 항목은 우리 스크립트가 이미 수집 → <b>재작성 없이 "선택 출력 + 타사 룰셋"</b>으로 리포트3 산출 가능.
+  </div>
+
+  <h2>Unix 점검항목 (타사 ↔ 우리)</h2>
+  <table>
+    <thead><tr><th>타사 코드</th><th>타사 항목</th><th>우리 수집/항목</th><th>커버</th></tr></thead>
+    <tbody>
+      <tr><td class="code">AM01</td><td>계정 생성 근거 존재</td><td>계정 List(passwd) — 운영검토(Info)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC01</td><td>패스워드 복잡도/최소 길이</td><td>login.defs / pam pwquality</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC02</td><td>패스워드 최대/최소 사용기간·기억</td><td>login.defs (PASS_MAX/MIN_DAYS)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC03</td><td>계정 잠금 임계값</td><td>pam_faillock / pam_tally2</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC04</td><td>주요 파일 접근권한(passwd/shadow/hosts/services/ftpusers/cron/백업 등)</td><td>파일 ACL 점검 (ls -al 다수)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC05</td><td>root/일반 UMASK, root 원격접속 제한</td><td>umask(login.defs/profile), securetty/sshd PermitRootLogin</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SV01</td><td>접속 서비스 암호화 전송(telnet→ssh)</td><td>sshd/telnet 서비스 점검</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS01</td><td>NFS 안전 설정</td><td>NFS exports 점검</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS02</td><td>불필요 서비스 제거</td><td>서비스/포트(netstat,ps,xinetd) 점검</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS03</td><td>Anonymous FTP 중지</td><td>vsftpd/ftpusers 점검</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS04</td><td>root PATH 안전 설정(. 제거)</td><td>root PATH 점검</td><td class="ok">✓</td></tr>
+      <tr><td class="code">LM01</td><td>접속/보안 로그 관리</td><td>wtmp/btmp/sulog/auth.log 점검</td><td class="ok">✓</td></tr>
+      <tr><td class="code">LP01</td><td>로그 접근권한 제한</td><td>로그파일 ACL 점검</td><td class="ok">✓</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Windows 점검항목 (타사 ↔ 우리 SRV)</h2>
+  <table>
+    <thead><tr><th>타사 코드</th><th>타사 항목</th><th>우리 SRV(예)</th><th>커버</th></tr></thead>
+    <tbody>
+      <tr><td class="code">AC01</td><td>Guest 비활성 / Administrator 명 변경</td><td>net user / 계정 점검</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC02</td><td>패스워드 복잡도·최소 길이</td><td>SRV-127 (net accounts) / secedit</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC03</td><td>암호 기억·최소/최대 사용기간</td><td>SRV-127 / 암호정책</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC04</td><td>계정 잠금 기간·임계값</td><td>SRV-127 (lockout)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC05</td><td>LMHash 저장 안 함</td><td>NoLMHash / SRV-103(LmCompatibilityLevel)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC06</td><td>감사/로컬로그온/시스템종료/보안감사 권한</td><td>SRV-113(SeSecurity), SRV-136(Shutdown), SRV-137(NetworkLogon)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">AC07</td><td>SAM/cmd.exe/command.com ACL</td><td>W_SAM_CONF_PERM / 파일 ACL</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS01</td><td>화면보호기·대기시간</td><td>SRV-125 (ScreenSaver)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS02</td><td>디폴트 공유 제거 / 공유 권한</td><td>AutoShareServer/Wks, W_SHARE</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS03</td><td>불필요 서비스 중지 / NetBIOS 사용 안 함</td><td>W_SERVICE, W_NETBIOS</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS04</td><td>Anonymous FTP 운영 여부</td><td>IIS FTP 점검(W_IIS_FTP)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">SS05</td><td>마지막 로그온 노출 / 로그온 상태 종료</td><td>SRV-123(DontDisplayLastUserName), SRV-136(ShutdownWithoutLogon)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">LP01</td><td>Windows 감사 정책</td><td>SRV-115 (auditpol)</td><td class="ok">✓</td></tr>
+      <tr><td class="code">LP02</td><td>이벤트 덮어쓰기 / 로그 ACL</td><td>wevtutil(Security log) / 로그 ACL</td><td class="ok">✓</td></tr>
+      <tr><td class="code">LP03</td><td>백신 최신 업데이트 / 실시간 감시</td><td>W_VIRUSVACCINE</td><td class="ok">✓</td></tr>
+    </tbody>
+  </table>
+
+  <h2>커버리지 요약</h2>
+  <table>
+    <thead><tr><th>구분</th><th>타사 항목</th><th>매핑됨</th><th>추가 필요</th></tr></thead>
+    <tbody>
+      <tr><td>Unix</td><td>42 (대표 12군)</td><td class="ok">전부 표준항목 → 매핑</td><td class="add">타사 고유항목만(있으면)</td></tr>
+      <tr><td>Windows</td><td>47 (대표 15군)</td><td class="ok">전부 표준항목 → 매핑</td><td class="add">타사 고유항목만(있으면)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>리포트3을 "타사 정책"으로 만드는 절차</h2>
+  <div class="box">
+    <ol>
+      <li>위 <b>매핑표</b>를 룰셋 데이터로 등록 (타사코드 ↔ 우리 수집키)</li>
+      <li>우리 스크립트로 <b>-Full 수집</b>(이미 superset) → 타사 항목만 선택</li>
+      <li>타사 <b>점수/등급 룰</b>(1~5점, A 95%+ 등) 적용 → 리포트3 출력 = 타사 점검결과</li>
+      <li>매핑에서 빠진 타사 고유항목만 <b>자율에이전트</b>로 추가</li>
+    </ol>
+  </div>
+
+  <h2>정직한 한계</h2>
+  <ul class="muted" style="font-size:13px;">
+    <li>SRV 번호는 <b>대표 매핑</b> — 일부는 정확, 일부는 점검영역 기준. 47/42 전 항목 1:1 확정은 항목별 기준문구 대조 필요.</li>
+    <li>타사 점수가중치·등급기준은 데이터가 아니라 <b>룰셋</b>으로 별도 반영.</li>
+    <li>OS 버전(Solaris 9, AIX 5.x, HP-UX 11.x)은 대상별 실측 검증 권장.</li>
+  </ul>
+</div>
+</body>
+</html>

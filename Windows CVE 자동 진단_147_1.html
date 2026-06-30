@@ -1,0 +1,2336 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Windows CVE 자동 진단</title><style>* { box-sizing: border-box; }
+body {
+  font-family: "맑은 고딕", "Malgun Gothic", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f5f6fa; color: #222; margin: 0; padding: 0;
+}
+.topbar {
+  background: #2c3e50; color: #fff; padding: 12px 24px;
+  display: flex; align-items: center; gap: 32px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.topbar .logo { font-size: 18px; font-weight: bold; }
+.topbar nav { display: flex; gap: 16px; }
+.topbar nav a {
+  color: #cbd5e0; text-decoration: none; padding: 6px 12px; border-radius: 4px;
+  font-size: 14px;
+}
+.topbar nav a:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.topbar nav a.active { background: #34495e; color: #fff; }
+.container { max-width: 1280px; margin: 24px auto; padding: 0 24px; }
+h1 { font-size: 22px; margin: 8px 0 16px; }
+h2 { font-size: 17px; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #ddd; }
+h3 { font-size: 15px; margin: 16px 0 8px; }
+.muted { color: #777; }
+.small { font-size: 12px; }
+code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+
+/* Forms */
+.form-block {
+  background: #fff; padding: 16px 20px; border-radius: 8px;
+  margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.form-inline {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  margin: 12px 0;
+}
+.form-row { margin: 12px 0; }
+.form-row label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 13px; }
+input, select {
+  padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
+  font-size: 13px; font-family: inherit;
+}
+input[type="text"], input:not([type]), input[type="file"] { min-width: 200px; }
+
+/* Buttons */
+.btn, .btn-sm, button {
+  display: inline-block; padding: 6px 14px; border-radius: 4px;
+  text-decoration: none; cursor: pointer; border: 1px solid #ccc;
+  background: #fff; color: #333; font-size: 13px; font-family: inherit;
+}
+.btn-sm { padding: 3px 8px; font-size: 12px; }
+.btn:hover, button:hover { background: #f0f0f0; }
+.btn.primary, button.primary { background: #3498db; color: #fff; border-color: #2980b9; }
+.btn.primary:hover, button.primary:hover { background: #2980b9; }
+.btn.danger, button.danger { background: #e74c3c; color: #fff; border-color: #c0392b; }
+.btn.large { padding: 10px 24px; font-size: 15px; }
+
+/* Cards */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; }
+.card {
+  background: #fff; padding: 16px; border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.card-title { font-size: 16px; font-weight: bold; }
+.card-meta { font-size: 12px; color: #666; margin: 8px 0; }
+.card-stats { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.stat { padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+.stat.total { background: #ecf0f1; color: #2c3e50; }
+.stat.vuln  { background: #fadbd8; color: #c0392b; }
+.stat.safe  { background: #d5f5e3; color: #1e8449; }
+.stat.na    { background: #ebedef; color: #5d6d7e; }
+.card-actions { margin-top: 8px; }
+
+.os-badge {
+  display: inline-block; background: #34495e; color: #fff;
+  padding: 1px 6px; border-radius: 3px; font-size: 11px;
+  margin-left: 4px;
+}
+
+/* Tables */
+.data-table {
+  width: 100%; background: #fff; border-collapse: collapse;
+  border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  margin: 12px 0; font-size: 13px;
+}
+.data-table th, .data-table td {
+  padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left;
+  vertical-align: top;
+}
+.data-table th { background: #ecf0f1; font-weight: bold; }
+.data-table tr.status-vuln { background: #fdf2f0; }
+.data-table tr.status-na td { color: #888; }
+.data-table .vuln-cell { color: #c0392b; font-weight: bold; }
+.meta-table {
+  width: 100%; background: #fff; border-collapse: collapse;
+  margin: 12px 0; font-size: 13px;
+}
+.meta-table th, .meta-table td {
+  padding: 6px 10px; border: 1px solid #eee;
+}
+.meta-table th { background: #f8f9fa; width: 100px; font-weight: bold; }
+
+/* Badges */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: bold; color: #fff;
+}
+.b-vuln { background: #e74c3c; }
+.b-safe { background: #27ae60; }
+.b-na   { background: #95a5a6; }
+.sev {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  font-size: 11px; font-weight: bold; color: #fff;
+}
+.sev-상 { background: #c0392b; }
+.sev-중 { background: #e67e22; }
+.sev-하 { background: #3498db; }
+
+/* Summary cards on report */
+.summary-cards { display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+.summary-card {
+  background: #fff; padding: 14px 18px; border-radius: 8px;
+  min-width: 110px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.summary-card .num { font-size: 24px; font-weight: bold; margin-top: 4px; }
+.summary-card.total .num { color: #2c3e50; }
+.summary-card.vuln .num  { color: #e74c3c; }
+.summary-card.safe .num  { color: #27ae60; }
+.summary-card.na .num    { color: #95a5a6; }
+
+/* Report header */
+.report-header { display: flex; justify-content: space-between; align-items: center; }
+.report-actions { display: flex; gap: 8px; }
+
+/* Compare changes */
+tr.change-개선 { background: #e8f8f0; }
+tr.change-악화 { background: #fdf2f0; }
+
+/* Toggle */
+.toggle { padding: 3px 10px; font-size: 11px; border-radius: 10px; }
+.toggle.on  { background: #27ae60; color: #fff; border-color: #1e8449; }
+.toggle.off { background: #95a5a6; color: #fff; border-color: #7f8c8d; }
+
+/* Misc */
+.empty { padding: 20px; color: #888; text-align: center; }
+.error-msg {
+  background: #fadbd8; color: #c0392b; padding: 12px 16px;
+  border-radius: 6px; margin: 12px 0;
+}
+.error-stack {
+  background: #2c3e50; color: #ecf0f1; padding: 12px;
+  font-size: 11px; overflow-x: auto; border-radius: 6px;
+}
+
+/* === v3: 연결 테스트 / 수집 화면 === */
+.req { color: #e74c3c; }
+.radio-inline { margin-right: 16px; font-weight: normal; }
+.form-actions { margin-top: 20px; display: flex; gap: 8px; }
+.test-result {
+  background: #fff; padding: 16px; border-radius: 8px; margin-top: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.test-overall {
+  padding: 10px 14px; border-radius: 6px; font-weight: bold; margin-bottom: 10px;
+}
+.test-overall.ok   { background: #d5f5e3; color: #1e8449; }
+.test-overall.fail { background: #fadbd8; color: #c0392b; }
+tr.test-step.fail td { background: #fdf2f0; }
+tr.test-step.skip td { color: #888; }
+.data-table tr.status-safe td { background: #f0faf4; }
+
+/* === v5: 평가 방법 표시 === */
+.eval-method-summary {
+  background: #fff; padding: 10px 14px; border-radius: 6px;
+  margin: 12px 0; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.method-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: bold; margin: 0 4px;
+}
+.method-badge.simple { background: #d6eaf8; color: #1b4f72; }
+.method-badge.llm    { background: #f4ecf7; color: #6c3483; }
+.method-badge.na     { background: #ebedef; color: #5d6d7e; }
+
+.cat-stat { font-size: 13px; color: #666; font-weight: normal; margin-left: 12px; }
+
+.evidence {
+  font-size: 11px; color: #555; margin-top: 4px;
+  border-left: 3px solid #bdc3c7; padding-left: 8px;
+}
+.evidence code { background: #f8f8f8; font-size: 11px; }
+
+.data-table tr.status-safe td { background: #f0faf4; }
+
+/* === 삼성반도체 스타일 리포트 === */
+.policy-item-table {
+  margin: 14px 0; border-radius: 8px; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08); background: #fff;
+  border: 1px solid #e5e7eb;
+}
+.policy-item-table.status-vuln { border-left: 4px solid #c0392b; }
+.policy-item-table.status-safe { border-left: 4px solid #27ae60; }
+.policy-item-table.status-na   { border-left: 4px solid #95a5a6; }
+.policy-item-table .item-header th {
+  background: #f8fafc; padding: 12px 14px; text-align: left;
+  font-size: 14px; border-bottom: 1px solid #e5e7eb;
+}
+.policy-item-table .rule-id {
+  display: inline-block; background: #34495e; color: #fff;
+  padding: 2px 8px; border-radius: 4px; font-family: monospace;
+  font-size: 12px; margin-right: 8px;
+}
+.policy-item-table .item-title { font-size: 14px; font-weight: bold; color: #2c3e50; }
+.policy-item-table .badges-right { float: right; }
+.policy-item-table .badges-right > * { margin-left: 4px; }
+.policy-item-table th {
+  background: #fafbfc; color: #555; font-size: 12px; font-weight: bold;
+  text-align: left; padding: 8px 12px; vertical-align: top;
+  border-bottom: 1px solid #f0f0f0; width: 100px;
+}
+.policy-item-table td {
+  padding: 8px 12px; font-size: 12px; line-height: 1.6;
+  border-bottom: 1px solid #f0f0f0; vertical-align: top;
+}
+.policy-item-table td.long-text { white-space: pre-wrap; }
+.policy-item-table td.mono { font-family: monospace; font-size: 11px; background: #fafafa; }
+.policy-item-table .result-cell strong { color: #2c3e50; }
+.policy-item-table tr:last-child td,
+.policy-item-table tr:last-child th { border-bottom: none; }
+
+.cve-tag {
+  display: inline-block; padding: 3px 8px; margin: 2px;
+  border-radius: 4px; font-size: 11px; font-family: monospace;
+  background: #f4ecf7; color: #6c3483;
+}
+.cve-tag a { color: inherit; text-decoration: none; font-weight: bold; }
+.cve-tag .cvss-score { margin-left: 4px; padding-left: 4px; border-left: 1px solid rgba(0,0,0,0.2); }
+.cve-tag.cvss-critical { background: #f5b7b1; color: #78281f; }
+.cve-tag.cvss-high     { background: #fadbd8; color: #922b21; }
+.cve-tag.cvss-medium   { background: #fdebd0; color: #7e5109; }
+.cve-tag.cvss-low      { background: #d6eaf8; color: #1b4f72; }
+
+/* === v6: 금보원 양식 18컬럼 테이블 === */
+.fsi-table-wrap {
+  overflow-x: auto; margin: 14px 0;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.fsi-table {
+  min-width: 1800px;  /* 18컬럼 = 가로 스크롤 */
+  border-collapse: collapse; font-size: 11px;
+}
+.fsi-table th {
+  background: #34495e; color: #fff; padding: 8px 6px;
+  position: sticky; top: 0; z-index: 2;
+  border-right: 1px solid #2c3e50; white-space: nowrap;
+  font-weight: bold; text-align: center;
+}
+.fsi-table td {
+  padding: 6px 8px; border-right: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+.fsi-table tr:nth-child(even) td { background: #fafbfc; }
+.fsi-table tr:hover td { background: #fff8e1; }
+.fsi-table tr.row-done td { background: #f0faf4; }
+.fsi-table tr.row-in-progress td { background: #fff4e6; }
+.fsi-table td.long-text { white-space: pre-wrap; max-width: 280px; }
+.fsi-table td.mono { font-family: monospace; }
+.fsi-table td.editable {
+  background: #fffef0;
+  cursor: pointer;
+}
+.fsi-table td.editable:hover { background: #ffeaa7; }
+
+.newflag {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: bold;
+}
+.newflag-new { background: #fadbd8; color: #c0392b; }
+.newflag-old { background: #ebedef; color: #5d6d7e; }
+
+.fix-status {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 10px; font-weight: bold;
+}
+.fs-pending  { background: #fdf2f0; color: #c0392b; border: 1px solid #f5b7b1; }
+.fs-progress { background: #fff4e6; color: #d35400; border: 1px solid #f5cba7; }
+.fs-done     { background: #d5f5e3; color: #1e8449; border: 1px solid #82e0aa; }
+.fs-exempt   { background: #ebedef; color: #5d6d7e; border: 1px solid #aeb6bf; }
+
+.summary-card.new-flag .num { color: #c0392b; }
+.summary-card.recurring .num { color: #d35400; }
+
+.legend {
+  margin-top: 16px; padding: 12px; background: #fff;
+  border-radius: 6px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.legend > * { margin-right: 6px; }
+
+/* === v6: 대시보드 KPI / 차트 === */
+.dash-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 8px 0 16px;
+}
+.dash-period {
+  font-size: 12px; color: #666;
+}
+.dash-period > a { margin-left: 8px; }
+
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 14px; margin-bottom: 20px;
+}
+.kpi-card {
+  background: #fff; padding: 16px 18px; border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-top: 4px solid #95a5a6;
+}
+.kpi-card.kpi-vuln    { border-top-color: #e74c3c; }
+.kpi-card.kpi-new     { border-top-color: #e67e22; }
+.kpi-card.kpi-pending { border-top-color: #f1c40f; }
+.kpi-card.kpi-rate    { border-top-color: #27ae60; }
+.kpi-card.kpi-servers { border-top-color: #3498db; }
+.kpi-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+.kpi-num { font-size: 32px; font-weight: bold; color: #2c3e50; line-height: 1; }
+.kpi-card.kpi-vuln .kpi-num    { color: #c0392b; }
+.kpi-card.kpi-new .kpi-num     { color: #d35400; }
+.kpi-card.kpi-pending .kpi-num { color: #b7950b; }
+.kpi-card.kpi-rate .kpi-num    { color: #1e8449; }
+.kpi-sub { font-size: 11px; color: #888; margin-top: 4px; }
+
+.charts-row {
+  display: grid; grid-template-columns: 1fr 2fr;
+  gap: 14px; margin-bottom: 20px;
+}
+.chart-box {
+  background: #fff; padding: 16px; border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.chart-box.full { grid-column: 1 / -1; margin-bottom: 20px; }
+.chart-box h3 { margin: 0 0 12px; font-size: 14px; color: #2c3e50; }
+
+.donut-svg { width: 180px; height: 180px; display: block; margin: 0 auto 10px; }
+.donut-legend { padding-top: 4px; font-size: 12px; clear: both; }
+.donut-legend .legend-item {
+  display: flex; align-items: center; padding: 3px 0;
+}
+.donut-legend .dot {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 50%; margin-right: 6px;
+}
+.donut-legend .legend-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.donut-legend .legend-num { font-weight: bold; color: #2c3e50; margin-left: 8px; white-space: nowrap; }
+
+.trend-svg { width: 100%; height: 200px; }
+
+/* 가로 막대 (호스트별) */
+.bar-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px; font-size: 12px;
+}
+.bar-label { width: 220px; flex-shrink: 0; }
+.bar-track {
+  flex: 1; height: 22px; background: #f4f6f7; border-radius: 4px;
+  overflow: hidden; display: flex;
+}
+.bar-seg {
+  color: #fff; font-size: 11px; text-align: center; line-height: 22px;
+  font-weight: bold;
+}
+.bar-seg.sev-high { background: #c0392b; }
+.bar-seg.sev-mid  { background: #e67e22; }
+.bar-seg.sev-low  { background: #3498db; }
+.bar-total { width: 40px; text-align: right; font-weight: bold; color: #2c3e50; }
+.bar-legend { margin-top: 10px; font-size: 11px; }
+.bar-legend .legend-item { display: inline-block; margin-right: 12px; }
+.bar-legend .dot { display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: middle; border-radius: 2px; }
+.bar-legend .dot.sev-high { background: #c0392b; }
+.bar-legend .dot.sev-mid  { background: #e67e22; }
+.bar-legend .dot.sev-low  { background: #3498db; }
+
+.workqueue-box {
+  background: #fff; padding: 16px; border-radius: 8px;
+  margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.workqueue-box h3 { margin: 0 0 12px; font-size: 14px; color: #2c3e50; }
+
+/* sev 배지 (이미 있다면 무시) */
+.sev { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: bold; color: #fff; }
+.sev-상 { background: #c0392b; }
+.sev-중 { background: #e67e22; }
+.sev-하 { background: #3498db; }
+
+/* 서버 카드 자산 정보 */
+.server-card-meta { font-size: 11px; color: #555; margin: 4px 0; }
+
+/* v6: server-cards 보강 */
+.server-cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px; margin-top: 12px;
+}
+.server-card {
+  background: #fff; padding: 14px; border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.server-card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 4px;
+}
+.server-name { font-weight: bold; color: #2c3e50; font-size: 14px; }
+.os-badge {
+  background: #34495e; color: #fff; padding: 2px 8px;
+  border-radius: 4px; font-size: 10px; font-weight: bold;
+}
+.server-card-host { font-size: 12px; color: #666; margin-bottom: 6px; font-family: monospace; }
+.server-card-time { font-size: 11px; color: #888; margin: 6px 0; }
+.card-badges { display: flex; gap: 4px; margin: 8px 0; flex-wrap: wrap; }
+.card-badges .badge { font-size: 11px; padding: 2px 6px; border-radius: 10px; }
+.card-badges .badge.total { background: #ecf0f1; color: #2c3e50; }
+.badge.b-vuln { background: #fadbd8; color: #c0392b; }
+.badge.b-safe { background: #d5f5e3; color: #1e8449; }
+.badge.b-na   { background: #ebedef; color: #5d6d7e; }
+.card-actions { display: flex; gap: 4px; margin-top: 8px; }
+.btn-sm {
+  padding: 4px 8px; font-size: 11px; border-radius: 4px;
+  background: #ecf0f1; color: #2c3e50; text-decoration: none; border: none; cursor: pointer;
+}
+.btn-sm:hover { background: #d5dbdb; }
+.btn-sm.primary { background: #3498db; color: #fff; }
+.btn-sm.primary:hover { background: #2980b9; }
+.btn-sm.danger { background: #e74c3c; color: #fff; }
+
+/* v7: 소항목 카운트 배지 */
+.sub-badge {
+  display: inline-block; padding: 2px 8px;
+  background: #fef5e7; color: #af601a;
+  border: 1px solid #f5cba7; border-radius: 10px;
+  font-size: 11px; font-weight: bold;
+}
+.sub-badge strong { color: #c0392b; font-size: 13px; }
+
+/* v7.1: cascade hint */
+.cascade-hint {
+  display: block; margin-top: 4px;
+  font-size: 10px; color: #af601a;
+  background: #fef9e7; padding: 2px 6px; border-radius: 3px;
+  border-left: 2px solid #f1c40f;
+  line-height: 1.3;
+}
+.cascade-done {
+  display: block; margin-top: 4px;
+  font-size: 10px; color: #1e8449;
+}
+
+/* === v8: 메뉴 구조 개편 + 페이지 헤더 === */
+.topbar {
+  display: flex; align-items: center; padding: 6px 24px;
+  background: #1a2530; color: #fff; min-height: 56px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.brand { display: flex; align-items: center; gap: 8px; margin-right: 32px; }
+.brand .logo { font-size: 20px; }
+.brand-name { font-weight: bold; }
+.main-nav { display: flex; flex-wrap: nowrap; gap: 4px; flex: 1; align-items: center; }
+.main-nav > a, .nav-top {
+  color: #ecf0f1; padding: 8px 12px; border-radius: 6px;
+  text-decoration: none; font-size: 13px; white-space: nowrap; cursor: pointer; display: inline-block;
+}
+/* 드롭다운 그룹 */
+.nav-group { position: relative; }
+.nav-group.active > .nav-top { background: #3498db; color: #fff; font-weight: bold; }
+.nav-group:hover > .nav-top { background: rgba(255,255,255,0.1); }
+.nav-drop {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 100;
+  background: #1a2530; min-width: 160px; padding: 6px; border-radius: 0 0 8px 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+.nav-group:hover .nav-drop { display: block; }
+.nav-drop a {
+  display: block; color: #ecf0f1; padding: 8px 12px; border-radius: 6px;
+  text-decoration: none; font-size: 13px; white-space: nowrap;
+}
+.nav-drop a:hover { background: rgba(255,255,255,0.12); }
+.nav-drop a.active { background: #3498db; color: #fff; font-weight: bold; }
+.main-nav a:hover { background: rgba(255,255,255,0.1); }
+.main-nav a.active { background: #3498db; color: #fff; font-weight: bold; }
+.user-area { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.user-name { color: #bdc3c7; }
+.user-area .btn-sm { background: rgba(255,255,255,0.15); color: #fff; }
+
+.container { max-width: 1600px; margin: 16px auto; padding: 0 16px; }
+.page-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 16px 0;
+}
+.page-header h1 { margin: 0; }
+.back-link {
+  font-size: 13px; color: #3498db; text-decoration: none;
+  display: block; margin-bottom: 4px;
+}
+.header-actions { display: flex; gap: 8px; }
+
+/* KPI 4컬럼 */
+.kpi-grid.kpi-4col { grid-template-columns: repeat(4, 1fr); }
+.kpi-card.kpi-success { border-top-color: #27ae60; }
+.kpi-card.kpi-fail    { border-top-color: #e74c3c; }
+.kpi-card.kpi-running { border-top-color: #3498db; }
+.kpi-card.kpi-avg     { border-top-color: #9b59b6; }
+.kpi-card.kpi-cve     { border-top-color: #c0392b; }
+.kpi-card.kpi-success .kpi-num { color: #1e8449; }
+.kpi-card.kpi-fail .kpi-num    { color: #c0392b; }
+.kpi-card.kpi-running .kpi-num { color: #2874a6; }
+.kpi-card.kpi-avg .kpi-num     { color: #6c3483; }
+.kpi-card.kpi-cve .kpi-num     { color: #922b21; }
+
+/* 섹션 박스 */
+.section-box {
+  background: #fff; padding: 16px 20px; border-radius: 8px;
+  margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.section-box h3 { margin: 0 0 12px; font-size: 15px; color: #2c3e50; }
+
+/* 진단 이력 */
+.row-success td { background: #f7fef8; }
+.row-failed td  { background: #fef5f4; }
+.row-running td { background: #f4faff; }
+.status-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 12px;
+  font-size: 11px; font-weight: bold;
+}
+.st-success { background: #d5f5e3; color: #1e8449; }
+.st-failed  { background: #fadbd8; color: #c0392b; }
+.st-running { background: #d6eaf8; color: #2874a6; }
+.fail-reason { padding: 4px 8px; background: #fef5f4; border-left: 3px solid #e74c3c; border-radius: 4px; }
+.fail-reason strong { color: #922b21; }
+.fail-detail { font-family: monospace; font-size: 10px; color: #555; margin-top: 2px; }
+.progress-bar { width: 100%; height: 8px; background: #ecf0f1; border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2980b9); }
+.diag-result { font-size: 11px; }
+.diag-result .b-vuln { color: #c0392b; font-weight: bold; }
+.diag-result .b-safe { color: #1e8449; }
+.diag-result .b-info { color: #1976d2; }
+.diag-result .b-na   { color: #7f8c8d; }
+
+/* 실패 패턴 */
+.fail-stats { padding: 8px 0; }
+.fail-pattern-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 12px; }
+.fp-label { width: 320px; flex-shrink: 0; }
+.fp-phase {
+  display: inline-block; padding: 2px 6px; border-radius: 3px;
+  font-size: 10px; font-weight: bold; color: #fff; margin-right: 6px;
+}
+.fp-ssh   { background: #e67e22; }
+.fp-agent { background: #c0392b; }
+.fp-rule  { background: #9b59b6; }
+.fp-llm   { background: #16a085; }
+.fp-other { background: #7f8c8d; }
+.fp-bar { flex: 1; height: 14px; background: #ecf0f1; border-radius: 7px; overflow: hidden; }
+.fp-fill { height: 100%; background: linear-gradient(90deg, #e74c3c, #c0392b); }
+.fp-count { width: 50px; text-align: right; font-weight: bold; }
+
+/* 헬스체크 */
+.healthcheck-table { font-size: 12px; }
+.row-health-healthy td  { background: #f7fef8; }
+.row-health-warning td  { background: #fff8e1; }
+.row-health-critical td { background: #fef5f4; }
+.row-health-unreach td  { background: #f4f6f7; }
+.alert-dot { margin-left: 4px; font-size: 10px; }
+.hc-badge {
+  display: inline-block; padding: 3px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: bold; white-space: nowrap;
+}
+.hc-ok     { background: #d5f5e3; color: #1e8449; }
+.hc-warn   { background: #fdebd0; color: #af601a; }
+.hc-fail   { background: #fadbd8; color: #922b21; }
+.hc-unknown{ background: #ebedef; color: #5d6d7e; }
+.os-badge.os-linux   { background: #e67e22; color: #fff; }
+.os-badge.os-windows { background: #2874a6; color: #fff; }
+.disk-bar {
+  position: relative; width: 100%; height: 18px; background: #ecf0f1;
+  border-radius: 4px; overflow: hidden;
+}
+.disk-fill { height: 100%; transition: width 0.3s; }
+.disk-fill.disk-ok       { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+.disk-fill.disk-warning  { background: linear-gradient(90deg, #f39c12, #e67e22); }
+.disk-fill.disk-critical { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+.disk-text {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: bold; color: #fff;
+  text-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+.alert-text { color: #c0392b; font-weight: bold; }
+
+/* 룰셋 관리 */
+.ruleset-meta {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; margin-bottom: 16px;
+}
+.rs-card {
+  background: #fff; padding: 12px 16px; border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.rs-label { font-size: 11px; color: #7f8c8d; }
+.rs-value { font-size: 20px; font-weight: bold; color: #2c3e50; margin-top: 4px; }
+.rs-value.rs-user { color: #d35400; }
+
+.rule-add-methods {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.add-method {
+  text-align: center; padding: 24px; background: #fafbfc;
+  border-radius: 8px; border: 2px dashed #d5dbdb;
+}
+.add-method:hover { border-color: #3498db; background: #f4faff; }
+.method-icon { font-size: 36px; margin-bottom: 8px; }
+.add-method h4 { margin: 4px 0; }
+.add-method .btn { margin-top: 12px; }
+
+.rules-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.filters { display: flex; gap: 8px; font-size: 12px; }
+.filters select, .filters input { padding: 4px 8px; border: 1px solid #d5dbdb; border-radius: 4px; font-size: 12px; }
+
+.method-badge.mixed { background: #fef5e7; color: #af601a; }
+
+.rule-type-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: bold;
+}
+.rule-type-badge.host    { background: #d6eaf8; color: #1b4f72; }
+.rule-type-badge.per-row { background: #f4ecf7; color: #6c3483; }
+
+.src-badge {
+  display: inline-block; padding: 2px 6px; border-radius: 3px;
+  font-size: 10px; font-weight: bold;
+}
+.src-builtin { background: #ebedef; color: #5d6d7e; }
+.src-user    { background: #fdebd0; color: #af601a; }
+.src-ai      { background: #f4ecf7; color: #6c3483; }
+
+/* Toggle switch */
+.toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background: #ccc; border-radius: 20px; transition: 0.2s;
+}
+.slider:before {
+  position: absolute; content: ""; height: 14px; width: 14px;
+  left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s;
+}
+.toggle input:checked + .slider { background: #27ae60; }
+.toggle input:checked + .slider:before { transform: translateX(16px); }
+.rule-disabled td { opacity: 0.5; }
+
+/* 룰 추가 폼 */
+.mode-tabs { display: flex; gap: 4px; }
+.mode-tabs .tab {
+  padding: 8px 14px; background: #ecf0f1; border-radius: 6px 6px 0 0;
+  text-decoration: none; color: #5d6d7e; font-size: 13px;
+}
+.mode-tabs .tab.active { background: #fff; color: #2c3e50; font-weight: bold; }
+
+.rule-add-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-pane, .preview-pane {
+  background: #fff; padding: 20px; border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.form-pane h3 {
+  margin: 20px 0 12px; padding-bottom: 4px;
+  border-bottom: 2px solid #ecf0f1; font-size: 14px;
+}
+.form-pane h3:first-child { margin-top: 0; }
+.form-grid { display: flex; flex-direction: column; gap: 14px; }
+.form-row label { display: block; font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 4px; }
+.form-row input[type="text"], .form-row select, .form-row textarea {
+  width: 100%; padding: 6px 10px; border: 1px solid #bdc3c7;
+  border-radius: 4px; font-size: 12px; box-sizing: border-box;
+}
+.form-row textarea { resize: vertical; font-family: monospace; }
+.form-row textarea.mono { background: #fafbfc; }
+.required { color: #c0392b; }
+.hint { font-size: 11px; color: #7f8c8d; margin-top: 3px; }
+.hint .link { color: #3498db; text-decoration: none; margin-right: 8px; }
+
+.radio-group { display: flex; gap: 12px; }
+.radio-group.vertical { flex-direction: column; gap: 8px; }
+.radio { font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.sev-radio {
+  padding: 4px 10px; border-radius: 4px; cursor: pointer;
+}
+.sev-radio.sev-상 { background: #fadbd8; color: #922b21; }
+.sev-radio.sev-중 { background: #fdebd0; color: #7e5109; }
+.sev-radio.sev-하 { background: #d6eaf8; color: #1b4f72; }
+
+.check-config { background: #fafbfc; padding: 10px; border-radius: 4px; border: 1px solid #ecf0f1; }
+.check-params { display: flex; gap: 12px; margin-top: 8px; }
+.check-params label { font-size: 11px; }
+.check-params input { width: 100px; padding: 3px 6px; }
+
+.form-actions { display: flex; gap: 8px; margin-top: 20px; padding-top: 12px; border-top: 1px solid #ecf0f1; }
+
+.preview-pane h3 { margin: 0 0 12px; font-size: 14px; }
+.yaml-preview {
+  background: #1e2a38; color: #ecf0f1; padding: 12px;
+  border-radius: 6px; font-size: 11px; max-height: 400px; overflow: auto;
+}
+.test-result {
+  background: #fafbfc; padding: 12px; border-radius: 6px;
+  margin-top: 8px; font-size: 12px;
+}
+.test-row { display: flex; justify-content: space-between; padding: 4px 0; }
+.test-label { color: #555; }
+.test-result-ok { color: #1e8449; font-weight: bold; }
+.test-result-ng { color: #c0392b; font-weight: bold; }
+.test-detail { padding: 6px 12px; background: #fff; border-radius: 4px; margin: 4px 0; font-size: 11px; }
+.mini-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.mini-table th { background: #ecf0f1; padding: 4px 6px; text-align: left; }
+.mini-table td { padding: 4px 6px; border-bottom: 1px solid #f0f0f0; font-family: monospace; }
+.preview-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* AI 룰 제안 */
+.ai-target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.ai-target-card {
+  display: block; padding: 14px; background: #fafbfc; border-radius: 8px;
+  border: 2px solid #ecf0f1; cursor: pointer;
+}
+.ai-target-card.selected { border-color: #3498db; background: #f4faff; }
+.ai-target-card .atc-name { font-weight: bold; color: #2c3e50; }
+.ai-target-card .atc-meta { font-size: 11px; color: #7f8c8d; margin: 4px 0; }
+.ai-target-card .atc-tables { font-size: 11px; color: #16a085; }
+
+.check-group { display: flex; flex-wrap: wrap; gap: 12px; }
+.check { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.multi-select { width: 100%; min-height: 80px; padding: 6px; }
+
+.ai-suggestions { display: flex; flex-direction: column; gap: 12px; }
+.ai-suggestion-card {
+  background: #fff; padding: 14px; border-radius: 8px;
+  border-left: 4px solid #95a5a6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.ai-suggestion-card.priority-high   { border-left-color: #c0392b; }
+.ai-suggestion-card.priority-medium { border-left-color: #e67e22; }
+.ai-suggestion-card.priority-low    { border-left-color: #3498db; }
+
+.ais-header { display: flex; justify-content: space-between; align-items: start; gap: 12px; margin-bottom: 8px; }
+.check-large { display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; }
+.check-large input { width: 18px; height: 18px; }
+.ais-id { font-family: monospace; background: #ecf0f1; padding: 2px 8px; border-radius: 3px; font-size: 11px; }
+.ais-title { font-weight: bold; font-size: 13px; }
+.ais-meta { display: flex; gap: 6px; align-items: center; }
+.ais-category { font-size: 11px; color: #7f8c8d; }
+.ais-confidence { font-size: 11px; background: #f4ecf7; color: #6c3483; padding: 2px 8px; border-radius: 10px; }
+
+.ais-body { padding: 8px 0; }
+.ais-rationale {
+  background: #fef9e7; padding: 8px 12px; border-radius: 4px;
+  border-left: 3px solid #f1c40f; font-size: 12px; margin-bottom: 10px;
+}
+.ais-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; }
+.ais-col h5 { margin: 0 0 6px; font-size: 11px; color: #7f8c8d; }
+.ais-table-hint { background: #ecf0f1; padding: 4px 6px; border-radius: 3px; font-size: 10px; display: block; }
+.ais-data-sample { font-size: 10px; color: #555; margin-top: 6px; padding: 4px; background: #fafbfc; border-radius: 3px; font-family: monospace; }
+.yaml-mini { background: #1e2a38; color: #ecf0f1; padding: 8px; border-radius: 4px; font-size: 10px; max-height: 180px; overflow: auto; }
+.yaml-mini code { white-space: pre; }
+
+.ais-cves { margin-top: 10px; font-size: 11px; }
+.ais-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #ecf0f1; }
+.bulk-actions { margin-top: 16px; padding-top: 12px; border-top: 1px solid #ecf0f1; display: flex; gap: 8px; }
+
+/* 취약점 상세 + CVE */
+.detail-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 16px; margin-bottom: 16px; }
+.detail-section {
+  background: #fff; padding: 16px 20px; border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.detail-section h3 { margin: 0 0 12px; font-size: 14px; }
+.kv-table { width: 100%; font-size: 12px; }
+.kv-table th { text-align: left; padding: 6px 8px; background: #fafbfc; color: #555; width: 110px; }
+.kv-table td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; }
+
+.vuln-result-block { padding: 12px; background: #fef5f4; border-radius: 6px; border-left: 4px solid #e74c3c; }
+.vr-status { margin-bottom: 8px; }
+.vr-reason, .vr-evidence { font-size: 12px; margin-top: 6px; }
+
+.rule-info-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.rule-info-grid h4 { margin: 0 0 6px; font-size: 12px; color: #555; }
+.rule-info-grid pre { background: #fafbfc; padding: 10px; border-radius: 4px; font-size: 11px; margin: 0; white-space: pre-wrap; }
+
+/* CVE 카드 */
+.cve-card {
+  background: #fff; padding: 16px; border-radius: 8px;
+  border-left: 5px solid #95a5a6;
+  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.cve-card.cvss-critical { border-left-color: #78281f; background: #fbf5f4; }
+.cve-card.cvss-high     { border-left-color: #c0392b; background: #fef5f4; }
+.cve-card.cvss-medium   { border-left-color: #e67e22; background: #fef9f3; }
+.cve-card.cvss-low      { border-left-color: #3498db; background: #f4faff; }
+
+.cve-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.cve-id-large { font-family: monospace; font-size: 16px; font-weight: bold; }
+.cve-id-large a { color: #2c3e50; text-decoration: none; }
+.cve-id-large a:hover { color: #3498db; }
+.cvss-badge {
+  display: inline-block; padding: 4px 10px; border-radius: 4px;
+  font-size: 11px; font-weight: bold; font-family: monospace;
+}
+.cvss-badge.cvss-critical { background: #78281f; color: #fff; }
+.cvss-badge.cvss-high     { background: #c0392b; color: #fff; }
+.cvss-badge.cvss-medium   { background: #e67e22; color: #fff; }
+.cvss-badge.cvss-low      { background: #3498db; color: #fff; }
+.cve-source { margin-left: auto; font-size: 11px; color: #7f8c8d; }
+
+.cve-title { font-size: 13px; margin: 6px 0; }
+.cve-desc { font-size: 12px; color: #444; line-height: 1.5; margin: 6px 0 12px; }
+.cve-meta-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  padding: 10px; background: rgba(255,255,255,0.6); border-radius: 6px;
+  font-size: 11px;
+}
+.cve-meta-grid > div { padding: 2px 0; }
+.cve-meta-grid code { background: #ecf0f1; padding: 1px 6px; border-radius: 3px; font-size: 10px; }
+
+.av-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 3px;
+  font-size: 10px; font-weight: bold;
+}
+.av-network  { background: #e74c3c; color: #fff; }
+.av-adjacent { background: #e67e22; color: #fff; }
+.av-local    { background: #f1c40f; color: #fff; }
+.av-physical { background: #95a5a6; color: #fff; }
+
+.cve-attack, .cve-exploit { font-size: 11px; margin-top: 8px; }
+.cve-exploit { padding: 6px 10px; background: #fadbd8; border-radius: 4px; }
+.exploit-link {
+  display: inline-block; padding: 2px 6px; background: #c0392b; color: #fff;
+  border-radius: 3px; font-size: 10px; text-decoration: none; margin-left: 4px;
+}
+
+.empty-cves {
+  padding: 20px; text-align: center; background: #fafbfc;
+  border-radius: 6px; color: #7f8c8d; font-size: 12px;
+}
+.data-table.mini { font-size: 11px; }
+.data-table.mini th, .data-table.mini td { padding: 4px 8px; }
+
+main.container { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+/* YAML preview 텍스트 가시화 보정 */
+.yaml-preview code, .yaml-mini code {
+  color: #ecf0f1 !important;
+  background: transparent !important;
+  font-family: monospace;
+  white-space: pre;
+  display: block;
+}
+
+/* v9: 스케줄 점검 */
+.cron-display {
+  background: #2c3e50; color: #f39c12; padding: 3px 8px;
+  border-radius: 4px; font-family: monospace; font-size: 11px;
+}
+.scope-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: bold;
+}
+.scope-all   { background: #d6eaf8; color: #1b4f72; }
+.scope-group { background: #d5f5e3; color: #1e8449; }
+.scope-list  { background: #fdebd0; color: #af601a; }
+.notif-badge {
+  display: inline-block; padding: 2px 6px; border-radius: 3px;
+  font-size: 10px; background: #fef9e7; color: #7e5109; margin-right: 2px;
+}
+.trigger-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 3px;
+  font-size: 10px; font-weight: bold;
+}
+.tr-cron   { background: #d6eaf8; color: #1b4f72; }
+.tr-manual { background: #fdebd0; color: #af601a; }
+.tr-retry  { background: #f4ecf7; color: #6c3483; }
+.st-warning { background: #fef9e7; color: #7e5109; }
+
+.schedule-calendar {
+  background: #fafbfc; border-radius: 8px; padding: 12px;
+}
+.cal-header {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  margin-bottom: 8px;
+}
+.cal-day-header {
+  text-align: center; padding: 6px; background: #fff;
+  border-radius: 6px; font-size: 11px;
+}
+.cal-day-header.today { background: #3498db; color: #fff; }
+.cal-day-header .day-name { font-weight: bold; }
+.cal-day-header .day-date { font-size: 10px; opacity: 0.8; }
+.cal-body {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  min-height: 120px;
+}
+.cal-day-body {
+  background: #fff; border-radius: 6px; padding: 6px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.cal-event {
+  padding: 4px 6px; border-radius: 3px; font-size: 10px;
+  border-left: 3px solid #95a5a6;
+}
+.cal-event.status-success { background: #d5f5e3; border-left-color: #27ae60; }
+.cal-event.status-failed  { background: #fadbd8; border-left-color: #c0392b; }
+.cal-event.status-pending { background: #d6eaf8; border-left-color: #3498db; }
+.event-time { font-weight: bold; font-family: monospace; }
+.event-name { font-size: 9px; }
+.event-target { font-size: 9px; opacity: 0.7; }
+
+main.container { padding-bottom: 40px; }
+
+/* v9.1: 업로드 화면 */
+.upload-container {
+  background: #fff; padding: 24px; border-radius: 8px;
+  margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.upload-dropzone {
+  border: 3px dashed #bdc3c7; border-radius: 12px;
+  padding: 40px 20px; text-align: center; background: #fafbfc;
+  transition: all 0.2s; cursor: pointer;
+}
+.upload-dropzone:hover, .upload-dropzone.dragover {
+  border-color: #3498db; background: #f4faff;
+}
+.upload-dropzone.has-file {
+  border-color: #27ae60; background: #f0faf4;
+}
+.upload-icon { font-size: 48px; margin-bottom: 12px; }
+.upload-text { font-size: 14px; margin-bottom: 8px; }
+.upload-pick {
+  display: inline-block; background: #3498db; color: #fff;
+  padding: 6px 14px; border-radius: 4px; cursor: pointer;
+  margin: 0 4px;
+}
+.upload-pick input { display: none; }
+.upload-hint { font-size: 12px; color: #7f8c8d; }
+.upload-filename {
+  margin-top: 16px; font-weight: bold; color: #27ae60;
+}
+.upload-options { margin-top: 20px; padding: 16px; background: #fafbfc; border-radius: 8px; }
+.form-row.inline { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.form-row.inline label { width: 200px; font-size: 13px; font-weight: bold; margin: 0; }
+.form-row.inline select { flex: 1; max-width: 400px; }
+.upload-actions { margin-top: 20px; display: flex; gap: 8px; }
+.upload-progress {
+  margin-top: 16px; padding: 12px; background: #f4faff; border-radius: 6px;
+}
+.progress-text { margin-top: 6px; font-size: 12px; color: #2874a6; }
+.upload-result {
+  margin-top: 16px; padding: 16px; border-radius: 8px;
+}
+.upload-result.success {
+  background: #f0faf4; border-left: 4px solid #27ae60;
+}
+.upload-result.error {
+  background: #fef5f4; border-left: 4px solid #c0392b;
+}
+.upload-result h3 { margin: 0 0 12px; }
+.upload-result ul { margin: 8px 0; padding-left: 20px; line-height: 1.8; font-size: 13px; }
+.upload-result code { background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+.upload-result pre { background: #fafbfc; padding: 8px; border-radius: 4px; font-size: 11px; max-height: 200px; overflow: auto; }
+.upload-result-actions { margin-top: 12px; display: flex; gap: 8px; }
+
+/* v9.4: 삼성 리포트 진단 결과 강화 */
+.result-cell { padding: 12px 14px !important; }
+.result-cell.result-safe { background: #f0faf4; border-left: 4px solid #27ae60; }
+.result-cell.result-vuln { background: #fef5f4; border-left: 4px solid #c0392b; }
+.result-cell.result-na   { background: #fef9e7; border-left: 4px solid #f39c12; }
+
+.result-status {
+  font-size: 14px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.result-icon {
+  display: inline-block; width: 24px; height: 24px;
+  border-radius: 50%; text-align: center;
+  font-weight: bold; line-height: 24px;
+}
+.result-safe .result-icon { background: #27ae60; color: #fff; }
+.result-vuln .result-icon { background: #c0392b; color: #fff; }
+.result-na   .result-icon { background: #f39c12; color: #fff; }
+
+.result-reason {
+  padding: 6px 10px; background: rgba(255,255,255,0.7);
+  border-radius: 4px; margin-bottom: 4px; font-size: 13px;
+}
+.evidence {
+  padding: 4px 10px; font-size: 12px;
+  background: rgba(255,255,255,0.5); border-radius: 4px;
+  margin-top: 4px;
+}
+.evidence code { background: #2c3e50; color: #ecf0f1; padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+
+.na-hint {
+  margin-top: 8px; padding: 6px 10px;
+  background: #fef9e7; border: 1px dashed #f1c40f;
+  border-radius: 4px; font-size: 11px; color: #7e5109;
+}
+
+.result-subs {
+  margin-top: 10px; padding-top: 8px;
+  border-top: 1px dashed #d5dbdb;
+}
+.subs-table {
+  width: 100%; margin-top: 6px; border-collapse: collapse;
+  background: #fff; border-radius: 4px; overflow: hidden;
+}
+.subs-table th, .subs-table td {
+  padding: 4px 8px; font-size: 11px; border-bottom: 1px solid #ecf0f1;
+}
+.subs-table th { background: #ecf0f1; text-align: left; font-weight: bold; }
+.subs-table tr.sub-vuln td { background: #fef5f4; }
+.subs-table tr.sub-safe td { background: #f7fef8; }
+.badge.b-vuln { background: #c0392b; color: #fff; padding: 1px 6px; border-radius: 3px; font-size: 10px; }
+.badge.b-safe { background: #27ae60; color: #fff; padding: 1px 6px; border-radius: 3px; font-size: 10px; }
+
+/* v9.5: 금보원 리포트 — 양호/취약/판정불가 행 구분 */
+.row-status-vuln td { background: #fef5f4; }
+.row-status-na   td { background: #fef9e7; }
+.row-status-safe td { background: #f7fef8; }
+.row-status-safe td { opacity: 0.85; }  /* 양호는 약간 흐리게 */
+
+.row-status-vuln.row-done td { background: #d5f5e3 !important; }
+.row-status-vuln.row-in-progress td { background: #fcf3cf !important; }
+
+.status-cell {
+  display: inline-block; padding: 3px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: bold; white-space: nowrap;
+}
+.status-cell.st-vuln { background: #c0392b; color: #fff; }
+.status-cell.st-safe { background: #27ae60; color: #fff; }
+.status-cell.st-na   { background: #f39c12; color: #fff; }
+
+/* v9.6: 예외/제외 관리 */
+.kpi-5col { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpi-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpi-card.kpi-warning { border-top-color: #f39c12; }
+.kpi-card.kpi-info    { border-top-color: #3498db; }
+
+.scope-badge.scope-result  { background: #d6eaf8; color: #1b4f72; }
+.scope-badge.scope-host    { background: #d5f5e3; color: #1e8449; }
+.scope-badge.scope-global  { background: #fdebd0; color: #af601a; }
+.scope-badge.scope-os      { background: #f4ecf7; color: #6c3483; }
+
+.appr-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+.appr-badge.appr-approved { background: #27ae60; color: #fff; }
+.appr-badge.appr-rejected { background: #c0392b; color: #fff; }
+.appr-badge.appr-pending  { background: #f39c12; color: #fff; }
+
+.cat-badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+.cat-badge.cat-logic_error      { background: #c0392b; color: #fff; }
+.cat-badge.cat-false_positive   { background: #e67e22; color: #fff; }
+.cat-badge.cat-not_applicable   { background: #95a5a6; color: #fff; }
+.cat-badge.cat-data_unavailable { background: #f39c12; color: #fff; }
+.cat-badge.cat-duplicate        { background: #9b59b6; color: #fff; }
+.cat-badge.cat-other            { background: #7f8c8d; color: #fff; }
+
+.row-expired td  { opacity: 0.5; background: #fef5f4; }
+.row-disabled td { opacity: 0.55; }
+
+.form-container { background: #fff; padding: 24px; border-radius: 8px; max-width: 900px; }
+.form-section {
+  margin-bottom: 24px; padding-bottom: 20px;
+  border-bottom: 1px solid #ecf0f1;
+}
+.form-section h3 {
+  margin: 0 0 12px; font-size: 14px; color: #2c3e50;
+  padding-left: 12px; border-left: 4px solid #3498db;
+}
+.form-row { margin-bottom: 12px; }
+.form-row.inline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.form-row.inline label { width: 140px; font-size: 13px; font-weight: bold; margin: 0; }
+.form-row > label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+.form-row input[type="text"], .form-row input[type="date"], .form-row textarea, .form-row select {
+  padding: 8px 10px; border: 1px solid #d5dbdb; border-radius: 4px; font-size: 13px;
+  font-family: inherit; width: 100%; max-width: 500px; box-sizing: border-box;
+}
+.form-row textarea { font-family: inherit; resize: vertical; }
+.radio-group { display: flex; flex-direction: column; gap: 8px; }
+.radio-group > label {
+  padding: 12px; background: #fafbfc; border: 2px solid transparent;
+  border-radius: 6px; cursor: pointer; display: block;
+}
+.radio-group > label:has(input:checked) {
+  border-color: #3498db; background: #f4faff;
+}
+.radio-group input[type="radio"] { margin-right: 8px; }
+.radio-group strong { display: inline-block; }
+.radio-inline { display: flex; gap: 12px; flex-wrap: wrap; }
+.radio-inline label { padding: 4px 10px; cursor: pointer; }
+.form-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+.info-box {
+  margin-top: 20px; padding: 16px;
+  background: #f4faff; border-left: 4px solid #3498db;
+  border-radius: 6px; font-size: 13px;
+}
+.info-box h4 { margin: 0 0 8px; font-size: 13px; color: #1b4f72; }
+.info-box ul { margin: 8px 0; padding-left: 20px; line-height: 1.7; }
+.comparison-table {
+  width: 100%; margin-top: 10px; border-collapse: collapse;
+  background: #fff; font-size: 12px;
+}
+.comparison-table th, .comparison-table td {
+  padding: 6px 10px; border: 1px solid #ecf0f1; text-align: left;
+}
+.comparison-table thead th { background: #34495e; color: #fff; }
+.comparison-table tbody th { background: #fafbfc; }
+
+/* 리포트에 예외 표시 */
+.status-cell.st-exception { background: #9b59b6; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+.row-status-exception td  { background: #f4ecf7; }
+.fix-status.fs-exempt     { background: #9b59b6; color: #fff; }
+
+.empty { color: #95a5a6; font-style: italic; }
+
+/* v9.7: 제외 관리 - 대상 타입 배지 */
+.tt-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+.tt-badge.tt-account { background: #d6eaf8; color: #1b4f72; }
+.tt-badge.tt-file    { background: #d5f5e3; color: #1e8449; }
+.tt-badge.tt-port    { background: #fdebd0; color: #af601a; }
+.tt-badge.tt-ip      { background: #f4ecf7; color: #6c3483; }
+.tt-badge.tt-host    { background: #fadbd8; color: #943126; }
+
+.tag-chip {
+  display: inline-block; padding: 1px 6px; margin: 1px;
+  background: #ecf0f1; border-radius: 3px; font-size: 10px;
+}
+
+.cat-badge.cat-system_account     { background: #3498db; color: #fff; }
+.cat-badge.cat-service_account    { background: #2980b9; color: #fff; }
+.cat-badge.cat-managed_separately { background: #16a085; color: #fff; }
+.cat-badge.cat-legacy             { background: #95a5a6; color: #fff; }
+.cat-badge.cat-monitoring_only    { background: #9b59b6; color: #fff; }
+
+/* v9.8: INFO 상태 + 영문 병기 */
+.status-cell.st-info { background: #3498db; color: #fff; }
+.row-status-info td  { background: #ebf5fb; }
+
+.summary-card.info { border-top: 3px solid #3498db; }
+.summary-card.info .num { color: #2874a6; }
+
+.result-cell.result-info { background: #ebf5fb; border-left: 4px solid #3498db; }
+.result-info .result-icon { background: #3498db; color: #fff; }
+
+.badge.b-info { background: #3498db; color: #fff; padding: 1px 6px; border-radius: 3px; font-size: 10px; }
+
+.info-hint {
+  margin-top: 8px; padding: 6px 10px;
+  background: #ebf5fb; border: 1px dashed #3498db;
+  border-radius: 4px; font-size: 11px; color: #1b4f72;
+}
+
+/* v9.9: 정합성 검증 화면 */
+.kpi-4col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpi-card.kpi-fail { border-top-color: #c0392b; }
+.kpi-card.kpi-fail .kpi-num { color: #c0392b; }
+.kpi-card.kpi-success .kpi-num { color: #27ae60; }
+.kpi-card.kpi-info .kpi-num { color: #3498db; }
+.kpi-sub { font-size: 11px; color: #7f8c8d; margin-top: 4px; }
+
+.match-icon {
+  display: inline-block; padding: 3px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: bold;
+}
+.match-icon.match-ok { background: #27ae60; color: #fff; }
+.match-icon.match-no { background: #c0392b; color: #fff; }
+.text-center { text-align: center; }
+
+/* v9.11: CVE 자동 진단 */
+.kpi-5col { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpi-card.kpi-critical { border-top-color: #8e44ad; }
+.kpi-card.kpi-critical .kpi-num { color: #8e44ad; }
+
+.info-table {
+  width: 100%;
+  background: #fff;
+  border-radius: 6px;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+.info-table th, .info-table td {
+  padding: 8px 12px;
+  border: 1px solid #ecf0f1;
+  font-size: 13px;
+}
+.info-table th {
+  background: #fafbfc;
+  font-weight: bold;
+  width: 120px;
+  text-align: left;
+}
+
+.cve-table {
+  font-size: 12px;
+}
+.cve-table td {
+  vertical-align: middle;
+}
+
+.sev-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+}
+.sev-badge.sev-critical { background: #8e44ad; }
+.sev-badge.sev-high { background: #c0392b; }
+.sev-badge.sev-medium { background: #f39c12; }
+.sev-badge.sev-low { background: #95a5a6; }
+
+.kev-badge { font-size: 16px; }
+
+.badge-exploit {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: bold;
+  background: #c0392b;
+  color: #fff;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.prio-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.prio-badge.prio-immediate { background: #c0392b; color: #fff; }
+.prio-badge.prio-urgent { background: #e67e22; color: #fff; }
+.prio-badge.prio-scheduled { background: #f39c12; color: #fff; }
+.prio-badge.prio-monitor { background: #95a5a6; color: #fff; }
+
+.row-priority-immediate td { background: #fdf2f0; }
+.row-priority-urgent td { background: #fef5ed; }
+.row-priority-scheduled td { background: #fef9e7; }
+.row-priority-monitor td { background: #fafbfc; }
+
+.cve-detail-row td.cve-detail {
+  padding: 0 !important;
+  background: #fff;
+  border-top: none;
+}
+.cve-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fafbfc;
+  border-bottom: 2px solid #ecf0f1;
+}
+.cve-detail-block {
+  font-size: 12px;
+}
+.detail-label {
+  font-weight: bold;
+  color: #34495e;
+  margin-bottom: 4px;
+}
+.detail-text {
+  color: #2c3e50;
+  line-height: 1.5;
+}
+.detail-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.alert-warning {
+  background: #fef9e7;
+  border-left: 4px solid #f39c12;
+  color: #7d6608;
+}
+
+/* v9.13: 인증 관련 */
+.role-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.role-badge.role-admin { background: #8e44ad; color: #fff; }
+.role-badge.role-operator { background: #2980b9; color: #fff; }
+.role-badge.role-viewer { background: #7f8c8d; color: #fff; }
+
+.role-mini {
+  margin-left: 4px;
+  font-size: 11px;
+}
+
+.row-disabled td {
+  opacity: 0.5;
+  background: #fafbfc;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.alert-warning {
+  background: #fef9e7;
+  border-left: 4px solid #f39c12;
+  color: #7d6608;
+}
+
+.radio-group label {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid #ecf0f1;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.radio-group label:hover {
+  background: #fafbfc;
+}
+.radio-group input[type="radio"] {
+  margin-right: 8px;
+}
+.radio-group .muted {
+  display: block;
+  margin-top: 2px;
+  margin-left: 22px;
+}
+
+/* v9.14: Agent Push 모달 */
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-backdrop {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+}
+.modal-content {
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #ecf0f1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 {
+  margin: 0;
+}
+.modal-close {
+  background: none;
+  border: 0;
+  font-size: 24px;
+  cursor: pointer;
+  color: #95a5a6;
+  padding: 0 8px;
+}
+.modal-body {
+  padding: 20px;
+}
+.modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #ecf0f1;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.install-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #ecf0f1;
+  margin-top: 12px;
+}
+.tab-btn {
+  padding: 8px 16px;
+  background: #fafbfc;
+  border: 1px solid #ecf0f1;
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: #7f8c8d;
+}
+.tab-btn.active {
+  background: #fff;
+  color: #2c3e50;
+  border-color: #3498db;
+  border-bottom: 2px solid #fff;
+  margin-bottom: -2px;
+}
+.tab-content {
+  padding: 16px 4px;
+}
+
+.code-block {
+  background: #2c3e50;
+  color: #ecf0f1;
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-family: "SF Mono", Monaco, Menlo, "Courier New", monospace;
+  font-size: 11px;
+  overflow-x: auto;
+  margin: 4px 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* v9.16: 조치 관리 (칸반) */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.kanban-col {
+  background: #f4f6f7;
+  border-radius: 6px;
+  border-top: 4px solid #95a5a6;
+  min-height: 400px;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+}
+.kanban-col.col-fail { border-top-color: #c0392b; }
+.kanban-col.col-running { border-top-color: #f39c12; }
+.kanban-col.col-success { border-top-color: #27ae60; }
+.kanban-col.col-exception { border-top-color: #8e44ad; }
+
+.kanban-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ecf0f1;
+  background: #fff;
+  border-radius: 6px 6px 0 0;
+}
+.kanban-header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.kanban-count {
+  background: #34495e;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.col-fail .kanban-count { background: #c0392b; }
+.col-running .kanban-count { background: #f39c12; }
+.col-success .kanban-count { background: #27ae60; }
+.col-exception .kanban-count { background: #8e44ad; }
+
+.kanban-body {
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+.kanban-empty {
+  text-align: center;
+  color: #95a5a6;
+  padding: 30px 0;
+  font-size: 12px;
+}
+
+.kanban-card {
+  background: #fff;
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border-left: 3px solid #95a5a6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: box-shadow 0.15s;
+}
+.kanban-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.kanban-card.sev-상 { border-left-color: #c0392b; }
+.kanban-card.sev-중 { border-left-color: #f39c12; }
+.kanban-card.sev-하 { border-left-color: #95a5a6; }
+
+.card-header {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.rule-id-badge {
+  background: #34495e;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
+  font-family: monospace;
+}
+.severity-badge {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
+  color: #fff;
+}
+.severity-badge.sev-상 { background: #c0392b; }
+.severity-badge.sev-중 { background: #f39c12; }
+.severity-badge.sev-하 { background: #95a5a6; }
+.severity-badge.sev-정보 { background: #3498db; }
+
+.badge-new {
+  background: #3498db;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
+}
+.badge-overdue {
+  color: #c0392b;
+  font-size: 14px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+.card-meta {
+  font-size: 11px;
+  color: #555;
+}
+.meta-line {
+  margin-bottom: 2px;
+}
+.meta-icon {
+  display: inline-block;
+  width: 16px;
+}
+
+.vuln-detail-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fafbfc;
+  border-radius: 4px;
+  border-left: 3px solid #3498db;
+}
+.code-block-small {
+  background: #2c3e50;
+  color: #ecf0f1;
+  padding: 8px 10px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: monospace;
+  margin: 4px 0 0 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-row select, .filter-row input {
+  padding: 6px 10px;
+  border: 1px solid #d5dbdb;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.filter-row input[type="search"] {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* v9.16: 예외/제외/취약점 관리 보강 */
+.row-expiring td {
+  background: #fef9e7 !important;
+  border-left: 3px solid #f39c12;
+}
+.row-expiring td:first-child {
+  border-left: 3px solid #f39c12;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+}
+.status-pill.status-fail { background: #fadbd8; color: #c0392b; }
+.status-pill.status-running { background: #fef5e7; color: #d35400; }
+.status-pill.status-success { background: #d5f5e3; color: #1e8449; }
+.status-pill.status-exception { background: #ebdef0; color: #6c3483; }
+
+.badge-sub {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #34495e;
+  color: #fff;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.vuln-table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+</style></head><body><main class="container">
+
+
+<div class="page-header">
+  <h1>Windows CVE 자동 진단 #2985</h1>
+  <p class="muted small">
+    설치된 <strong>3개 핫픽스(KB)</strong>와 OS 빌드를 기준으로,
+    알려진 Windows 보안 취약점(CVE)의 패치 적용 여부를 결정론적으로 판정한 결과입니다.
+    누락된 보안 업데이트(KB)는 미패치(AFFECTED)로 분류됩니다.
+  </p>
+  <div class="header-actions">
+    <a href="/diagnosis/2985/ai" class="btn" style="background:#6c5ce7;color:#fff;">🤖 AI 결과로</a>
+    <a href="/cve/sync" class="btn">CVE Feed 동기화</a>
+    <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
+    <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
+  </div>
+</div>
+
+<div class="info-box" style="background:#eef2ff; border-left:4px solid #6c5ce7; padding:0.75rem 1rem; margin:0 0 1rem; border-radius:4px;">
+  <strong>🪟 Windows 패치 기반 진단</strong>
+  <span class="muted small">
+    — OS: <strong>Windows Server 2022</strong> (빌드 10.0.20348)
+    · 설치 핫픽스 <strong>3</strong>건
+    
+      (KB5008882, KB5011497, KB5010523)
+    
+  </span>
+</div>
+
+
+
+<!-- 환경 정보 -->
+<table class="info-table">
+  <tbody><tr>
+    <th>호스트명</th><td>dolf-w2022-147</td>
+    <th>OS</th><td>Windows Server 2022 (10.0.20348)</td>
+  </tr>
+  <tr>
+    <th>설치 핫픽스</th><td><strong>3건</strong></td>
+    <th>매칭된 CVE</th><td><strong>1건</strong> (취약 1)</td>
+  </tr>
+  <tr>
+    <th>설치 소프트웨어</th><td colspan="3"><strong>55건</strong> <span class="muted small">(레지스트리 Uninstall 인벤토리 — 서드파티 SW)</span></td>
+  </tr>
+</tbody></table>
+
+<!-- 서드파티 소프트웨어 CVE 매칭 결과 -->
+
+
+  <div class="section-box" style="margin-top:16px;border:2px solid #c0392b;">
+    <h3 style="margin-top:0;color:#c0392b;">🧩 설치 소프트웨어 CVE 2건 (서드파티 SW)</h3>
+    <table class="data-table">
+      <thead><tr><th>CVE</th><th>소프트웨어</th><th>설치 버전</th><th>CVSS</th><th>KEV</th><th>수정 버전</th><th>내용</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td class="mono small">CVE-2022-1552</td>
+            <td>PostgreSQL 13</td>
+            <td class="mono small"><strong style="color:#c0392b;">13</strong></td>
+            <td class="small">8.8</td>
+            <td class="small">-</td>
+            <td class="mono small">13.7 / 14.3</td>
+            <td class="small">PostgreSQL 보안 제한 작업 우회(권한 상승)</td>
+          </tr>
+        
+          <tr>
+            <td class="mono small">CVE-2021-23214</td>
+            <td>PostgreSQL 13</td>
+            <td class="mono small"><strong style="color:#c0392b;">13</strong></td>
+            <td class="small">8.1</td>
+            <td class="small">-</td>
+            <td class="mono small">13.5</td>
+            <td class="small">PostgreSQL SSL/GSS 핸드셰이크 후 잔여 평문 처리(MITM)</td>
+          </tr>
+        
+      </tbody>
+    </table>
+  </div>
+
+
+<!-- CISA KEV 등재 제품 탐지 (활성 익스플로잇 — 버전 미검증 자문) -->
+
+
+  <div class="section-box" style="margin-top:16px;border:2px solid #e67e22;">
+    <h3 style="margin-top:0;color:#d35400;">🔥 CISA KEV 등재 제품 탐지 5건 (활성 익스플로잇)</h3>
+    <p class="muted small" style="margin:4px 0 10px;">설치된 제품이 CISA KEV(실제 공격에 악용된 취약점) 목록에 있는 제품군입니다. <strong>버전 미검증 자문</strong> — 해당 제품의 버전/패치 상태를 점검하세요. (정밀 버전 판정은 NVD 동기화로 확대)</p>
+    <table class="data-table">
+      <thead><tr><th>제품군(KEV)</th><th>설치 소프트웨어</th><th>버전</th><th>KEV CVE</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td><strong style="color:#d35400;">Flash Player</strong></td>
+            <td>Adobe Flash Player 32 NPAPI</td>
+            <td class="mono small">32.0.0.371</td>
+            <td class="small">36건 <span class="muted">(CVE-2014-0502, CVE-2013-0648, CVE-2013-0643…)</span></td>
+          </tr>
+        
+          <tr>
+            <td><strong style="color:#d35400;">Java SE</strong></td>
+            <td>Java SE Development Kit 8 Update 391 (64-bit)</td>
+            <td class="mono small">8.0.3910.13</td>
+            <td class="small">8건 <span class="muted">(CVE-2016-3427, CVE-2013-2465, CVE-2012-5076…)</span></td>
+          </tr>
+        
+          <tr>
+            <td><strong style="color:#d35400;">Edge</strong></td>
+            <td>Microsoft Edge</td>
+            <td class="mono small">86.0.622.38</td>
+            <td class="small">5건 <span class="muted">(CVE-2016-3351, CVE-2017-0037, CVE-2016-7201…)</span></td>
+          </tr>
+        
+          <tr>
+            <td><strong style="color:#d35400;">Edge</strong></td>
+            <td>Microsoft Edge Update</td>
+            <td class="mono small">1.3.135.41</td>
+            <td class="small">5건 <span class="muted">(CVE-2016-3351, CVE-2017-0037, CVE-2016-7201…)</span></td>
+          </tr>
+        
+          <tr>
+            <td><strong style="color:#d35400;">Notepad++</strong></td>
+            <td>Notepad++ (64-bit x64)</td>
+            <td class="mono small">7.5.7</td>
+            <td class="small">1건 <span class="muted">(CVE-2025-15556…)</span></td>
+          </tr>
+        
+      </tbody>
+    </table>
+  </div>
+
+
+<!-- 설치 소프트웨어 인벤토리 (rpm -qa 의 Windows 대응) -->
+
+  <details class="section-box" style="margin-top:16px;" open="">
+    <summary style="cursor:pointer;font-weight:700;">🧩 설치 소프트웨어 인벤토리 (55건) — 클릭하여 펼치기</summary>
+    <p class="muted small" style="margin:8px 0;">서드파티 소프트웨어의 CVE 매칭은 소프트웨어 CVE DB 보강 시 활성화됩니다(현재는 자산 인벤토리 표시).</p>
+    <table class="data-table" style="margin-top:8px;">
+      <thead><tr><th>#</th><th>소프트웨어</th><th>버전</th><th>게시자</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td class="small mono">1</td>
+            <td>Adobe Flash Player 32 NPAPI</td>
+            <td class="mono small">32.0.0.371</td>
+            <td class="small muted">Adobe</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">2</td>
+            <td>Azure Data Studio</td>
+            <td class="mono small">1.47.1</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">3</td>
+            <td>Browser for SQL Server 2022</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">4</td>
+            <td>Integration Services</td>
+            <td class="mono small">16.0.5395.0</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">5</td>
+            <td>Java 8 Update 391 (64-bit)</td>
+            <td class="mono small">8.0.3910.13</td>
+            <td class="small muted">Oracle Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">6</td>
+            <td>Java Auto Updater</td>
+            <td class="mono small">2.8.391.13</td>
+            <td class="small muted">Oracle Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">7</td>
+            <td>Java SE Development Kit 8 Update 391 (64-bit)</td>
+            <td class="mono small">8.0.3910.13</td>
+            <td class="small muted">Oracle Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">8</td>
+            <td>LSware UniTyX Manager</td>
+            <td class="mono small">4.0.0</td>
+            <td class="small muted">LSware</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">9</td>
+            <td>Microsoft Analysis Services OLE DB Provider</td>
+            <td class="mono small">16.0.5143.0</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">10</td>
+            <td>Microsoft Edge</td>
+            <td class="mono small">86.0.622.38</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">11</td>
+            <td>Microsoft Edge Update</td>
+            <td class="mono small">1.3.135.41</td>
+            <td class="small muted">-</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">12</td>
+            <td>Microsoft Help Viewer 2.3</td>
+            <td class="mono small">2.3.28307</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">13</td>
+            <td>Microsoft MPI (10.1.12498.18)</td>
+            <td class="mono small">10.1.12498.18</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">14</td>
+            <td>Microsoft ODBC Driver 17 for SQL Server</td>
+            <td class="mono small">17.10.5.1</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">15</td>
+            <td>Microsoft OLE DB Driver for SQL Server</td>
+            <td class="mono small">18.6.7.0</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">16</td>
+            <td>Microsoft SQL Server 2008 R2 Native Client</td>
+            <td class="mono small">10.50.1600.1</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">17</td>
+            <td>Microsoft SQL Server 2012 Native Client</td>
+            <td class="mono small">11.0.2100.60</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">18</td>
+            <td>Microsoft SQL Server 2022 (64-bit)</td>
+            <td class="mono small">-</td>
+            <td class="small muted">-</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">19</td>
+            <td>Microsoft SQL Server 2022 RsFx Driver</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">20</td>
+            <td>Microsoft SQL Server 2022 Setup (English)</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">21</td>
+            <td>Microsoft SQL Server Management Studio - 19.3</td>
+            <td class="mono small">19.3.4.0</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">22</td>
+            <td>Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729</td>
+            <td class="mono small">9.0.30729</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">23</td>
+            <td>Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729</td>
+            <td class="mono small">9.0.30729</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">24</td>
+            <td>Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40664</td>
+            <td class="mono small">12.0.40664.0</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">25</td>
+            <td>Microsoft Visual C++ 2013 x86 Additional Runtime - 12.0.40664</td>
+            <td class="mono small">12.0.40664</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">26</td>
+            <td>Microsoft Visual C++ 2013 x86 Minimum Runtime - 12.0.40664</td>
+            <td class="mono small">12.0.40664</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">27</td>
+            <td>Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.34.31931</td>
+            <td class="mono small">14.34.31931.0</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">28</td>
+            <td>Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.34.31931</td>
+            <td class="mono small">14.34.31931.0</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">29</td>
+            <td>Microsoft Visual C++ 2022 X64 Additional Runtime - 14.34.31931</td>
+            <td class="mono small">14.34.31931</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">30</td>
+            <td>Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.34.31931</td>
+            <td class="mono small">14.34.31931</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">31</td>
+            <td>Microsoft Visual C++ 2022 X86 Additional Runtime - 14.34.31931</td>
+            <td class="mono small">14.34.31931</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">32</td>
+            <td>Microsoft Visual C++ 2022 X86 Minimum Runtime - 14.34.31931</td>
+            <td class="mono small">14.34.31931</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">33</td>
+            <td>Microsoft Visual Studio Tools for Applications 2019</td>
+            <td class="mono small">16.0.31110</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">34</td>
+            <td>Microsoft Visual Studio Tools for Applications 2019 x64 Hosting Support</td>
+            <td class="mono small">16.0.31110</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">35</td>
+            <td>Microsoft Visual Studio Tools for Applications 2019 x86 Hosting Support</td>
+            <td class="mono small">16.0.31110</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">36</td>
+            <td>Microsoft VSS Writer for SQL Server 2022</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">37</td>
+            <td>Notepad++ (64-bit x64)</td>
+            <td class="mono small">7.5.7</td>
+            <td class="small muted">Notepad++ Team</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">38</td>
+            <td>PostgreSQL 13</td>
+            <td class="mono small">13</td>
+            <td class="small muted">PostgreSQL Global Development Group</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">39</td>
+            <td>SnakeTail 64-bit v1.9.8.0</td>
+            <td class="mono small">1.9.8.0</td>
+            <td class="small muted">SnakeNest.com</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">40</td>
+            <td>SQL Server 2022 Advanced Analytics</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">41</td>
+            <td>SQL Server 2022 Batch Parser</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">42</td>
+            <td>SQL Server 2022 Common Files</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">43</td>
+            <td>SQL Server 2022 Connection Info</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">44</td>
+            <td>SQL Server 2022 Database Engine Services</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">45</td>
+            <td>SQL Server 2022 Database Engine Shared</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">46</td>
+            <td>SQL Server 2022 DMF</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">47</td>
+            <td>SQL Server 2022 Full text search</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">48</td>
+            <td>SQL Server 2022 Shared Management Objects</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">49</td>
+            <td>SQL Server 2022 Shared Management Objects Extensions</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">50</td>
+            <td>SQL Server 2022 SQL Diagnostics</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">51</td>
+            <td>SQL Server 2022 XEvent</td>
+            <td class="mono small">16.0.1000.6</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">52</td>
+            <td>SQL Server Management Studio</td>
+            <td class="mono small">19.3.4.0</td>
+            <td class="small muted">Microsoft Corp.</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">53</td>
+            <td>SQL Server Management Studio Language Pack - English</td>
+            <td class="mono small">19.3.4.0</td>
+            <td class="small muted">Microsoft Corp.</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">54</td>
+            <td>SSMS Post Install Tasks</td>
+            <td class="mono small">19.3.4.0</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+          <tr>
+            <td class="small mono">55</td>
+            <td>Visual Studio 2017 Isolated Shell for SSMS</td>
+            <td class="mono small">15.0.28308.421</td>
+            <td class="small muted">Microsoft Corporation</td>
+          </tr>
+        
+      </tbody>
+    </table>
+  </details>
+
+
+<!-- KPI 카드 -->
+<div class="kpi-grid kpi-5col" style="margin-top:16px;">
+  <div class="kpi-card kpi-critical">
+    <div class="kpi-label">CRITICAL</div>
+    <div class="kpi-num">0</div>
+    <div class="kpi-sub">CVSS 9.0+</div>
+  </div>
+  <div class="kpi-card kpi-fail">
+    <div class="kpi-label">HIGH</div>
+    <div class="kpi-num">1</div>
+    <div class="kpi-sub">CVSS 7.0~8.9</div>
+  </div>
+  <div class="kpi-card kpi-warning">
+    <div class="kpi-label">MEDIUM</div>
+    <div class="kpi-num">0</div>
+    <div class="kpi-sub">CVSS 4.0~6.9</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">CISA KEV</div>
+    <div class="kpi-num" style="color:#c0392b;">0</div>
+    <div class="kpi-sub">활성 익스플로잇</div>
+  </div>
+  <div class="kpi-card kpi-success">
+    <div class="kpi-label">패치됨</div>
+    <div class="kpi-num">0</div>
+    <div class="kpi-sub">KB 적용 확인</div>
+  </div>
+</div>
+
+<!-- 우선순위 KPI -->
+<div class="kpi-grid kpi-4col" style="margin-top:12px;">
+  <div class="kpi-card" style="border-top-color:#c0392b;">
+    <div class="kpi-label">IMMEDIATE</div>
+    <div class="kpi-num" style="color:#c0392b;">0</div>
+    <div class="kpi-sub">즉시 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#e67e22;">
+    <div class="kpi-label">URGENT</div>
+    <div class="kpi-num" style="color:#e67e22;">0</div>
+    <div class="kpi-sub">긴급 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#f39c12;">
+    <div class="kpi-label">SCHEDULED</div>
+    <div class="kpi-num" style="color:#f39c12;">1</div>
+    <div class="kpi-sub">정기 패치</div>
+  </div>
+  <div class="kpi-card" style="border-top-color:#7f8c8d;">
+    <div class="kpi-label">MONITOR</div>
+    <div class="kpi-num" style="color:#7f8c8d;">0</div>
+    <div class="kpi-sub">모니터링</div>
+  </div>
+</div>
+
+<!-- CVE 목록 -->
+<div class="section-box" style="margin-top:20px;">
+  <h3>매칭된 CVE 목록 (우선순위 정렬)</h3>
+  <table class="data-table cve-table">
+    <thead>
+      <tr>
+        <th width="110">CVE ID</th>
+        <th>이름</th>
+        <th width="60">CVSS</th>
+        <th width="50">KEV</th>
+        <th width="60">EPSS</th>
+        <th>대상 / 패치 KB</th>
+        <th width="100">우선순위</th>
+        <th width="80">실제 위험</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+        <tr class="row-priority-scheduled">
+          <td class="mono"><strong>CVE-2022-37958</strong></td>
+          <td class="small">
+            SPNEGO NEGOEX 원격 코드 실행
+            
+          </td>
+          <td><span class="sev-badge sev-high">8.1</span></td>
+          <td class="text-center">
+            <span class="muted">·</span>
+          </td>
+          <td class="text-center small">40.0%</td>
+          <td class="mono small">
+            Windows Server 2022 (10.0.20348)
+            
+              <div class="muted small" style="color:#c0392b;">⚠ 미설치 KB: KB5017315</div>
+            
+            
+          </td>
+          <td>
+            
+              <span class="prio-badge prio-scheduled">SCHEDULED</span>
+            
+          </td>
+          <td class="text-center">
+            
+              <span class="status-cell st-vuln">취약</span>
+            
+          </td>
+        </tr>
+        <tr class="cve-detail-row">
+          <td colspan="8" class="cve-detail">
+            <div class="cve-detail-grid">
+              <div class="cve-detail-block">
+                <div class="detail-label">📝 AI 판정 근거</div>
+                <div class="detail-text">이 시스템(Windows Server 2022 (10.0.20348))은 KB5017315(또는 이후 누적 업데이트)가 설치되지 않아 CVE-2022-37958에 취약합니다. CVSS 8.1 (HIGH).</div>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">💀 공격 시나리오</div>
+                <div class="detail-text">인증 전/후 원격 코드 실행으로 시스템 장악 가능.</div>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">🔧 권장 조치</div>
+                <ul class="detail-list">
+                  <li>KB5017315 이상 누적 보안 업데이트 설치</li><li>2022-09 누적 업데이트(KB5017315 이상)를 설치하십시오.</li>
+                </ul>
+              </div>
+              <div class="cve-detail-block">
+                <div class="detail-label">📋 패치 정보</div>
+                <div class="detail-text">
+                  <strong>권고:</strong> CVE-2022-37958<br>
+                  <strong>수정 KB:</strong> KB5017315<br>
+                  <strong>설치된 핫픽스:</strong> KB5008882, KB5011497, KB5010523
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      
+      
+    </tbody>
+  </table>
+</div>
+
+<div class="info-box" style="margin-top:20px;">
+  <h4>Windows CVE 자동 진단 동작 방식</h4>
+  <ul>
+    <li><strong>Stage 1 — 인벤토리 추출:</strong> OS 빌드 + 설치 핫픽스(3개 KB) + 서비스 상태</li>
+    <li><strong>Stage 2 — 패치 판정:</strong> 빌드 UBR ≥ 수정 UBR 이거나 수정 KB가 설치됨 → 패치, 아니면 미설치</li>
+    <li><strong>Stage 3 — 조건 평가:</strong> 일부 CVE는 특정 서비스(SMB·Spooler·Netlogon 등) 실행 여부로 공격 표면 가중</li>
+    <li><strong>Stage 4 — 우선순위:</strong> CISA KEV → 미패치 → CVSS 순</li>
+  </ul>
+  <p class="small muted" style="margin-top:12px;">
+    ※ 본 기능은 큐레이션된 핵심 Windows Server CVE만 포함합니다. 운영 환경에서는 Microsoft 보안 업데이트 가이드(MSRC) /
+    NVD 피드를 동기화하여 KB-CVE 매핑을 최신으로 유지해야 합니다. 설치 프로그램(서드파티 SW) 단위 CVE는 인벤토리 수집 확장이 필요합니다.
+  </p>
+</div>
+
+
+
+</main></body></html>

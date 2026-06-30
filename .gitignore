@@ -39,3 +39,6 @@ data/uploads/
 # ── OS ──
 .DS_Store
 Thumbs.db
+
+# 로컬 설정(토큰 포함) — 커밋 금지
+.claude/settings.local.json

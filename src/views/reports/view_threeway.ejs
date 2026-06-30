@@ -17,10 +17,13 @@
   table.tw td.code { font-family:monospace; color:#666; font-size:0.78rem; white-space:nowrap; }
   tr.mismatch { background:#fdecea; }
   tr.nodata { color:#999; }
-  .v { font-weight:700; padding:1px 7px; border-radius:4px; display:inline-block; min-width:46px; text-align:center; }
-  .v.취약 { background:#fdecea; color:#c0392b; }
-  .v.양호 { background:#eafaf1; color:#27ae60; }
-  .v.기타, .v.미점검 { background:#f0f0f0; color:#888; }
+  .v { font-weight:700; padding:2px 9px; border-radius:5px; display:inline-block; min-width:58px; text-align:center; font-size:0.82rem; }
+  .v.취약 { background:#fdecea; color:#c0392b; border:1px solid #f5b7b1; }
+  .v.양호 { background:#eafaf1; color:#1e8449; border:1px solid #abebc6; }
+  .v.정보제공 { background:#eaf2fd; color:#2563eb; border:1px solid #aacbf5; }
+  .v.판정불가 { background:#fff4e5; color:#b9770e; border:1px solid #f5d7a3; }
+  .v.미점검 { background:#f0f0f0; color:#888; border:1px solid #ddd; }
+  .v.기타 { background:#f0f0f0; color:#888; }
   .v.none { color:#ccc; }
   .m-agree { color:#27ae60; font-weight:700; }
   .m-mismatch { color:#c0392b; font-weight:700; }
@@ -89,6 +92,16 @@
 <div class="tw-toolbar">
   <label><input type="checkbox" id="onlyMismatch" onchange="applyFilter()"> 불일치만 보기</label>
   <label><input type="checkbox" id="hideNoData" onchange="applyFilter()"> 비교불가 숨기기</label>
+</div>
+
+<div class="tw-legend" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#f8f9fb;border:1px solid #e1e5ea;border-radius:8px;padding:8px 12px;margin:8px 0;">
+  <b>판정 범례:</b>
+  <span class="v 취약">취약</span>
+  <span class="v 양호">양호</span>
+  <span class="v 정보제공">정보제공</span>
+  <span class="v 판정불가">판정불가</span>
+  <span class="v 미점검">미점검</span>
+  <span style="color:#666;font-size:0.8rem;">· <b>정보제공</b>=스캔만으론 판정 불가한 정보성/운영절차 항목 · <b>판정불가</b>=수집데이터 부족 · 이 둘은 <b>일치 비교에서 제외</b>(취약/양호만 비교)</span>
 </div>
 
 <table class="tw" id="twTable">

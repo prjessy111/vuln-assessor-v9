@@ -22,22 +22,25 @@ function loadCrosswalk() {
   return _crosswalk;
 }
 
-// AI 판정(취약/양호/판정불가/정보제공) → 비교용 버킷
+// AI 판정(취약/양호/판정불가/정보제공) → 비교용 버킷 (기타를 정보제공/판정불가로 분리)
 function normAi(v) {
   const s = String(v || '').trim();
   if (s === '취약') return '취약';
   if (s === '양호') return '양호';
-  return '기타'; // 판정불가/정보제공/정보
+  if (s === '정보제공' || s === '정보' || s === 'INFO') return '정보제공';
+  return '판정불가'; // 판정불가/N/A/그 외
 }
 // SecuMS 자체판정(BAD/OK/INFO/WAIT) → 비교용 버킷
 function normSecums(v) {
   const s = String(v || '').trim().toUpperCase();
   if (s === 'BAD') return '취약';
   if (s === 'OK') return '양호';
-  if (s === 'WAIT' || s === '' ) return '미점검';
-  return '기타'; // INFO 등
+  if (s === 'WAIT' || s === '') return '미점검';
+  if (s === 'INFO') return '정보제공';
+  return '판정불가'; // 그 외
 }
 
+// 비교 기준: 취약/양호만 decisive (정보제공·판정불가·미점검은 비교 제외)
 function isDecisive(x) { return x === '취약' || x === '양호'; }
 
 /**

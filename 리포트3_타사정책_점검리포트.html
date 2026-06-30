@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>리포트3 — 타사 정책 기준 점검 리포트</title>
+<style>
+  body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;background:#f5f6fa;color:#222;margin:0;padding:24px;line-height:1.5;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;} h2{font-size:16px;margin:24px 0 8px;border-bottom:2px solid #ddd;padding-bottom:6px;}
+  .sub{color:#777;font-size:13px;margin-bottom:14px;}
+  table{width:100%;border-collapse:collapse;background:#fff;margin:8px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  th,td{border:1px solid #e1e5ea;padding:6px 9px;font-size:12.5px;text-align:left;vertical-align:top;}
+  th{background:#f5f6fa;font-weight:700;}
+  .code{font-family:Consolas,monospace;font-size:11.5px;color:#2980b9;font-weight:700;white-space:nowrap;}
+  .good{color:#27ae60;font-weight:700;} .bad{color:#c0392b;font-weight:700;} .na{color:#888;font-weight:700;} .info{color:#b9770e;font-weight:700;}
+  .grade{display:inline-block;min-width:34px;padding:3px 12px;border-radius:14px;font-weight:800;color:#fff;font-size:15px;}
+  .gA{background:#1aa260;} .gB{background:#2980b9;} .gC{background:#f39c12;} .gD{background:#e67e22;} .gF{background:#c0392b;}
+  .cards{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;}
+  .card{flex:1 1 110px;background:#fff;border:1px solid #e1e5ea;border-radius:8px;padding:10px;text-align:center;}
+  .card .n{font-size:1.6rem;font-weight:800;}
+  .note{background:#fff8e1;border-left:4px solid #f1c40f;padding:8px 12px;border-radius:4px;font-size:12px;margin:10px 0;}
+  .muted{color:#888;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>리포트3 — 타사 정책 기준 점검 리포트</h1>
+  <div class="sub">정책: 타사 OS 보안 점검 기준 (리포트3.xlsx) · 엔진: vuln-assessor · 점수체계: 항목 1~5점, 준수율 등급 A(95%+)~F</div>
+
+  <div class="note">
+    ※ <b>본 리포트 = 타사 정책 항목을 우리 점검 데이터로 채운 결과</b>입니다. 항목 매핑(타사코드↔우리 SRV)은 확정,
+    <b>판정값(양호/취약/N/A)·점수는 대상 서버의 진단 결과(리포트1)에서 자동 연동</b>됩니다. 아래는 양식·매핑·점수체계 + 연동 위치.
+  </div>
+
+  <h2>등급 요약 (대상 서버 진단 연동)</h2>
+  <div class="cards">
+    <div class="card"><div class="muted">준수율</div><div class="n">— %</div><div class="muted">양호÷전체</div></div>
+    <div class="card"><div class="muted">등급</div><div class="n"><span class="grade gA">A</span></div><div class="muted">95%+ 기준</div></div>
+    <div class="card"><div class="muted">양호</div><div class="n good">—</div></div>
+    <div class="card"><div class="muted">취약</div><div class="n bad">—</div></div>
+    <div class="card"><div class="muted">N/A</div><div class="n na">—</div></div>
+    <div class="card"><div class="muted">총점</div><div class="n">— / —</div></div>
+  </div>
+  <p class="muted">등급기준: A 95%+ · B 90%+ · C 80%+ · D 70%+ · F 70%미만 (타사 기준, 금융결제원 위험도 동일)</p>
+
+  <h2>Windows 점검 항목 (타사 ↔ 우리 매핑 + 판정 연동)</h2>
+  <table>
+    <thead><tr><th>타사코드</th><th>점검 항목</th><th>우리 항목(SRV)</th><th>판정</th><th>점수</th></tr></thead>
+    <tbody>
+      <tr><td class="code">AC01</td><td>Guest 비활성 / Administrator 명 변경</td><td>net user / 계정</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC02</td><td>패스워드 복잡도·최소 길이</td><td>SRV-127 net accounts/secedit</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC03</td><td>암호 기억·최소/최대 사용기간</td><td>암호정책(secedit)</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC04</td><td>계정 잠금 기간·임계값</td><td>SRV-127 lockout</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC05</td><td>LMHash 저장 안 함</td><td>SRV-103 LmCompatibility/NoLMHash</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC06</td><td>감사/로컬로그온/시스템종료/보안감사 권한</td><td>SRV-113·136·137</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC07</td><td>SAM/cmd.exe/command.com ACL</td><td>W_SAM_CONF_PERM/파일ACL</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS01</td><td>화면보호기·대기시간</td><td>SRV-125 ScreenSaver</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS02</td><td>디폴트 공유 제거 / 공유 권한</td><td>AutoShare, W_SHARE</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS03</td><td>불필요 서비스 중지 / NetBIOS 사용안함</td><td>W_SERVICE, W_NETBIOS</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS04</td><td>Anonymous FTP 운영 여부</td><td>W_IIS_FTP</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS05</td><td>마지막 로그온 노출 / 로그온상태 종료</td><td>SRV-123, SRV-136</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">LP01</td><td>Windows 감사 정책</td><td>SRV-115 auditpol</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">LP02</td><td>이벤트 덮어쓰기 / 로그 ACL</td><td>wevtutil/로그ACL</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">LP03</td><td>백신 최신 업데이트 / 실시간 감시</td><td>W_VIRUSVACCINE</td><td>(연동)</td><td>1~5</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Unix 점검 항목 (타사 ↔ 우리 매핑)</h2>
+  <table>
+    <thead><tr><th>타사코드</th><th>점검 항목</th><th>우리 항목</th><th>판정</th><th>점수</th></tr></thead>
+    <tbody>
+      <tr><td class="code">AM01</td><td>계정 생성 근거</td><td>passwd 계정목록(Info)</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC01</td><td>패스워드 복잡도/최소 길이</td><td>login.defs/pam pwquality</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC02</td><td>패스워드 사용기간·기억</td><td>login.defs PASS_MAX/MIN</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC03</td><td>계정 잠금 임계값</td><td>pam_faillock</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC04</td><td>주요 파일 접근권한(passwd/shadow/services/cron/백업 등)</td><td>파일 ACL 점검</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">AC05</td><td>UMASK / root 원격접속 제한</td><td>umask, sshd PermitRootLogin/securetty</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SV01</td><td>접속 서비스 암호화(telnet→ssh)</td><td>sshd/telnet 점검</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS01</td><td>NFS 안전 설정</td><td>NFS exports</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS02</td><td>불필요 서비스 제거</td><td>서비스/포트 점검</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS03</td><td>Anonymous FTP 중지</td><td>vsftpd/ftpusers</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">SS04</td><td>root PATH 안전(. 제거)</td><td>root PATH</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">LM01</td><td>접속/보안 로그 관리</td><td>wtmp/btmp/sulog/auth.log</td><td>(연동)</td><td>1~5</td></tr>
+      <tr><td class="code">LP01</td><td>로그 접근권한 제한</td><td>로그파일 ACL</td><td>(연동)</td><td>1~5</td></tr>
+    </tbody>
+  </table>
+
+  <h2>구현 방법 (앱 자동 생성)</h2>
+  <table>
+    <thead><tr><th>단계</th><th>내용</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>1. 항목 매핑</td><td>타사코드 ↔ 우리 SRV/수집키 (위 표)</td><td class="good">✅ 확정</td></tr>
+      <tr><td>2. 판정 연동</td><td>대상 서버 진단(리포트1)의 SRV별 양호/취약/N/A → 타사 항목에 매핑</td><td class="info">룰셋 코드화 필요</td></tr>
+      <tr><td>3. 점수·등급</td><td>항목 1~5점 가중, 준수율→A~F 등급 산출</td><td class="info">룰셋 코드화 필요</td></tr>
+      <tr><td>4. 출력</td><td>본 양식에 자동 채워 리포트3 생성</td><td class="info">2·3 완료 후 자동</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">→ 매핑·양식·점수체계는 완성. 남은 건 2·3(판정연동+점수룰)을 앱 룰셋(JSON)으로 코드화하면 서버별 리포트3가 자동 생성됨.</p>
+</div>
+</body>
+</html>

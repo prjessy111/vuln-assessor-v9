@@ -6,6 +6,8 @@
     <a href="/reports/<%= session.assessment_id %>/fsi" class="btn">📋 전체 리포트1로</a>
     <a href="/reports/<%= session.assessment_id %>/samsung/vuln" class="btn" style="background:#c0392b;color:#fff;">🚨 취약점 리포트2로</a>
     <a href="/reports/<%= session.assessment_id %>/fsi/vuln/xlsx" class="btn primary">XLSX 다운로드</a>
+    <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
+    <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
     <a href="/history?server_id=<%= session.server_id %>" class="btn">이력으로</a>
   </div>
 </div>
@@ -106,6 +108,7 @@
         <td class="long-text small">
           <%= r.reason %>
           <% if (r.evidence) { %><br><span class="muted">→ <%= r.evidence %></span><% } %>
+          <% if (r.status === '취약' && r.recommend) { %><br><span style="color:#1e8449;font-weight:600;">🔧 조치법: <%= r.recommend %></span><% } %>
         </td>
         <td>
           <span class="newflag newflag-<%= r.is_new ? 'new' : 'old' %>">

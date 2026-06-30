@@ -10,6 +10,8 @@
     <a href="/diagnosis/<%= assessment_id %>/ai" class="btn" style="background:#6c5ce7;color:#fff;">🤖 AI 결과로</a>
     <a href="/diagnosis/<%= assessment_id %>/validate" class="btn">정합성 검증</a>
     <a href="/cve/sync" class="btn">CVE Feed 동기화</a>
+    <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
+    <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
   </div>
 </div>
 

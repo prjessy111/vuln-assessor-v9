@@ -10,6 +10,8 @@
   <div class="header-actions">
     <a href="/diagnosis/<%= assessment_id %>/ai" class="btn" style="background:#6c5ce7;color:#fff;">🤖 AI 결과로</a>
     <a href="/cve/sync" class="btn">CVE Feed 동기화</a>
+    <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
+    <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
   </div>
 </div>
 
@@ -38,7 +40,90 @@
     <th>설치 핫픽스</th><td><strong><%= result.packages_count %>건</strong></td>
     <th>매칭된 CVE</th><td><strong><%= result.summary.total %>건</strong> (취약 <%= result.summary.actually_vulnerable %>)</td>
   </tr>
+  <tr>
+    <th>설치 소프트웨어</th><td colspan="3"><strong><%= (result.software && result.software.length) || 0 %>건</strong> <span class="muted small">(레지스트리 Uninstall 인벤토리 — 서드파티 SW)</span></td>
+  </tr>
 </table>
+
+<!-- 서드파티 소프트웨어 CVE 매칭 결과 -->
+<% var swMatches = result.software_matches || []; %>
+<% if (swMatches.length) { %>
+  <div class="section-box" style="margin-top:16px;border:2px solid #d35400;">
+    <h3 style="margin-top:0;color:#d35400;">🧩 설치 소프트웨어/라이브러리 잠재 CVE <%= swMatches.length %>건 (검토 필요)</h3>
+    <div style="background:#fff8e1;border-left:4px solid #f1c40f;padding:8px 12px;margin:0 0 10px;border-radius:4px;font-size:12.5px;">
+      ⚠ <strong>버전 범위 기준 "잠재" 취약입니다.</strong> 벤더 <strong>백포트 패치</strong>(예: <code>openssl-1.0.2k-16.el7</code>는 버전은 같아도 수정 포함)나
+      취약 기능 <strong>실제 사용여부(도달성)</strong>는 미검증 — "위험"으로 보여도 실제는 아닐 수 있으니 <strong>확정 전 검토</strong>가 필요합니다.
+    </div>
+    <table class="data-table">
+      <thead><tr><th>CVE</th><th>소프트웨어</th><th>버전</th><th>CVSS</th><th>판정</th><th>표기 근거</th></tr></thead>
+      <tbody>
+        <% swMatches.forEach(function (m) { var j = m.ai_judgment || {}; var vd = j.verdict || m.verdict || 'POTENTIAL';
+           var badge = vd === 'PATCHED_BACKPORT' ? '<span style="color:#27ae60;font-weight:700;">✓ 패치됨(백포트)</span>'
+                     : vd === 'CONFIRMED' ? '<span style="color:#c0392b;font-weight:700;">🔴 확정</span>'
+                     : vd === 'LIKELY_VULNERABLE' ? '<span style="color:#e67e22;font-weight:700;">🔴 유력</span>'
+                     : '<span style="color:#2980b9;font-weight:700;">🔍 검토필요</span>'; %>
+          <tr>
+            <td class="mono small"><%= m.cve_id %><%= m.cisa_kev ? ' 🔴KEV' : '' %></td>
+            <td><%= m.software %></td>
+            <td class="mono small"><strong style="color:#c0392b;"><%= m.version %></strong></td>
+            <td class="small"><%= m.cvss_v3 %></td>
+            <td class="small"><%- badge %></td>
+            <td class="small">
+              <div><%= m.basis || (m.software + ' ' + m.version + ' 영향범위 포함') %></div>
+              <% if (j.rationale_ko) { %><div class="muted" style="margin-top:3px;">↳ <%= j.rationale_ko %></div><% } %>
+              <% if (m.backport_check && m.backport_check.detail) { %><div style="margin-top:3px;color:#1e8449;">↳ 백포트확인: <%= m.backport_check.detail %></div><% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } else if (result.software && result.software.length) { %>
+  <p class="muted small" style="margin-top:12px;">🧩 설치 소프트웨어 <%= result.software.length %>건 중 소프트웨어 CVE DB와 매칭된 항목 없음 (DB 보강 시 확대).</p>
+<% } %>
+
+<!-- CISA KEV 등재 제품 탐지 (활성 익스플로잇 — 버전 미검증 자문) -->
+<% var kevP = result.kev_products || []; %>
+<% if (kevP.length) { %>
+  <div class="section-box" style="margin-top:16px;border:2px solid #e67e22;">
+    <h3 style="margin-top:0;color:#d35400;">🔥 CISA KEV 등재 제품 탐지 <%= kevP.length %>건 (활성 익스플로잇)</h3>
+    <p class="muted small" style="margin:4px 0 10px;">설치된 제품이 CISA KEV(실제 공격에 악용된 취약점) 목록에 있는 제품군입니다. <strong>버전 미검증 자문</strong> — 해당 제품의 버전/패치 상태를 점검하세요. (정밀 버전 판정은 NVD 동기화로 확대)</p>
+    <table class="data-table">
+      <thead><tr><th>제품군(KEV)</th><th>설치 소프트웨어</th><th>버전</th><th>KEV CVE</th></tr></thead>
+      <tbody>
+        <% kevP.forEach(function (k) { %>
+          <tr>
+            <td><strong style="color:#d35400;"><%= k.product %></strong></td>
+            <td><%= k.software %></td>
+            <td class="mono small"><%= k.version || '-' %></td>
+            <td class="small"><%= k.kev_cve_count %>건 <span class="muted">(<%= (k.sample_cves||[]).slice(0,3).join(', ') %>…)</span></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<!-- 설치 소프트웨어 인벤토리 (rpm -qa 의 Windows 대응) -->
+<% if (result.software && result.software.length) { %>
+  <details class="section-box" style="margin-top:16px;">
+    <summary style="cursor:pointer;font-weight:700;">🧩 설치 소프트웨어 인벤토리 (<%= result.software.length %>건) — 클릭하여 펼치기</summary>
+    <p class="muted small" style="margin:8px 0;">서드파티 소프트웨어의 CVE 매칭은 소프트웨어 CVE DB 보강 시 활성화됩니다(현재는 자산 인벤토리 표시).</p>
+    <table class="data-table" style="margin-top:8px;">
+      <thead><tr><th>#</th><th>소프트웨어</th><th>버전</th><th>게시자</th></tr></thead>
+      <tbody>
+        <% result.software.forEach(function (sw, i) { %>
+          <tr>
+            <td class="small mono"><%= i + 1 %></td>
+            <td><%= sw.name %></td>
+            <td class="mono small"><%= sw.version || '-' %></td>
+            <td class="small muted"><%= sw.publisher || '-' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </details>
+<% } %>
 
 <!-- KPI 카드 -->
 <div class="kpi-grid kpi-5col" style="margin-top:16px;">

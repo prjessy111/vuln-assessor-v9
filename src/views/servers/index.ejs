@@ -343,7 +343,7 @@ async function hcAll(btn) {
 
 // one-click 배치: 스크립트(배포→수집→진단) / SecuMS(raw 수집→진단)
 async function batchRun(id, host, os, source, btn) {
-  const label = source === 'script' ? '스크립트(배포→수집→진단)' : 'SecuMS(수집→진단)';
+  const label = source === 'script' ? '스크립트(배포→수집→진단)' : 'SecuMS Raw(수집→진단)';
   if (!confirm(host + ' — ' + label + ' 일괄 실행. 수 분 소요됩니다. 계속할까요?')) return;
   const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 배치 중...';
   try {

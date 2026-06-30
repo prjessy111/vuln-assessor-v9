@@ -171,7 +171,7 @@ CMD_CPUINFO="cat /proc/cpuinfo"
 CMD_CPUSTAT="cat /proc/stat"
 CMD_IOSTAT=""
 CMD_VMSTAT="cat /proc/meminfo"
-CMD_PATCHINFO="rpm -qa -i"
+CMD_PATCHINFO="rpm -qa"
 if [ "$FSI_FAST" = "1" ] && [ "$FSI_ENABLE_INTERFACETABLE" != "1" ]; then
 	CMD_INTERFACETABLE="SKIPPED_FOR_SPEED: interface table inventory skipped in fast mode. Run --full for complete evidence."
 else
@@ -327,7 +327,7 @@ elif [ $OS = "Linux" ]; then
 	CMD_CPUSTAT="cat /proc/stat"
 	CMD_IOSTAT=""
 	CMD_VMSTAT="cat /proc/meminfo"
-	CMD_PATCHINFO="rpm -qa -i"
+	CMD_PATCHINFO="rpm -qa"
 
 	CMD_LASTLOG="perl -e 'alarm shift @ARGV; exec @ARGV' 180 lastlog"
 	CMD_PWCK="pwck"
@@ -2737,6 +2737,63 @@ fDumpE
 fDumpS "patch"
 	echo "$ $CMD_PATCHINFO"
 	$CMD_PATCHINFO | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+	# Debian/Ubuntu: rpm 부재 환경의 설치 패키지 인벤토리(CVE 매칭용). fast 모드(SKIPPED)에서는 생략.
+	case "$CMD_PATCHINFO" in
+		*SKIPPED_FOR_SPEED*) : ;;
+		*)
+			if command -v dpkg-query >/dev/null 2>&1; then
+				echo "$ dpkg -l"
+				dpkg-query -W -f='ii  ${Package}  ${Version}  ${Architecture}  ${binary:Summary}\n' 2>/dev/null | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+			fi
+			;;
+	esac
+fDumpE
+
+#------------------------------------------------------------
+# JAR(자바 라이브러리) 인벤토리 — 내장 라이브러리 CVE(Log4j/Commons 등) 매칭용. fast 모드(SKIPPED)에선 생략.
+fDumpS "jar_inventory"
+	echo "$ jar-inventory"
+	case "$CMD_PATCHINFO" in
+		*SKIPPED_FOR_SPEED*) echo "SKIPPED_FOR_SPEED: jar scan skipped in fast mode. Run --full." ;;
+		*)
+			if command -v find >/dev/null 2>&1; then
+				find /opt /usr/local /home /app /srv /var/lib /usr/share/java /usr/lib -name '*.jar' 2>/dev/null | head -3000 | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+			fi
+			;;
+	esac
+fDumpE
+
+#------------------------------------------------------------
+# SBOM 인벤토리 — CycloneDX/SPDX 파일 수집 (있으면 가장 정확한 컴포넌트 식별)
+fDumpS "sbom_inventory"
+	echo "AI_EVIDENCE_BLOCK_BEGIN"
+	echo "check_ids=INV-SBOM"
+	echo "RAW_COMMAND_OUTPUT_BEGIN"
+	case "$CMD_PATCHINFO" in
+		*SKIPPED_FOR_SPEED*) echo "SKIPPED_FOR_SPEED" ;;
+		*)
+			for d in /opt /usr/local /home /app /srv; do
+				find "$d" \( -iname 'bom.json' -o -iname '*.cdx.json' -o -iname '*cyclonedx*.json' -o -iname '*.spdx.json' \) 2>/dev/null | head -10 | while read -r sb; do
+					cat "$sb" 2>/dev/null
+				done
+			done
+			;;
+	esac
+	echo "RAW_COMMAND_OUTPUT_END"
+fDumpE
+
+#------------------------------------------------------------
+# 비정기(압축형) 설치 아카이브 — tar/zip/war/ear 목록. 압축 푼 것은 jar/네이티브 스캔이 잡고, 미해제 아카이브는 여기서 가시화.
+fDumpS "archive_inventory"
+	echo "$ archive-inventory (tar/zip/war/ear)"
+	case "$CMD_PATCHINFO" in
+		*SKIPPED_FOR_SPEED*) echo "SKIPPED_FOR_SPEED" ;;
+		*)
+			if command -v find >/dev/null 2>&1; then
+				find /opt /usr/local /home /app /srv -type f \( -iname '*.war' -o -iname '*.ear' -o -iname '*.tar.gz' -o -iname '*.tgz' -o -iname '*.zip' \) 2>/dev/null | head -500 | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+			fi
+			;;
+	esac
 fDumpE
 
 #------------------------------------------------------------

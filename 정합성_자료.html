@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>정합성 자료 — 외부 docx vs vuln-assessor 독립 탐지</title>
+<style>
+  body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;background:#f5f6fa;color:#222;margin:0;padding:24px;line-height:1.55;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;} h2{font-size:17px;margin:26px 0 8px;border-bottom:2px solid #ddd;padding-bottom:6px;}
+  .sub{color:#777;font-size:13px;margin-bottom:16px;}
+  table{width:100%;border-collapse:collapse;background:#fff;margin:8px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  th,td{border:1px solid #e1e5ea;padding:8px 10px;font-size:13px;text-align:left;}
+  th{background:#f5f6fa;font-weight:700;}
+  .ok{color:#27ae60;font-weight:700;} .add{color:#2980b9;font-weight:700;} .miss{color:#c0392b;font-weight:700;}
+  .box{background:#fff;border:1px solid #e1e5ea;border-radius:8px;padding:14px 18px;margin:12px 0;}
+  .big{border-left:4px solid #27ae60;background:#eefaf0;} .muted{color:#888;font-size:12px;}
+  .kpi{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;}
+  .card{flex:1 1 130px;background:#fff;border:1px solid #e1e5ea;border-radius:8px;padding:12px;text-align:center;}
+  .card .n{font-size:1.8rem;font-weight:800;} .mono{font-family:Consolas,monospace;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>정합성 자료 — 외부 보고서(docx) vs 우리 독립 탐지</h1>
+  <div class="sub">docx는 참고(시점 고정·수기). 우리는 NVD/KEV로 독립 산출. "우리가 docx 항목을 독립적으로 같이 잡는가" = 정합성. · 2026-06-30</div>
+
+  <div class="box big">
+    <b>결론:</b> docx가 지적한 <b>주요 OSS 라이브러리를 우리도 독립적으로 탐지</b>(정합) + <b>그 이상 다수 추가 탐지</b>.
+    누락은 3종(POCO·TinyXML·SIGAR)뿐이며 "틀려서"가 아니라 <b>CVE DB·프로브 미커버</b> → 추가하면 해소.
+  </div>
+
+  <div class="kpi">
+    <div class="card"><div class="n ok">4</div><div>docx 주요 OSS 일치<br><span class="muted">OpenSSL·zlib·SQLite·PostgreSQL</span></div></div>
+    <div class="card"><div class="n add">5+</div><div>docx에 없는 초과 탐지<br><span class="muted">log4j·commons·hadoop·jetty·struts</span></div></div>
+    <div class="card"><div class="n miss">3</div><div>누락(다음세션)<br><span class="muted">POCO·TinyXML·SIGAR</span></div></div>
+  </div>
+
+  <h2>docx 107 라이브러리 ↔ 우리 탐지</h2>
+  <table>
+    <thead><tr><th>docx 지적 (제품 내장 OSS)</th><th>우리 독립 탐지</th><th>정합</th></tr></thead>
+    <tbody>
+      <tr><td>OpenSSL 1.0.2o</td><td>✅ 탐지 (CVE-2022-0778, CVE-2019-1559 …)</td><td class="ok">일치</td></tr>
+      <tr><td>zlib 1.2.3</td><td>✅ 탐지 (CVE-2018-25032, CVE-2022-37434)</td><td class="ok">일치</td></tr>
+      <tr><td>SQLite 3.7.7.1</td><td>✅ 탐지 (CVE-2019-8457, CVE-2022-35737)</td><td class="ok">일치</td></tr>
+      <tr><td>PostgreSQL 13.0</td><td>✅ 탐지 (CVE-2022-1552 … · 검토필요=백포트인지)</td><td class="ok">일치</td></tr>
+      <tr><td>libexpat 2.0.1 · PCRE 8.x</td><td>△ 부분 (147 expat 탐지 / 107 strings 미적중)</td><td>부분</td></tr>
+      <tr><td>POCO 1.4.2 · TinyXML 2.6.2 · SIGAR 1.6.4</td><td class="miss">❌ 미탐 — DB/프로브 미커버</td><td class="miss">누락</td></tr>
+      <tr><td>(docx에 없음)</td><td class="add">➕ log4j·commons-collections·hadoop·jetty·struts 등 다수</td><td class="add">초과</td></tr>
+    </tbody>
+  </table>
+
+  <h2>정합성 의미</h2>
+  <div class="box">
+    <ul>
+      <li>docx를 <b>정답지로 맞춘 게 아니라</b>, 우리가 <b>NVD/KEV로 독립 산출</b>한 결과가 docx 주요 항목과 <b>겹친 것</b> = 신뢰성 근거.</li>
+      <li>우리가 <b>더 많이</b> 잡음 = docx(시점 고정 수기)보다 포괄적. docx의 누락/오류도 우리가 보완 가능.</li>
+      <li>판정은 <b>"유력/검토필요/패치됨(백포트)"</b> 으로 정직 표기 — 과탐을 확정인 양 내놓지 않음.</li>
+    </ul>
+  </div>
+
+  <h2>정합성 개선 과제 (다음 세션)</h2>
+  <ul class="muted" style="font-size:13px;">
+    <li>누락 3종(POCO/TinyXML/SIGAR): CVE DB·strings 프로브 보강 (TinyXML은 CVE-2021-42260 이미 DB에 있음 — 탐지만 추가하면 됨)</li>
+    <li>백포트 결정론: distroAdvisory(RHEL/Ubuntu) 라이브 활성(<code>CVE_BACKPORT_CHECK=1</code>) 실측</li>
+    <li>버전 정밀도(PostgreSQL "13" minor), 도달성 분석, GHSA/OSV 다중소스</li>
+  </ul>
+</div>
+</body>
+</html>

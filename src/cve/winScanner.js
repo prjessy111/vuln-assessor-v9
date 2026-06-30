@@ -29,7 +29,95 @@ function loadWinCveDb() {
   return _winCveCache;
 }
 
-function invalidateWinCveCache() { _winCveCache = null; }
+function invalidateWinCveCache() { _winCveCache = null; _swCveCache = null; }
+
+// ── 서드파티 소프트웨어 CVE (설치 SW 인벤토리 name+version 매칭) ──
+let _swCveCache = null;
+function loadSoftwareCveDb() {
+  if (_swCveCache) return _swCveCache;
+  try {
+    const p = path.join(__dirname, '../../data/cve/cve-software-curated.json');
+    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+    _swCveCache = Array.isArray(j) ? j : (j.cves || []);
+  } catch (_) { _swCveCache = []; }
+  return _swCveCache;
+}
+
+// 버전 비교 (숫자+문자 접미사 지원: "1.0.2o", "2.15.0", "17.7.2.1")
+function _verParts(v) {
+  return String(v || '').split(/[^0-9a-zA-Z]+/).filter(Boolean).map(x => {
+    const m = x.match(/^(\d+)([a-zA-Z]*)$/);
+    return m ? [parseInt(m[1], 10), m[2]] : [0, x];
+  });
+}
+function _cmpVer(a, b) {
+  const pa = _verParts(a), pb = _verParts(b);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || [0, ''], y = pb[i] || [0, ''];
+    if (x[0] !== y[0]) return x[0] < y[0] ? -1 : 1;
+    if (x[1] !== y[1]) return x[1] < y[1] ? -1 : 1;
+  }
+  return 0;
+}
+function _inRange(v, ranges) {
+  return (ranges || []).some(r =>
+    (r.from == null || _cmpVer(v, r.from) >= 0) &&
+    (r.to == null || _cmpVer(v, r.to) < 0));
+}
+function _normName(n) { return ' ' + String(n || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' '; }
+
+/**
+ * 설치 소프트웨어 인벤토리 vs 소프트웨어 CVE DB 매칭.
+ * @param {Array} software - [{name, version, publisher}]
+ */
+function matchWindowsSoftware(software) {
+  let nvd = [];
+  try { nvd = require('./nvdCpe').load(); } catch (_) {}
+  const db = loadSoftwareCveDb().concat(nvd);  // 큐레이션 + NVD 전체 CPE
+  const out = [];
+  for (const sw of (software || [])) {
+    if (!sw.version) continue;
+    const nn = _normName(sw.name);
+    for (const cve of db) {
+      const aliases = [cve.package, ...(cve.aliases || [])]
+        .map(a => String(a || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim())
+        .filter(Boolean);
+      if (!aliases.some(a => nn.includes(' ' + a + ' '))) continue;
+      if (!_inRange(sw.version, cve.affected_versions)) continue;
+      const src = cve._source === 'nvd-cpe' ? 'NVD CPE' : (cve._source || '큐레이션 DB');
+      const rng = (cve.affected_versions || []).map(r => `${r.from || '0'}~${r.to || '∞'}`).join(', ');
+      out.push({
+        cve_id: cve.cve_id,
+        name: cve.name,
+        severity: cve.severity,
+        cvss_v3: cve.cvss_v3,
+        cisa_kev: !!cve.cisa_kev,
+        exploit_public: !!cve.exploit_public,
+        software: sw.name,
+        version: sw.version,
+        fixed: cve.fixed,
+        package: cve.package,
+        // 표기 근거: 어떤 버전범위에 들었고 어느 출처(NVD/큐레이션) 데이터인지
+        basis: `설치 버전 ${sw.version}이(가) 영향 범위(${rng})에 포함 · 출처: ${src}` + (cve.fixed ? ` · 수정버전: ${cve.fixed}` : ''),
+        source: src,
+        matched_range: rng,
+        // 출처별 백포트 위험 구분: 번들 라이브러리(JAR/native)=낮음(버전 신뢰), 설치 프로그램=중간.
+        confidence: 'version-only',
+        backport_risk: /jar|native lib|라이브러리/.test(sw.publisher || '') ? 'low' : 'medium',
+        caveat: /jar|native lib|라이브러리/.test(sw.publisher || '')
+          ? '번들 라이브러리 — 버전 신뢰도 높음(배포판 백포트 적음). 단 취약 기능 실제 사용여부(도달성)는 미검증.'
+          : '버전 기준 잠재 취약 — 벤더 패치·실사용 미검증, 검토 필요.',
+        verdict: 'POTENTIAL',
+      });
+    }
+  }
+  // CVE+SW 중복 제거
+  const seen = new Set();
+  return out.filter(m => {
+    const k = m.cve_id + '|' + m.software + '|' + m.version;
+    if (seen.has(k)) return false; seen.add(k); return true;
+  });
+}
 
 async function openSqliteDb(filePath) {
   const initSqlJs = require('sql.js');
@@ -173,6 +261,97 @@ function extractWindowsInventoryFromScriptXml(xmlText) {
     skipped,
     source: 'script',
   };
+}
+
+/**
+ * INV-SOFTWARE(레지스트리 Uninstall) 원문에서 설치 소프트웨어 인벤토리 추출.
+ * 형식(fsi_win_ai.ps1 INV-SOFTWARE): "DisplayName | DisplayVersion | Publisher"
+ * → rpm -qa 의 Windows 대응. 서드파티 SW CVE 매칭의 입력(name+version)으로 사용.
+ */
+function extractWindowsSoftwareFromScriptXml(xmlText) {
+  const txt = String(xmlText || '');
+  const m = txt.match(/check_ids=INV-SOFTWARE[\s\S]*?RAW_COMMAND_OUTPUT_BEGIN([\s\S]*?)RAW_COMMAND_OUTPUT_END/i);
+  if (!m) return [];
+  const out = [];
+  for (const rawLine of m[1].split(/\r?\n/)) {
+    const s = rawLine.trim()
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    if (!s || /^cmd#/i.test(s)) continue;
+    const parts = s.split('|').map(x => x.trim());
+    if (!parts[0]) continue;
+    out.push({ name: parts[0], version: parts[1] || '', publisher: parts[2] || '' });
+  }
+  // 이름 기준 중복 제거
+  const seen = new Set();
+  return out.filter(p => {
+    const k = (p.name + '|' + p.version).toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+/**
+ * JAR 파일명 → {name, version}. 예: "log4j-core-2.14.1.jar" → {log4j-core, 2.14.1}
+ * 마지막 "-<숫자>" 앞을 이름, 뒤를 버전으로 분리.
+ */
+function parseJarFilename(fname) {
+  // 이름(비탐욕) - 선행 semver 토큰(숫자.숫자…[단일문자]) - (빌드/타임스탬프 접미사 무시) .jar
+  // 예: hadoop-auth-2.6.0.2.2.0.0-2041.jar → {hadoop-auth, 2.6.0.2.2.0.0}
+  //     axis2-adb-1.7.0-20130831.003130-1701.jar → {axis2-adb, 1.7.0}
+  //     log4j-core-2.14.1.jar → {log4j-core, 2.14.1}
+  const m = String(fname || '').trim().match(/^(.+?)-(\d[\d.]*[a-z]?)(?:[-_+].*)?\.jar$/i);
+  if (!m) return null;
+  return { name: m[1].toLowerCase().trim(), version: m[2] };
+}
+
+/**
+ * INV-JAR(파일시스템 JAR 스캔) 섹션에서 Java 라이브러리 인벤토리 추출.
+ * docx의 "내장 라이브러리(JAR)" 계층을 우리도 명령으로 수집 → 매칭.
+ */
+function extractJarsFromScriptXml(xmlText) {
+  const txt = String(xmlText || '');
+  const m = txt.match(/check_ids=INV-JAR[\s\S]*?RAW_COMMAND_OUTPUT_BEGIN([\s\S]*?)RAW_COMMAND_OUTPUT_END/i);
+  if (!m) return [];
+  const out = [];
+  const seen = new Set();
+  for (const rawLine of m[1].split(/\r?\n/)) {
+    const s = rawLine.trim();
+    if (!s || /^cmd#/i.test(s)) continue;
+    const base = s.split(/[\\/]/).pop();            // 경로 제거 → 파일명
+    if (!/\.jar$/i.test(base)) continue;
+    const p = parseJarFilename(base);
+    if (!p || !p.name || !p.version) continue;
+    const k = p.name + '@' + p.version;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ name: p.name, version: p.version, publisher: '(jar/라이브러리)' });
+  }
+  return out;
+}
+
+/**
+ * INV-NATIVELIB(네이티브 OSS 라이브러리 버전 프로브) 파싱.
+ * 형식: "libname | version | file" (스크립트가 .dll strings에서 OpenSSL/zlib/expat 등 버전 추출)
+ * → 번들 오픈소스 라이브러리 CVE 매칭(POCO 번들 OpenSSL/zlib 등).
+ */
+function extractNativeLibsFromScriptXml(xmlText) {
+  const txt = String(xmlText || '');
+  const m = txt.match(/check_ids=INV-NATIVELIB[\s\S]*?RAW_COMMAND_OUTPUT_BEGIN([\s\S]*?)RAW_COMMAND_OUTPUT_END/i);
+  if (!m) return [];
+  const out = [];
+  const seen = new Set();
+  for (const rawLine of m[1].split(/\r?\n/)) {
+    const s = rawLine.trim();
+    if (!s || /^cmd#/i.test(s)) continue;
+    const p = s.split('|').map(x => x.trim());
+    if (p.length < 2 || !p[0] || !p[1] || !/^\d/.test(p[1])) continue;
+    const k = p[0].toLowerCase() + '@' + p[1];
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ name: p[0].toLowerCase(), version: p[1], publisher: '(native lib)' });
+  }
+  return out;
 }
 
 function osProductLabel(inv) {
@@ -425,12 +604,25 @@ async function runWindowsCveScan(dbPath, environment) {
 async function runWindowsCveScanFromScript(xmlPath, environment) {
   const xmlText = fs.readFileSync(xmlPath, 'utf8');
   const inv = extractWindowsInventoryFromScriptXml(xmlText);
+  // 통합 인벤토리 = 설치 프로그램(레지스트리) + JAR(자바 라이브러리) + 네이티브 OSS 라이브러리
+  const jars = extractJarsFromScriptXml(xmlText);
+  const nativeLibs = extractNativeLibsFromScriptXml(xmlText);
+  let sbom = [];
+  try { sbom = require('./sbomParser').extractSbomFromScriptXml(xmlText); } catch (_) {}
+  // 통합 인벤토리 = 설치 프로그램 + JAR + 네이티브 + SBOM(정확 식별, purl 기반)
+  const software = extractWindowsSoftwareFromScriptXml(xmlText).concat(jars).concat(nativeLibs).concat(sbom);
+  // 1차 패턴 매칭 → 2차 백포트/도달성 인지 판정(검토필요/잠재 구분)
+  let softwareMatches = matchWindowsSoftware(software);
+  try { softwareMatches = require('./judge').judgeSoftwareAll(softwareMatches); } catch (_) {}
+  let kevProducts = [];
+  try { kevProducts = require('./kevCrosscheck').crossCheck(software); } catch (_) {}
 
   const env = {
     hostname: inv.hostname || (environment && environment.hostname) || 'unknown',
     os_distro: osProductLabel(inv),
     os_version: inv.build || '-',
     hotfix_count: inv.hotfixes.length,
+    software_count: software.length,
     ...environment,
   };
 
@@ -448,6 +640,9 @@ async function runWindowsCveScanFromScript(xmlPath, environment) {
       : null,
     packages_count: inv.hotfixes.length,
     hotfixes: inv.hotfixes,
+    software,                 // 설치 소프트웨어 인벤토리 (서드파티 SW — 레지스트리 Uninstall)
+    software_matches: softwareMatches,  // 설치 SW vs 소프트웨어 CVE DB 매칭 (버전 검증)
+    kev_products: kevProducts,          // 설치 SW vs CISA KEV 제품 (활성 익스플로잇 자문)
     env,
     matches,
     summary,
@@ -459,6 +654,12 @@ module.exports = {
   runWindowsCveScanFromScript,
   extractWindowsInventory,
   extractWindowsInventoryFromScriptXml,
+  extractWindowsSoftwareFromScriptXml,
+  extractJarsFromScriptXml,
+  extractNativeLibsFromScriptXml,
+  parseJarFilename,
+  matchWindowsSoftware,
+  loadSoftwareCveDb,
   matchAll,
   loadWinCveDb,
   invalidateWinCveCache,

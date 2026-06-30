@@ -1,3 +1,36 @@
 </main>
+<style>
+@media print {
+  .topbar, .main-nav, .report-actions, .no-print, .user-area { display: none !important; }
+  main.container { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  body { background: #fff !important; }
+  .section-box, table { page-break-inside: avoid; }
+}
+</style>
+<script>
+// 리포트 PDF 저장 = 브라우저 인쇄(대상: PDF로 저장)
+function printReport() { window.print(); }
+
+// 리포트 HTML 저장 = 현재 화면을 CSS 내장 단일 파일로 다운로드
+async function downloadReportHtml() {
+  var css = '';
+  try { css = await (await fetch('/static/css/style.css')).text(); } catch (e) {}
+  var main = document.querySelector('main.container') || document.body;
+  var clone = main.cloneNode(true);
+  clone.querySelectorAll('.report-actions, .no-print').forEach(function (el) { el.remove(); });
+  // 접힌 <details>(예: 설치 SW 인벤토리)를 펼쳐서 저장 — HTML 보고서에 내용이 다 보이도록
+  clone.querySelectorAll('details').forEach(function (d) { d.setAttribute('open', ''); });
+  var title = (document.title || 'report').trim();
+  var html = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>'
+    + title + '</title><style>' + css + '</style></head><body><main class="container">'
+    + clone.innerHTML + '</main></body></html>';
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = title.replace(/[\\/:*?"<>|]+/g, '_') + '.html';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+}
+</script>
 </body>
 </html>

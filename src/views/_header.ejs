@@ -7,10 +7,15 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">
-    <span class="logo">🛡️</span>
-    <span class="brand-name">Vuln Assessor</span>
-  </div>
+  <a href="/" class="brand" style="text-decoration:none;">
+    <svg class="adv-logo" viewBox="0 0 40 46" width="26" height="30" aria-hidden="true">
+      <defs><linearGradient id="advShield" x1="0" y1="0" x2="40" y2="46" gradientUnits="userSpaceOnUse"><stop stop-color="#38BDF8"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs>
+      <path d="M20 2 37 9V22c0 11-8 19-17 22C11 41 3 33 3 22V9z" fill="url(#advShield)"/>
+      <path d="M12.5 23l5 5 10-11.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="brand-name">ADV</span>
+    <span class="brand-tag">AI Diagnosis Verify</span>
+  </a>
   <%
     // 활성 메뉴 → 그룹 매핑 (부모 하이라이트용)
     var _g = { diagnosis:'diag', collection:'diag', schedules:'diag', agent:'diag',
@@ -37,8 +42,8 @@
       <span class="nav-top">리포트·현황 ▾</span>
       <div class="nav-drop">
         <a href="/reports" class="<%= activeMenu === 'reports' ? 'active' : '' %>">리포트</a>
-        <a href="/inspection-status" class="<%= activeMenu === 'inspection-status' ? 'active' : '' %>">점검현황</a>
-        <a href="/security-grade" class="<%= activeMenu === 'security-grade' ? 'active' : '' %>">서버별 점검 이력</a>
+        <a href="/inspection-status" class="<%= activeMenu === 'inspection-status' ? 'active' : '' %>">진단 현황</a>
+        <a href="/security-grade" class="<%= activeMenu === 'security-grade' ? 'active' : '' %>">서버별 진단 이력</a>
         <a href="/cve-sync" class="<%= activeMenu === 'cve-sync' ? 'active' : '' %>">CVE 동기화</a>
       </div>
     </div>

@@ -52,7 +52,7 @@
     </select>
     <select id="diagSource">
       <option value="">전체 소스</option>
-      <option value="secums">SecuMS</option>
+      <option value="secums">SecuMS Raw</option>
       <option value="script">Script</option>
       <option value="both">SecuMS+Script</option>
     </select>
@@ -68,6 +68,7 @@
         <th>서버</th>
         <th>자산번호</th>
         <th>룰셋</th>
+        <th>유형</th>
         <th>실행 시각</th>
         <th>소요시간</th>
         <th>상태</th>
@@ -92,6 +93,16 @@
           </td>
           <td class="mono small"><%= d.asset_no || '-' %></td>
           <td class="small"><%= d.ruleset_ver %></td>
+          <td class="small">
+            <% var _dt = d.diagnose_type;
+               var _model = d.llm || d.llm_provider || d.llm_choice || d.model || '';
+               var _badge, _color;
+               if (_dt === 'llm') { _badge = 'LLM' + (_model ? ' · ' + _model : ''); _color = '#6c5ce7'; }
+               else if (_dt === 'ai') { _badge = 'AI (mock)'; _color = '#16a085'; }
+               else if (_dt === 'ai_llm') { _badge = 'AI+LLM'; _color = '#2980b9'; }
+               else { _badge = _dt || '룰셋'; _color = '#7f8c8d'; } %>
+            <span style="background:<%= _color %>;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap;"><%= _badge %></span>
+          </td>
           <td class="mono small"><%= d.executed_at %></td>
           <td class="small">
             <% if (d.elapsed_ms) { %><%= fmtMs(d.elapsed_ms) %><% } else { %>-<% } %>
@@ -143,9 +154,10 @@
             <% if (d.status === 'success') { %>
               <% if (d.diagnose_type === 'ai' || d.diagnose_type === 'llm') { %>
                 <a href="/diagnosis/<%= d.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">🤖 <%= d.diagnose_type === 'llm' ? 'LLM' : 'AI' %> 결과</a>
-                <% if (d.diagnose_type === 'ai') { %>
+                <% if (d.diagnose_type === 'ai' || d.diagnose_type === 'llm') { %>
                   <a href="/reports/<%= d.assessment_id %>/fsi" class="btn-sm">리포트1</a>
                   <a href="/reports/<%= d.assessment_id %>/samsung" class="btn-sm">리포트2</a>
+                  <a href="/reports/<%= d.assessment_id %>/policy3" class="btn-sm" style="background:#0984e3;color:#fff;">리포트3(타사)</a>
                 <% } %>
                 <a href="/diagnosis/<%= d.assessment_id %>/cve" class="btn-sm" style="background:#8e44ad;color:#fff;">🛡 CVE</a>
               <% } else { %>

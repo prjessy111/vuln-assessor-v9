@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>비교 — 외부 docx 보고서 vs vuln-assessor (107 / 147)</title>
+<style>
+  body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;background:#f5f6fa;color:#222;margin:0;padding:24px;line-height:1.55;}
+  .wrap{max-width:1120px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;} h2{font-size:17px;margin:30px 0 10px;border-bottom:2px solid #ddd;padding-bottom:6px;}
+  h3{font-size:14px;margin:16px 0 6px;}
+  .sub{color:#777;font-size:13px;margin-bottom:18px;}
+  table{width:100%;border-collapse:collapse;background:#fff;margin:10px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  th,td{border:1px solid #e1e5ea;padding:8px 10px;font-size:13px;text-align:left;vertical-align:top;}
+  th{background:#f5f6fa;font-weight:700;}
+  .mono{font-family:Consolas,monospace;font-size:12px;}
+  .crit{color:#c0392b;font-weight:700;} .warn{color:#d35400;font-weight:700;} .ok{color:#27ae60;font-weight:700;}
+  .box{background:#fff;border:1px solid #e1e5ea;border-radius:8px;padding:14px 18px;margin:12px 0;}
+  .gap{border-left:4px solid #c0392b;} .align{border-left:4px solid #27ae60;} .fix{border-left:4px solid #2980b9;background:#eef5fc;}
+  .muted{color:#888;font-size:12px;}
+  ul{margin:6px 0 6px 18px;} li{margin:3px 0;font-size:13px;}
+  .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;color:#fff;}
+  .t-d{background:#8e44ad;} .t-o{background:#16a085;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>비교 리포트 — 외부 docx vs vuln-assessor</h1>
+  <div class="sub">대상: jessy107 / dolf-w2022-147 · 기준일 2026-06-30 · <span class="tag t-d">docx</span> 외부 보고서 &nbsp; <span class="tag t-o">우리</span> vuln-assessor</div>
+
+  <h2>0. 가장 중요한 차이 — "계층(layer)"이 다름</h2>
+  <div class="box gap">
+    두 docx가 진단한 것은 <b>애플리케이션에 내장된 라이브러리</b>(컴파일/번들된 OSS·JAR)이고,
+    우리 스캔은 <b>OS에 설치된 프로그램</b>(레지스트리 Uninstall)이다. <b>서로 다른 깊이</b>라 대부분 겹치지 않는다.
+    <ul>
+      <li><b>107 docx</b> = 제품 내장 <b>네이티브 OSS</b>: OpenSSL 1.0.2o, zlib 1.2.3, POCO 1.4.2, libexpat 2.0.1, PCRE 8.x, SQLite 3.7.7.1, TinyXML 2.6.2, SIGAR 1.6.4, PostgreSQL 13.0</li>
+      <li><b>147 docx</b> = <b>Java 앱 의존성(JAR)</b>: Apache Commons(BeanUtils·Collections·Compress·Text 등), Log4j, PDFBox, POI, Tika, CXF, mime4j, PostgreSQL JDBC 42.3.1, PostgreSQL 14.4</li>
+      <li><b>우리</b> = 레지스트리 설치 프로그램 (Flash, Java 런타임, Edge, SQL Server, PostgreSQL 등)</li>
+    </ul>
+    → 내장 .dll/.jar 은 레지스트리에 안 나오므로 <b>우리 현재 스캔으론 docx 항목 대부분이 안 보인다.</b>
+  </div>
+
+  <h2>1. 107 — docx(제품 내장 OSS) vs 우리</h2>
+  <table>
+    <thead><tr><th>라이브러리/SW</th><th><span class="tag t-d">docx</span></th><th><span class="tag t-o">우리</span></th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>OpenSSL 1.0.2o</td><td class="crit">취약(P0, EOL)</td><td>미탐</td><td>제품 내장 → 레지스트리에 없음</td></tr>
+      <tr><td>zlib 1.2.3 / libexpat 2.0.1 / PCRE 8.x / SQLite 3.7.7.1 / TinyXML / SIGAR</td><td class="crit">취약(P0~P2)</td><td>미탐</td><td>전부 내장 라이브러리</td></tr>
+      <tr><td>PostgreSQL 13.0</td><td class="warn">P1</td><td class="ok">탐지 (CVE-2022-1552 등)</td><td>설치 프로그램이라 우리도 봄 ✓</td></tr>
+      <tr><td>OS 패치(Zerologon·PrintNightmare·EternalBlue)</td><td>—(범위 밖)</td><td class="crit">OS CVE 5건</td><td>우리만 탐지 — docx 범위 아님</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. 147 — docx(Java 앱 의존성) vs 우리</h2>
+  <table>
+    <thead><tr><th>라이브러리/SW</th><th><span class="tag t-d">docx</span></th><th><span class="tag t-o">우리</span></th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>Apache Commons Text/Collections, Log4j, PDFBox, POI, Tika, CXF …</td><td class="crit">취약 다수</td><td>미탐</td><td>JAR 의존성 → 레지스트리에 없음</td></tr>
+      <tr><td>PostgreSQL JDBC 42.3.1</td><td class="crit">CVE-2024-…</td><td>미탐</td><td>앱 내 JAR</td></tr>
+      <tr><td>PostgreSQL 14.4 (docx) / 13 (우리)</td><td class="warn">14.4</td><td class="warn">PostgreSQL 13 탐지</td><td><b>버전 불일치 — 확인 필요</b></td></tr>
+      <tr><td>Adobe Flash 32 / Java 8u391 / Edge 86 / Notepad++ 7.5.7</td><td>—(범위 밖)</td><td class="crit">KEV 제품 탐지</td><td>우리만 탐지 — 설치 프로그램</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 정합성 — 실측 (OSS 라이브러리 수집 후, 2026-06-30)</h2>
+  <div class="box align">
+    재수집(JAR·네이티브·strings)으로 OSS 계층까지 탐지 → <b>docx와 "틀린" 게 아니라 "겹치고 + 더 많이 + 일부 누락"</b>:
+    <ul>
+      <li><b>일치(독립 검증)</b>: OpenSSL 1.0.2o · zlib 1.2.3 · SQLite · PostgreSQL → docx와 동일하게 우리도 탐지 ✅</li>
+      <li><b>초과 탐지(docx에 없음)</b>: log4j · commons-collections · hadoop · jetty · struts 등 — 우리가 더 잡음</li>
+      <li><b>누락</b>: POCO 1.4.2 · TinyXML 2.6.2 · SIGAR 1.6.4 — CVE DB·strings 프로브 미커버 (추가하면 탐지 가능)</li>
+    </ul>
+    리포트 내 고유 CVE: <b>107 = 95건</b>, <b>147 = 59건</b>. 모두 판정(유력/검토필요/패치됨) + 표기 근거 포함.
+  </div>
+  <table>
+    <thead><tr><th>docx 107 라이브러리</th><th>우리 탐지</th></tr></thead>
+    <tbody>
+      <tr><td>OpenSSL 1.0.2o</td><td class="ok">✅ 탐지 (CVE-2022-0778 등)</td></tr>
+      <tr><td>zlib 1.2.3</td><td class="ok">✅ 탐지</td></tr>
+      <tr><td>SQLite 3.7.7.1</td><td class="ok">✅ 탐지</td></tr>
+      <tr><td>PostgreSQL 13.0</td><td class="ok">✅ 탐지</td></tr>
+      <tr><td>PCRE 8.x · libexpat 2.0.1</td><td>△ 부분(147 expat 탐지, 107 미탐 — strings 미적중)</td></tr>
+      <tr><td>POCO 1.4.2 · TinyXML 2.6.2 · SIGAR 1.6.4</td><td class="add">❌ 미탐 (DB·프로브 미커버 → 추가 필요)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. ★ 우리가 고칠 것 (action items)</h2>
+  <div class="box fix">
+    <h3>① 내장 라이브러리 스캔 부재 (가장 큰 갭)</h3>
+    docx 항목 대부분(OpenSSL/zlib/Apache Commons/Log4j 등)은 <b>제품에 번들된 .dll/.jar</b>라 레지스트리에 안 보인다. 이를 잡으려면:
+    <ul>
+      <li><b>파일시스템 스캔</b>: 설치 경로의 .dll 버전 문자열, .jar manifest(예: <span class="mono">META-INF/MANIFEST.MF</span>, 파일명 <span class="mono">log4j-core-2.x.jar</span>) 수집</li>
+      <li>또는 <b>SBOM 수집</b>(CycloneDX/SPDX) → 의존성 인벤토리 매칭</li>
+      <li>→ 이걸 추가하면 docx와 같은 층을 커버 (현재는 OS 설치 프로그램만)</li>
+    </ul>
+    <h3>② 버전 정밀도</h3>
+    <ul>
+      <li>PostgreSQL "13"처럼 minor 누락 → 정밀 버전(13.7 등) 수집·표기 보강 (패치 여부 판정 정확화)</li>
+      <li>147 PostgreSQL 13 vs docx 14.4 불일치 실측 확인</li>
+    </ul>
+    <h3>③ CVE DB 확장</h3>
+    <ul>
+      <li>Apache Commons/Log4j/PDFBox/JDBC 등 <b>Java 생태계 CVE</b>를 NVD 동기화로 확보 (현재 베이스라인 27건)</li>
+      <li>KEV 제품 탐지는 버전 미검증 자문 → NVD CPE 연동으로 버전 정밀 매칭 전환</li>
+    </ul>
+  </div>
+
+  <h2>5. 결론 (포지셔닝)</h2>
+  <div class="box">
+    <ul>
+      <li><b>docx</b> = 한 제품의 내장 라이브러리를 <b>수기로 깊게</b> 분석(시점 고정·참고). <b>OS·설치프로그램·KEV·자동갱신은 없음.</b></li>
+      <li><b>우리</b> = OS 패치 + 설치 프로그램 + KEV + NVD 자동갱신을 <b>여러 서버에 자동</b>으로. <b>SecuMS가 못 하는 CVE 강점.</b></li>
+      <li>상호보완: docx의 "내장 라이브러리 심층"을 우리가 흡수하려면 <b>④①(파일시스템/SBOM 스캔)</b>이 다음 과제.</li>
+      <li>이미 입증된 것: <b>PostgreSQL을 docx와 독립적으로 동일 탐지</b> = 우리 정확성. 나머지 미탐은 "범위(계층)" 차이지 오류가 아님.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

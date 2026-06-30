@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로그인 — Vuln Assessor</title>
+  <title>로그인 — ADV (AI Diagnosis Verify)</title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     body {
@@ -106,9 +106,15 @@
 <body>
   <div class="login-box">
     <div class="login-logo">
-      <div class="icon">🛡</div>
-      <h1>Vuln Assessor</h1>
-      <div class="sub">LSware 취약점 진단 시스템</div>
+      <div class="icon">
+        <svg viewBox="0 0 40 46" width="52" height="60" aria-hidden="true">
+          <defs><linearGradient id="advLoginShield" x1="0" y1="0" x2="40" y2="46" gradientUnits="userSpaceOnUse"><stop stop-color="#38BDF8"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs>
+          <path d="M20 2 37 9V22c0 11-8 19-17 22C11 41 3 33 3 22V9z" fill="url(#advLoginShield)"/>
+          <path d="M12.5 23l5 5 10-11.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1 style="letter-spacing:2px;font-weight:800;">ADV</h1>
+      <div class="sub"><b>AI Diagnosis Verify</b> · SecuMS Diagnosis Verification</div>
     </div>
 
     <% if (typeof error !== 'undefined' && error) { %>
@@ -137,7 +143,7 @@
     </form>
 
     <div class="login-footer">
-      © LSware Vuln Assessor v9.13
+      © LSware ADV (AI Diagnosis Verify) v9.14
     </div>
   </div>
 </body>

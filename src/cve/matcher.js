@@ -23,17 +23,43 @@ let _cveCache = null;
  * 보강(enrichment) 모듈을 통해 큐레이션 DB + sync 데이터를 머지한 결과 반환.
  * sync 데이터가 없으면 큐레이션 DB만 사용. 매처 입장에서는 형식이 동일.
  */
+// 권위 소프트웨어 CVE DB(cve-software-curated.json) 로드 — OS·플랫폼 공통.
+// from<=v<to 의미를 isVersionAffected 와 맞추기 위해 include_from/to 기본값 주입.
+function loadSoftwareCves() {
+  try {
+    const p = path.join(__dirname, '../../data/cve/cve-software-curated.json');
+    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const arr = Array.isArray(j) ? j : (j.cves || []);
+    return arr.map(c => ({
+      ...c,
+      affected_versions: (c.affected_versions || []).map(r => ({
+        from: r.from,
+        to: r.to,
+        include_from: r.include_from !== undefined ? r.include_from : true,
+        include_to: r.include_to !== undefined ? r.include_to : false,
+      })),
+    }));
+  } catch (_) {
+    return [];
+  }
+}
+
 function loadCveDb() {
   if (_cveCache) return _cveCache;
+  let base;
   try {
     const enrichment = require('./enrichment');
-    _cveCache = enrichment.loadEnrichedCveDb();
+    base = enrichment.loadEnrichedCveDb();
   } catch (e) {
     // 보강 모듈 로드 실패 시 큐레이션 DB만 사용 (안전한 폴백)
     console.warn(`[cve/matcher] enrichment 모듈 사용 불가, 큐레이션 DB만 로드: ${e.message}`);
     const cvePath = path.join(__dirname, '../../data/cve/cve-centos7-curated.json');
-    _cveCache = JSON.parse(fs.readFileSync(cvePath, 'utf8'));
+    base = JSON.parse(fs.readFileSync(cvePath, 'utf8'));
   }
+  // OS 패키지(centos) + 공통 소프트웨어 CVE + NVD CPE(전체) → 설치 SW 포괄 매칭
+  let nvd = [];
+  try { nvd = require('./nvdCpe').load(); } catch (_) {}
+  _cveCache = (Array.isArray(base) ? base : []).concat(loadSoftwareCves(), nvd);
   return _cveCache;
 }
 
@@ -80,6 +106,13 @@ function compareVersions(v1, v2) {
     if (ai < bi) return -1;
     if (ai > bi) return 1;
   }
+
+  // 숫자부 동일 시, OpenSSL 류 끝자리 문자접미사(1.0.2o vs 1.0.2p)를 타이브레이커로 비교.
+  // rpm 'pN'(1.8.19p2)는 끝이 숫자라 매칭 안 돼 영향 없음.
+  const suffix = (v) => (String(v).match(/\d([a-z]+)\s*$/i) || [])[1] || '';
+  const sa = suffix(v1), sb = suffix(v2);
+  if (sa < sb) return -1;
+  if (sa > sb) return 1;
   return 0;
 }
 

@@ -176,8 +176,54 @@ async function judgeAll(matches, environment, llmClient) {
   return judged;
 }
 
+/**
+ * 소프트웨어/라이브러리 CVE(버전 매칭) 판정 — 백포트·도달성 한계를 반영.
+ * 패턴(버전)은 '잠재'까지만 판정 가능 → 출처별로 신뢰도/검토필요를 구분.
+ *   - 번들 라이브러리(JAR/native): 버전 신뢰 높음(백포트 적음) → LIKELY, 단 도달성 검토
+ *   - 설치 프로그램/OS 패키지: 벤더 백포트 가능 → NEEDS_REVIEW(확정 아님)
+ */
+function judgeSoftwareMatch(m) {
+  const kev = !!m.cisa_kev;
+  const cvss = Number(m.cvss_v3) || 0;
+  const bundled = m.backport_risk === 'low';
+  let verdict, priority, isVuln, rationale, actions;
+
+  if (bundled) {
+    verdict = 'LIKELY_VULNERABLE';
+    isVuln = true;
+    priority = kev ? 'IMMEDIATE' : (cvss >= 9.0 || m.exploit_public ? 'URGENT' : 'SCHEDULED');
+    rationale = `${m.software} ${m.version}은(는) ${m.cve_id} 영향 버전이며, 제품 내장(번들) 라이브러리라 ` +
+      `버전 신뢰도가 높습니다(배포판 백포트 가능성 낮음). 다만 취약 기능의 실제 사용여부(도달성)는 코드 확인 필요.` +
+      (kev ? ' CISA KEV 등재 — 우선 조치 권장.' : '');
+    actions = [`${m.fixed || '상위'} 버전으로 업그레이드`, '취약 기능 사용여부(도달성) 검토'];
+  } else {
+    verdict = 'NEEDS_REVIEW';
+    isVuln = null; // 확정 불가 (백포트 가능)
+    priority = kev ? 'URGENT' : 'SCHEDULED';
+    rationale = `${m.software} ${m.version}이(가) ${m.cve_id} 버전범위에 들지만, ` +
+      `벤더 백포트 패치(버전 미변경)나 실사용 여부가 미확인이라 "취약 확정"이 아닙니다. ` +
+      `release/패치 상태(배포판 advisory) 또는 실제 적용 여부를 확인하세요.`;
+    actions = ['배포판 보안 advisory(OVAL/RHSA/USN)로 백포트 여부 확인', '실제 패치/버전 재확인'];
+  }
+  return {
+    verdict,
+    is_vulnerable: isVuln,
+    actual_severity: m.severity,
+    patch_priority: priority,
+    rationale_ko: rationale,
+    recommended_actions: actions,
+    judged_by: 'heuristic_backport_aware',
+  };
+}
+
+function judgeSoftwareAll(matches) {
+  return (matches || []).map(m => ({ ...m, ai_judgment: judgeSoftwareMatch(m) }));
+}
+
 module.exports = {
   buildPrompt,
   mockJudge,
   judgeAll,
+  judgeSoftwareMatch,
+  judgeSoftwareAll,
 };

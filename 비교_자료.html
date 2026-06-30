@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>비교 자료 — jessy107 vs dolf-w2022-147</title>
+<style>
+  body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;background:#f5f6fa;color:#222;margin:0;padding:24px;line-height:1.55;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;} h2{font-size:17px;margin:26px 0 8px;border-bottom:2px solid #ddd;padding-bottom:6px;}
+  .sub{color:#777;font-size:13px;margin-bottom:16px;}
+  table{width:100%;border-collapse:collapse;background:#fff;margin:8px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  th,td{border:1px solid #e1e5ea;padding:8px 10px;font-size:13px;text-align:left;}
+  th{background:#f5f6fa;font-weight:700;}
+  .crit{color:#c0392b;font-weight:700;} .warn{color:#d35400;font-weight:700;} .mono{font-family:Consolas,monospace;font-size:12px;}
+  .box{background:#fff;border:1px solid #e1e5ea;border-radius:8px;padding:14px 18px;margin:12px 0;}
+  .muted{color:#888;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>비교 자료 — jessy107 vs dolf-w2022-147</h1>
+  <div class="sub">두 서버의 진단 결과 비교 (OS 점검 + 설치자산 CVE + OSS 라이브러리) · 2026-06-30</div>
+
+  <h2>1. 종합 비교</h2>
+  <table>
+    <thead><tr><th>항목</th><th>jessy107</th><th>dolf-w2022-147</th></tr></thead>
+    <tbody>
+      <tr><td>OS</td><td>Windows Server 2016 (10.0.14393)</td><td>Windows Server 2022 (10.0.20348)</td></tr>
+      <tr><td>설치 핫픽스</td><td>2건 (KB3192137, KB4054590)</td><td>3건 (KB5008882, KB5011497, KB5010523)</td></tr>
+      <tr><td>인벤토리(프로그램+JAR+네이티브)</td><td><strong>254</strong></td><td><strong>88</strong></td></tr>
+      <tr><td><b>OS 패치 CVE</b></td><td class="crit">5건 (Zerologon·PrintNightmare·EternalBlue 등)</td><td>1건</td></tr>
+      <tr><td><b>SW/OSS 라이브러리 CVE</b>(고유)</td><td class="crit">95건</td><td class="warn">59건</td></tr>
+      <tr><td><b>CISA KEV 제품</b></td><td>16건</td><td>7건 (Flash·Java·Edge 등)</td></tr>
+      <tr><td>위험 성격</td><td><b>OS 미패치 심각</b> (오래된 패치)</td><td><b>OS 최신, 서드파티 SW/라이브러리 취약</b></td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. 성격 차이 (정반대)</h2>
+  <div class="box">
+    <ul>
+      <li><b>jessy107 (2016)</b>: 핫픽스 2건뿐 → <b>OS 자체가 심각하게 미패치</b> (Zerologon·PrintNightmare·EternalBlue 등 KEV 다수). + 오래된 JAR/네이티브 라이브러리 95건.</li>
+      <li><b>dolf-147 (2022)</b>: OS는 최신이라 OS CVE 1건뿐. 대신 <b>설치 소프트웨어·라이브러리</b>가 문제 (Flash·Java 8·Edge 86·PostgreSQL·commons 등).</li>
+    </ul>
+    → 같은 Windows라도 <b>한쪽은 OS 패치, 한쪽은 SW 업그레이드</b>가 우선. 통합 진단이라 둘 다 한 보고서에서 드러남.
+  </div>
+
+  <h2>3. 탐지 계층 (둘 다 통합)</h2>
+  <table>
+    <thead><tr><th>계층</th><th>수집</th><th>매칭</th></tr></thead>
+    <tbody>
+      <tr><td>OS 패치</td><td>Get-HotFix / systeminfo</td><td>Windows CVE 큐레이션</td></tr>
+      <tr><td>설치 프로그램</td><td>레지스트리 Uninstall (INV-SOFTWARE)</td><td>NVD CPE + KEV</td></tr>
+      <tr><td>Java 라이브러리</td><td>JAR 파일명 (INV-JAR)</td><td>NVD CPE + 큐레이션</td></tr>
+      <tr><td>네이티브 OSS</td><td>.dll strings (INV-NATIVELIB)</td><td>OpenSSL/zlib/expat/sqlite/pcre CVE</td></tr>
+      <tr><td>SBOM(있으면)</td><td>CycloneDX/SPDX (INV-SBOM)</td><td>purl 정확 식별</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. 판정·근거 (정직 표기)</h2>
+  <div class="box">
+    각 CVE는 <b>유력 / 검토필요 / 패치됨(백포트)</b> 으로 구분되고, <b>표기 근거</b>(설치버전·영향범위·출처·수정버전)를 함께 보여줌.
+    번들 라이브러리=버전 신뢰(유력), 설치 프로그램/OS패키지=백포트 가능(검토필요). "위험"을 확정인 양 과장하지 않음.
+  </div>
+
+  <p class="muted" style="font-size:12px;">※ SW/OSS CVE 건수는 "잠재/검토 포함" — 백포트·도달성 미검증분 포함. 확정 취약은 검토 후 확정.</p>
+</div>
+</body>
+</html>

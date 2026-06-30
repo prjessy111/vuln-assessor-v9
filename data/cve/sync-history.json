@@ -1,5 +1,13 @@
 [
   {
+    "timestamp": "2026-06-29 14:48:46",
+    "total_cves": 1631,
+    "new_count": 0,
+    "cvss_changed": 0,
+    "kev_added": 27,
+    "description_updated": 0
+  },
+  {
     "timestamp": "2026-05-25 15:22:27",
     "total_cves": 1604,
     "new_count": 0,

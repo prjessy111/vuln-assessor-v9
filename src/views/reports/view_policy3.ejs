@@ -1,0 +1,61 @@
+<%- include('../_header', { title: '리포트3 — 타사 정책', activeMenu: 'reports' }) %>
+<style>
+  .p3-cards{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0;}
+  .p3-card{flex:1 1 120px;background:#fff;border:1px solid #e1e5ea;border-radius:8px;padding:12px;text-align:center;}
+  .p3-card .n{font-size:1.8rem;font-weight:800;}
+  .grade{display:inline-block;min-width:34px;padding:3px 14px;border-radius:14px;font-weight:800;color:#fff;font-size:18px;}
+  .gA{background:#1aa260;}.gB{background:#2980b9;}.gC{background:#f39c12;}.gD{background:#e67e22;}.gF{background:#c0392b;}
+  .v-good{color:#1aa260;font-weight:700;}.v-bad{color:#c0392b;font-weight:700;}.v-na{color:#888;font-weight:700;}
+  table.p3{width:100%;border-collapse:collapse;background:#fff;}
+  table.p3 th,table.p3 td{border:1px solid #e1e5ea;padding:6px 9px;font-size:12.5px;vertical-align:top;}
+  table.p3 th{background:#f5f6fa;}
+  .code{font-family:Consolas,monospace;color:#2980b9;font-weight:700;}
+</style>
+
+<div class="report-header">
+  <h1>리포트3 — 타사 정책 기준 점검 #<%= session.assessment_id %></h1>
+  <div class="report-actions">
+    <a href="/reports/<%= session.assessment_id %>/fsi" class="btn">리포트1(금보원)</a>
+    <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
+    <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
+    <a href="/history?server_id=<%= session.server_id %>" class="btn">이력으로</a>
+  </div>
+</div>
+<p class="muted small">정책: <%= policy.name %> · 대상 OS: <%= targetOs.toUpperCase() %> · <%= session.hostname || session.server_name %> · 금보원 진단 데이터를 타사 항목으로 매핑</p>
+
+<div class="p3-cards">
+  <div class="p3-card"><div class="muted small">준수율</div><div class="n"><%= summary.rate %>%</div><div class="muted small">양호÷(양호+취약)</div></div>
+  <div class="p3-card"><div class="muted small">등급</div><div class="n"><span class="grade g<%= summary.grade %>"><%= summary.grade %></span></div><div class="muted small">A95·B90·C80·D70</div></div>
+  <div class="p3-card"><div class="muted small">양호</div><div class="n v-good"><%= summary.good %></div></div>
+  <div class="p3-card"><div class="muted small">취약</div><div class="n v-bad"><%= summary.bad %></div></div>
+  <div class="p3-card"><div class="muted small">N/A·미매핑</div><div class="n v-na"><%= summary.na %></div></div>
+  <div class="p3-card"><div class="muted small">전체 항목</div><div class="n"><%= summary.total %></div></div>
+</div>
+
+<div class="section-box" style="background:#fff8e1;border-left:4px solid #f1c40f;padding:8px 12px;font-size:12.5px;">
+  ℹ 본 리포트는 <b>금보원(상위집합) 진단 결과</b>를 타사 항목에 자동 매핑한 것입니다. "미매핑"은 타사 항목 ↔ 우리 항목 크로스워크가
+  아직 정밀하지 않은 항목으로, 매핑 룰 보강 시 줄어듭니다. 점수가중치는 향후 적용 예정(현재 항목 균등).
+</div>
+
+<table class="p3" style="margin-top:12px;">
+  <thead><tr><th>코드</th><th>점검그룹</th><th>점검 항목</th><th>판정</th><th>심각도</th><th>사유 / 매핑항목</th></tr></thead>
+  <tbody>
+    <% items.forEach(function (it) {
+      var cls = it.verdict==='양호'?'v-good':(it.verdict==='취약'?'v-bad':'v-na'); %>
+      <tr>
+        <td class="code"><%= it.code %></td>
+        <td class="small"><%= it.group %></td>
+        <td class="small"><%= it.title %></td>
+        <td class="small <%= cls %>"><%= it.verdict %></td>
+        <td class="small"><%= (it.verdict==='취약' && it.severity) ? it.severity : '-' %></td>
+        <td class="small">
+          <% if (it.reason) { %><div><%= it.reason %></div><% } %>
+          <% if (it.verdict==='취약' && it.recommend) { %><div style="color:#1e8449;margin-top:2px;">↳ 조치: <%= it.recommend %></div><% } %>
+          <div class="muted" style="margin-top:2px;">← <%= it.matched || '미매핑(우리 점검에 없음)' %></div>
+        </td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<%- include('../_footer') %>
