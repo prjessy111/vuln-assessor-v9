@@ -2615,10 +2615,10 @@ app.get('/exceptions', (req, res) => {
 
 // 예외 신청 화면
 app.get('/exceptions/new', (req, res) => {
-  const { result_id, rule_id, server_id, username } = req.query;
+  const { result_id, rule_id, server_id, username, hostname } = req.query;
   res.render('exceptions/new', {
     activeMenu: 'exceptions',
-    prefill: { result_id, rule_id, server_id, username },
+    prefill: { result_id, rule_id, server_id, username, hostname },
     checkItems: buildCheckItemList(),
     servers: loadMock('servers') || [],
   });

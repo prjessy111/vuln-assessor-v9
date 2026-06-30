@@ -10,6 +10,26 @@
 </div>
 
 <form id="exceptionForm" class="form-container">
+<% var isPost = !!(prefill && prefill.result_id); %>
+<% if (isPost) { %>
+  <!-- 사후 예외: 항목·서버 고정, 체크박스(서버단위)/계정명(계정단위)만 -->
+  <div class="form-section">
+    <h3>사후 예외 대상</h3>
+    <input type="hidden" name="result_id" value="<%= prefill.result_id %>">
+    <input type="hidden" name="scope_type" value="result">
+    <input type="hidden" name="hostname" value="<%= prefill.hostname || '' %>">
+    <input type="hidden" name="title" value="사후 예외 <%= prefill.rule_id || '' %> @ <%= prefill.hostname || '' %>">
+    <input type="hidden" name="policy" value="전자금융기반시설_2026_OS">
+    <input type="hidden" name="related_basis" value="진단결과 <%= prefill.result_id %> 사후 예외">
+    <input type="hidden" id="postRuleId" value="<%= prefill.rule_id || '' %>">
+    <p class="muted small">점검항목 <code><%= prefill.rule_id || '-' %></code> · 서버 <b><%= prefill.hostname || '-' %></b></p>
+    <label style="display:block;margin:8px 0;"><input type="checkbox" id="serverScope" checked> <b>이 서버 전체</b>에 예외 적용 <span class="muted">(서버 단위)</span></label>
+    <div class="form-row inline">
+      <label>계정 단위면 계정명</label>
+      <input type="text" name="username" id="postUser" placeholder="계정 단위일 때만 입력 (비우면 서버 전체)">
+    </div>
+  </div>
+<% } else { %>
 
   <!-- ① 기본 정보 -->
   <div class="form-section">
@@ -93,6 +113,8 @@
     </div>
   </div>
 
+<% } %>
+
   <!-- 사유 -->
   <div class="form-section">
     <h3>예외 사유</h3>
@@ -140,27 +162,32 @@
 </form>
 
 <script>
-// 항목 검색 필터
+// 항목 검색 필터 (일괄 모드에만 존재 — 사후 예외 간소폼에선 #itemList 없음)
 var itemSearch = document.getElementById('itemSearch');
+var itemListEl = document.getElementById('itemList');
 function refreshItemCount(){
+  if (!itemListEl) return;
   var n = document.querySelectorAll('#itemList input[name="rule_ids"]:checked').length;
-  document.getElementById('itemCount').textContent = '선택 ' + n + '개';
+  var cnt = document.getElementById('itemCount'); if (cnt) cnt.textContent = '선택 ' + n + '개';
 }
-itemSearch.addEventListener('input', function(){
-  var q = itemSearch.value.toLowerCase().trim();
-  document.querySelectorAll('#itemList .item-opt').forEach(function(el){
-    el.style.display = (!q || el.dataset.text.indexOf(q) >= 0) ? 'block' : 'none';
+if (itemSearch && itemListEl) {
+  itemSearch.addEventListener('input', function(){
+    var q = itemSearch.value.toLowerCase().trim();
+    document.querySelectorAll('#itemList .item-opt').forEach(function(el){
+      el.style.display = (!q || el.dataset.text.indexOf(q) >= 0) ? 'block' : 'none';
+    });
   });
-});
+  itemListEl.addEventListener('change', refreshItemCount);
+  refreshItemCount();
+}
 function toggleAllItems(on){
+  if (!itemListEl) return;
   document.querySelectorAll('#itemList .item-opt').forEach(function(el){
-    if (el.style.display === 'none') return; // 검색으로 보이는 것만
+    if (el.style.display === 'none') return;
     el.querySelector('input').checked = on;
   });
   refreshItemCount();
 }
-document.getElementById('itemList').addEventListener('change', refreshItemCount);
-refreshItemCount();
 
 // 무기한 토글
 var indef = document.getElementById('indefinite'), effUntil = document.getElementById('effUntil');
@@ -175,9 +202,17 @@ indef.addEventListener('change', function(){ effUntil.disabled = indef.checked; 
 document.getElementById('exceptionForm').onsubmit = async function(e){
   e.preventDefault();
   var data = Object.fromEntries(new FormData(e.target));
-  // 점검항목 다중
-  data.rule_ids = Array.from(document.querySelectorAll('#itemList input[name="rule_ids"]:checked')).map(function(c){return c.value;});
-  if (!data.rule_ids.length) { alert('점검 항목을 1개 이상 선택하세요.'); return; }
+  // 점검항목 — 일괄 모드는 다중선택, 사후 모드는 고정 항목(postRuleId)
+  var postRule = document.getElementById('postRuleId');
+  if (postRule) {
+    data.rule_ids = [postRule.value];
+    // 서버 단위 체크 시 계정명 무시(서버 전체), 해제 시 입력한 계정명 사용
+    var ss = document.getElementById('serverScope');
+    if (ss && ss.checked) data.username = '';
+  } else {
+    data.rule_ids = Array.from(document.querySelectorAll('#itemList input[name="rule_ids"]:checked')).map(function(c){return c.value;});
+  }
+  if (!data.rule_ids.length || !data.rule_ids[0]) { alert('점검 항목을 1개 이상 선택하세요.'); return; }
   // 기간 검증
   if (!data.indefinite && (!data.effective_until || data.effective_until <= data.effective_from)) {
     alert('종료일은 시작일 이후여야 합니다. (또는 무기한 체크)'); return;
