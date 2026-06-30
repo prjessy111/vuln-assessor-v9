@@ -453,28 +453,40 @@
       "os": "windows",
       "group": "계정 및 권한관리",
       "title": "cmd.exe 파일에 대한 접근 권한이 설정되어 있는가?",
-      "score": 5
+      "score": 5,
+      "srv": [
+        "SRV-180"
+      ]
     },
     {
       "code": "AC07",
       "os": "windows",
       "group": "계정 및 권한관리",
       "title": "command.com 파일에 대한 접근 권한이 설정되어 있는가?",
-      "score": 5
+      "score": 5,
+      "srv": [
+        "SRV-181"
+      ]
     },
     {
       "code": "AC07",
       "os": "windows",
       "group": "계정 및 권한관리",
       "title": "PowerShell.exe 파일에 대한 접근 권한이 설정되어 있는가?",
-      "score": 5
+      "score": 5,
+      "srv": [
+        "SRV-182"
+      ]
     },
     {
       "code": "AC07",
       "os": "windows",
       "group": "계정 및 권한관리",
       "title": "PowerShell.exe 로 실행 가능한 파일에 대한 제한 설정이 되어 있는가?",
-      "score": 5
+      "score": 5,
+      "srv": [
+        "SRV-183"
+      ]
     },
     {
       "code": "SS01",
@@ -626,7 +638,10 @@
       "os": "windows",
       "group": "로그 및 패치관리",
       "title": "zeroday 공격 위험을 최소화하기 위하여 DEP 기능을 사용하고 있는가?",
-      "score": 5
+      "score": 5,
+      "srv": [
+        "SRV-184"
+      ]
     },
     {
       "code": "AC01",
