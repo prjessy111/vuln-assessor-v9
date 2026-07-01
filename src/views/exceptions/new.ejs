@@ -28,13 +28,36 @@
     <!-- 호스트 단위: 체크박스 (편하게) -->
     <label style="display:block;margin:8px 0;"><input type="checkbox" id="serverScope" checked> <b>이 서버(호스트) 전체</b>에 예외 적용 <span class="muted">(호스트 단위)</span></label>
 
-    <!-- 그 외 단위(계정 등): 자유 입력 -->
-    <div class="form-row inline">
-      <label>대상 단위 <span class="muted small">(계정 등)</span></label>
-      <input type="text" name="username" id="postUser"
-             placeholder="호스트 전체면 비움 · 계정 등 특정 대상이면 입력 (예: root, jessy72)">
+    <!-- 계정 단위: ① 체크박스 ② 다중 입력 ③ CSV -->
+    <div id="acctArea" style="border-left:3px solid #e1e5ea;padding-left:12px;margin-top:6px;">
+      <p id="scopeHint" class="muted small" style="margin:0 0 8px;"></p>
+      <% if (accounts && accounts.length) { %>
+        <div class="form-row inline" style="align-items:center;">
+          <label>계정 선택 <span class="muted small">(체크)</span></label>
+          <button type="button" class="btn-sm" onclick="acctAll(true)">로그인계정 전체</button>
+          <button type="button" class="btn-sm" onclick="acctAll(false)">해제</button>
+          <label style="font-weight:400;margin-left:8px;"><input type="checkbox" id="showAllAcct"> 시스템(nologin) 계정도 표시</label>
+        </div>
+        <div id="acctList" style="max-height:160px;overflow:auto;border:1px solid #e1e5ea;border-radius:6px;padding:8px;margin-bottom:8px;">
+          <% accounts.forEach(a => { %>
+            <label class="acct-opt" data-login="<%= a.login ? 1 : 0 %>"
+                   style="display:inline-block;width:auto;margin:2px 10px 2px 0;font-weight:400;<%= a.login ? '' : 'display:none;' %>">
+              <input type="checkbox" class="acctChk" value="<%= a.name %>"> <code><%= a.name %></code><% if (!a.login) { %> <span class="muted small">(nologin)</span><% } %>
+            </label>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="muted small">이 서버의 계정 목록을 찾지 못했습니다 (스크립트 진단 원본 없음). 아래에 직접 입력/붙여넣기 하세요.</p>
+      <% } %>
+      <div class="form-row inline">
+        <label>계정 직접 입력 <span class="muted small">(쉼표/공백 다중)</span></label>
+        <input type="text" id="postUserText" placeholder="예: root, jessy72, test*">
+      </div>
+      <div class="form-row">
+        <label>CSV 붙여넣기 <span class="muted small">(한 줄 1계정, 또는 호스트,계정)</span></label>
+        <textarea id="postCsv" rows="3" placeholder="root&#10;jessy72&#10;test*"></textarea>
+      </div>
     </div>
-    <p id="scopeHint" class="muted small" style="margin-top:4px;"></p>
   </div>
 <% } else { %>
 
@@ -196,37 +219,61 @@ function toggleAllItems(on){
   refreshItemCount();
 }
 
-// 사후 예외 — 대상 단위 자동감지(B) + 체크박스/입력 연동
+// 사후 예외 — 계정 대상: 체크박스 + 다중입력 + CSV (전역 함수)
+function collectPostAccounts(){
+  var set = {};
+  document.querySelectorAll('.acctChk:checked').forEach(function(c){ var v=c.value.trim(); if(v) set[v]=1; });
+  var tx = document.getElementById('postUserText');
+  if (tx) tx.value.split(/[\s,]+/).forEach(function(v){ v=v.trim(); if(v) set[v]=1; });
+  var csv = document.getElementById('postCsv');
+  if (csv) csv.value.split(/\r?\n/).forEach(function(line){
+    var p = line.split(','); var acct = (p.length>1 ? p[p.length-1] : p[0]).trim();
+    if (acct) set[acct]=1;
+  });
+  return Object.keys(set);
+}
+function paintScope(){
+  var ss = document.getElementById('serverScope');
+  var area = document.getElementById('acctArea');
+  var hint = document.getElementById('scopeHint');
+  if (!ss) return;
+  if (ss.checked) {
+    if (area) area.style.opacity = '0.45';
+    if (hint) hint.textContent = '→ 이 호스트의 모든 대상에 예외 적용 (호스트 단위). 계정 지정하려면 위 체크 해제';
+  } else {
+    if (area) area.style.opacity = '1';
+    var acc = collectPostAccounts();
+    if (hint) hint.textContent = acc.length
+      ? '→ 계정 ' + acc.length + '개에만 예외: ' + acc.slice(0,8).join(', ') + (acc.length>8?' …':'')
+      : '→ 계정을 체크/입력/붙여넣기 하세요 (비우면 호스트 단위와 동일)';
+  }
+}
+function acctAll(on){
+  document.querySelectorAll('#acctList .acct-opt').forEach(function(el){
+    if (el.style.display === 'none') return;
+    var c = el.querySelector('input'); if (c) c.checked = on;
+  });
+  var ss = document.getElementById('serverScope'); if (ss) ss.checked = false;
+  paintScope();
+}
 (function(){
   var ss = document.getElementById('serverScope');
-  var pu = document.getElementById('postUser');
   var ti = document.getElementById('postItemTitle');
-  var hint = document.getElementById('scopeHint');
-  if (!ss || !pu) return;  // 사후 모드에서만 존재
-
-  // 계정 등 "대상 단위"로 흔히 다루는 항목 키워드 (호스트 단위가 아님)
+  if (!ss) return;  // 사후 모드에서만
   var ACCOUNT_KW = ['패스워드','비밀번호','암호','계정','사용자','유저','로그온','로그인','세션','잠금','만료','변경주기','권한','소유자','홈디렉','쉘','shell','password','passwd','account','user','login','uid','lockout','expire'];
   var title = (ti && ti.value || '').toLowerCase();
-  var looksAccount = ACCOUNT_KW.some(function(k){ return title.indexOf(k.toLowerCase()) >= 0; });
-
-  function paint(){
-    if (ss.checked) {
-      pu.value = ''; pu.disabled = true;
-      hint.textContent = '→ 이 호스트의 모든 대상에 예외 적용 (호스트 단위)';
-    } else {
-      pu.disabled = false;
-      hint.textContent = pu.value.trim()
-        ? '→ "' + pu.value.trim() + '" 대상에만 예외 적용 (대상 단위)'
-        : '→ 대상명을 입력하세요 (비우면 호스트 단위와 동일)';
-    }
-  }
-  // 자동감지: 계정성 항목이면 호스트 체크 해제 + 입력 유도
-  if (looksAccount) { ss.checked = false; }
-  paint();
-  if (looksAccount) { try { pu.focus(); } catch(e){} }
-
-  ss.addEventListener('change', paint);
-  pu.addEventListener('input', function(){ if (pu.value.trim()) ss.checked = false; paint(); });
+  if (ACCOUNT_KW.some(function(k){ return title.indexOf(k.toLowerCase()) >= 0; })) ss.checked = false;
+  ss.addEventListener('change', paintScope);
+  var tx = document.getElementById('postUserText'); if (tx) tx.addEventListener('input', function(){ ss.checked=false; paintScope(); });
+  var csv = document.getElementById('postCsv'); if (csv) csv.addEventListener('input', function(){ ss.checked=false; paintScope(); });
+  document.querySelectorAll('.acctChk').forEach(function(c){ c.addEventListener('change', function(){ ss.checked=false; paintScope(); }); });
+  var showAll = document.getElementById('showAllAcct');
+  if (showAll) showAll.addEventListener('change', function(){
+    document.querySelectorAll('#acctList .acct-opt').forEach(function(el){
+      if (el.dataset.login === '0') el.style.display = showAll.checked ? 'inline-block' : 'none';
+    });
+  });
+  paintScope();
 })();
 
 // 무기한 토글
@@ -246,9 +293,15 @@ document.getElementById('exceptionForm').onsubmit = async function(e){
   var postRule = document.getElementById('postRuleId');
   if (postRule) {
     data.rule_ids = [postRule.value];
-    // 서버 단위 체크 시 계정명 무시(서버 전체), 해제 시 입력한 계정명 사용
     var ss = document.getElementById('serverScope');
-    if (ss && ss.checked) data.username = '';
+    if (ss && ss.checked) {
+      data.username = '';                       // 호스트 단위
+    } else {
+      var accts = collectPostAccounts();          // 체크박스 + 다중입력 + CSV 통합
+      if (!accts.length) { alert('계정을 1개 이상 선택/입력/붙여넣기 하거나, "이 서버 전체" 체크박스를 선택하세요.'); return; }
+      data.targets = accts.map(function(u){ return { hostname: data.hostname || '', username: u }; });
+      delete data.username;
+    }
   } else {
     data.rule_ids = Array.from(document.querySelectorAll('#itemList input[name="rule_ids"]:checked')).map(function(c){return c.value;});
   }

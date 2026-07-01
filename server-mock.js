@@ -2636,6 +2636,44 @@ app.get('/exceptions', (req, res) => {
 });
 
 // 예외 신청 화면
+// 서버 최신 스크립트 XML에서 /etc/passwd 계정 목록 파싱 (사후예외 계정 체크박스용)
+function findLatestScriptXml(hostname) {
+  if (!hostname) return null;
+  const rootDir = path.join(__dirname, 'data', 'uploads');
+  const hl = String(hostname).toLowerCase();
+  let best = null;
+  const walk = (dir) => {
+    let ents; try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of ents) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.xml$/i.test(e.name) && e.name.toLowerCase().includes(hl)) {
+        try { const m = fs.statSync(p).mtimeMs; if (!best || m > best.m) best = { p, m }; } catch (_) {}
+      }
+    }
+  };
+  walk(rootDir);
+  return best ? best.p : null;
+}
+function getServerAccounts(hostname) {
+  try {
+    const f = findLatestScriptXml(hostname);
+    if (!f) return [];
+    const txt = fs.readFileSync(f, 'utf8');
+    const re = /^([a-z_][a-z0-9_.-]*):[^:\n]*:(\d+):(\d+):[^:\n]*:[^:\n]*:([^\s:\]]*)\s*$/gm;
+    const seen = new Set(); const out = [];
+    let m;
+    while ((m = re.exec(txt))) {
+      const name = m[1], uid = +m[2], shell = m[4] || '';
+      if (seen.has(name)) continue; seen.add(name);
+      const login = /(bash|zsh|ksh|\/sh|\/csh|\/tcsh)$/.test(shell) && !/nologin|false|halt|shutdown|sync/.test(shell);
+      out.push({ name, uid, shell, login });
+    }
+    out.sort((a, b) => (b.login - a.login) || (a.uid - b.uid));
+    return out;
+  } catch (_) { return []; }
+}
+
 app.get('/exceptions/new', (req, res) => {
   const { result_id, rule_id, server_id, username, hostname, title } = req.query;
   res.render('exceptions/new', {
@@ -2643,6 +2681,7 @@ app.get('/exceptions/new', (req, res) => {
     prefill: { result_id, rule_id, server_id, username, hostname, title },
     checkItems: buildCheckItemList(),
     servers: loadMock('servers') || [],
+    accounts: hostname ? getServerAccounts(hostname) : [],
   });
 });
 
