@@ -362,10 +362,32 @@ app.get('/audit', (req, res) => {
   if (q) logs = logs.filter(l => JSON.stringify(l).toLowerCase().includes(q));
   if (act) logs = logs.filter(l => l.action === act);
   const actions = [...new Set(all.map(l => l.action))].sort();
+  // ─ 대시보드 집계 (전체 기준, 필터 무관) ─
+  const today = new Date().toISOString().slice(0, 10);
+  const countBy = (key) => {
+    const m = {};
+    all.forEach(l => { const k = l[key] || '-'; m[k] = (m[k] || 0) + 1; });
+    return Object.entries(m).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v);
+  };
+  const stat = {
+    total: all.length,
+    today: all.filter(l => String(l.at || '').slice(0, 10) === today).length,
+    fail: all.filter(l => l.result && l.result !== '성공').length,
+    users: new Set(all.map(l => l.user).filter(u => u && u !== '-')).size,
+  };
+  stat.failRate = stat.total ? Math.round(stat.fail / stat.total * 100) : 0;
+  const byAction = countBy('action');
+  const byUser = countBy('user').filter(x => x.k !== '-').slice(0, 8);
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    days.push({ d, n: all.filter(l => String(l.at || '').slice(0, 10) === d).length });
+  }
   res.render('audit/index', {
     activeMenu: 'audit',
     now: new Date().toISOString().slice(0, 16).replace('T', ' '),
     logs: logs.slice(0, 300), total: all.length, actions, q, act,
+    stat, byAction, byUser, days,
   });
 });
 

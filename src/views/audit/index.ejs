@@ -13,6 +13,49 @@
   </div>
 </div>
 
+<!-- ── 대시보드 (전체 기준) ── -->
+<div class="kpi-grid kpi-4col">
+  <div class="kpi-card"><div class="kpi-label">전체 감사 이력</div><div class="kpi-num"><%= stat.total %></div><div class="kpi-sub">최대 1000건 보존</div></div>
+  <div class="kpi-card kpi-new"><div class="kpi-label">오늘 활동</div><div class="kpi-num"><%= stat.today %></div><div class="kpi-sub"><%= now.slice(0,10) %></div></div>
+  <div class="kpi-card" style="border-top-color:#c0392b;"><div class="kpi-label">실패</div><div class="kpi-num" style="color:#c0392b;"><%= stat.fail %></div><div class="kpi-sub">실패율 <%= stat.failRate %>%</div></div>
+  <div class="kpi-card" style="border-top-color:#8e44ad;"><div class="kpi-label">활동 사용자</div><div class="kpi-num" style="color:#8e44ad;"><%= stat.users %></div><div class="kpi-sub">고유 계정 수</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+  <div class="section-box" style="margin:0;">
+    <h3>최근 7일 추이</h3>
+    <% var maxDay = Math.max(1, ...days.map(d => d.n)); %>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:8px;">
+      <% days.forEach(d => { %>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+          <div class="small mono" style="font-size:11px;"><%= d.n %></div>
+          <div title="<%= d.d %>: <%= d.n %>건" style="width:70%;background:#3B82F6;border-radius:3px 3px 0 0;height:<%= Math.round(d.n / maxDay * 90) %>px;min-height:2px;"></div>
+          <div class="muted" style="font-size:10px;margin-top:4px;"><%= d.d.slice(5) %></div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+  <div class="section-box" style="margin:0;">
+    <h3>액션별 분포</h3>
+    <% var maxAct = Math.max(1, ...byAction.map(a => a.v)); %>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <% byAction.slice(0,8).forEach(a => { %>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="small" style="width:120px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= a.k %></div>
+          <div style="flex:1;background:#eef2f7;border-radius:3px;"><div style="width:<%= Math.round(a.v / maxAct * 100) %>%;background:#38BDF8;height:14px;border-radius:3px;min-width:2px;"></div></div>
+          <div class="small mono" style="width:36px;"><%= a.v %></div>
+        </div>
+      <% }); %>
+    </div>
+    <% if (byUser.length) { %>
+      <h3 style="margin-top:14px;">사용자별 활동 (상위)</h3>
+      <div class="small" style="display:flex;flex-wrap:wrap;gap:6px;">
+        <% byUser.forEach(u => { %><span class="audit-act" style="background:#f3e8ff;color:#8e44ad;"><%= u.k %> · <%= u.v %></span><% }); %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
 <div class="section-box">
   <h3>주요 액션 이력 <span class="muted small" style="font-weight:normal;">— 로그인·진단 실행·예외/제외·조치·예약·헬스체크 등 자동 기록 (최신순)</span></h3>
   <form class="afilter" method="get" action="/audit">
