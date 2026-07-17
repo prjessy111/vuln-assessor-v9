@@ -1,0 +1,43 @@
+{
+  "title": "Notification Management",
+  "desc": "Send history of events (vulnerability found, failure, etc.) that occurred during assessment/scheduled runs. Channels are set via the <code>NOTIFIER_CHANNELS</code> environment variable (e.g. <code>console,slack</code>).",
+  "testBtn": "Send Test Notification",
+  "kpi": {
+    "total": "Total",
+    "keep500": "Up to 500 kept",
+    "last24h": "Last 24 Hours",
+    "sendAttempt": "Send attempts",
+    "last7d": "Last 7 Days",
+    "sendFail": "Send Failures",
+    "partialFail": "Incl. partial channel failures",
+    "urgent": "Critical alerts"
+  },
+  "ch": {
+    "title": "Channel Settings",
+    "active": "Active Channels",
+    "changeHint": "change via environment variable (comma-separated)",
+    "email": "Email (SMTP)",
+    "configured": "Configured",
+    "notConfigured": "Not configured",
+    "required": "required",
+    "envRequired": "environment variable required"
+  },
+  "hist": {
+    "title": "Send History (last {n})",
+    "empty": "No notifications have been sent. Run an assessment or click the [Send Test Notification] button above.",
+    "sentAt": "Sent At",
+    "severity": "Severity",
+    "event": "Event",
+    "subject": "Title",
+    "channelResult": "Channel Results"
+  },
+  "js": {
+    "promptSeverity": "Severity (info / warning / error / success):",
+    "promptTitle": "Title:",
+    "defaultTitle": "Test notification",
+    "testBody": "Test notification triggered from the UI",
+    "sendResult": "Send result: ",
+    "failPrefix": "Failed: ",
+    "error": "error"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "title": "ユーザー管理",
+  "role": {
+    "admin": "管理者",
+    "operator": "オペレーター",
+    "viewer": "閲覧者",
+    "adminFull": "管理者(admin)",
+    "operatorFull": "オペレーター(operator)",
+    "viewerFull": "閲覧者(viewer)"
+  },
+  "index": {
+    "desc": "システムユーザーを管理します。<strong>管理者(admin)</strong>のみユーザーの追加/修正/削除が可能です。",
+    "addUser": "+ ユーザー追加",
+    "kpi": {
+      "total": "全ユーザー",
+      "active": "有効",
+      "admin": "管理者",
+      "inactive": "無効"
+    },
+    "listTitle": "ユーザー一覧",
+    "th": {
+      "username": "ユーザーID",
+      "name": "氏名",
+      "email": "メール",
+      "role": "権限",
+      "enabled": "有効",
+      "lastLogin": "最終ログイン",
+      "createdAt": "作成日",
+      "actions": "操作"
+    },
+    "mustChangePw": "⚠ パスワード変更が必要",
+    "active": "有効",
+    "inactive": "無効",
+    "none": "なし",
+    "editBtn": "編集",
+    "roleGuide": {
+      "title": "権限案内",
+      "admin": "すべての機能 + ユーザー管理",
+      "operator": "診断実行、例外/除外登録、レポート閲覧",
+      "viewer": "レポート閲覧のみ可能 (修正不可)"
+    },
+    "js": {
+      "deleteConfirm": "ユーザー「{username}」を削除しますか?",
+      "deleted": "削除しました。",
+      "failPrefix": "失敗: ",
+      "errWord": "エラー"
+    }
+  },
+  "form": {
+    "titleEdit": "ユーザー編集",
+    "titleNew": "ユーザー追加",
+    "headEdit": "ユーザー編集 #{id}",
+    "basicInfo": "基本情報",
+    "username": "ユーザーID",
+    "usernamePh": "英数字/_ 3~30文字",
+    "usernameFixed": "ユーザーIDは変更不可",
+    "name": "氏名",
+    "namePh": "実名",
+    "email": "メール",
+    "pwSection": "パスワード",
+    "pwKeepHint": "空欄の場合は既存パスワードを維持。変更する場合は新しいパスワードを入力。",
+    "newPassword": "新しいパスワード",
+    "password": "パスワード",
+    "min8": "8文字以上",
+    "pwConfirm": "パスワード確認",
+    "retype": "再入力",
+    "roleSection": "権限",
+    "roleAdmin": "管理者 (admin)",
+    "roleOperator": "オペレーター (operator)",
+    "roleViewer": "閲覧者 (viewer)",
+    "roleAdminDesc": "すべての機能 + ユーザー管理",
+    "roleOperatorDesc": "診断/例外/除外など一般運用機能",
+    "roleViewerDesc": "レポート閲覧のみ可能",
+    "statusSection": "状態",
+    "enabled": "有効",
+    "disabledHint": "無効時はログイン不可",
+    "addUser": "ユーザー追加",
+    "js": {
+      "pwMismatch": "パスワードが一致しません。",
+      "updated": "修正しました。",
+      "added": "ユーザーを追加しました。",
+      "failPrefix": "失敗: ",
+      "errWord": "エラー"
+    }
+  },
+  "password": {
+    "title": "パスワード変更",
+    "mustChangeTitle": "⚠ パスワード変更が必要",
+    "mustChangeDesc": "セキュリティ上、初回ログイン時にパスワード変更が必要です。",
+    "current": "現在のパスワード",
+    "new": "新しいパスワード",
+    "newConfirm": "新しいパスワード確認",
+    "newPh": "8文字以上、英数字/記号の組み合わせ推奨",
+    "change": "変更",
+    "js": {
+      "mismatch": "新しいパスワードが一致しません。",
+      "sameAsCurrent": "新しいパスワードは現在のものと異なるものに設定してください。",
+      "changed": "パスワードを変更しました。",
+      "failPrefix": "失敗: ",
+      "errWord": "エラー"
+    }
+  }
+}

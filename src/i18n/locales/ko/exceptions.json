@@ -1,0 +1,152 @@
+{
+  "index": {
+    "title": "예외 관리",
+    "desc": "취약 판정을 받았으나 운영상 사유로 일정 기간 예외 처리하는 항목. 승인 후에만 효력 발생. 만료 임박 시 사전에 연장하거나 조치 완료해야 함.",
+    "btnNew": "+ 예외 신청",
+    "kpi": {
+      "total": "전체",
+      "totalSub": "등록된 예외",
+      "active": "활성",
+      "activeSub": "승인 + 유효기간 내",
+      "pending": "승인 대기",
+      "pendingSub": "CISO 검토 필요",
+      "expiring": "만료 임박",
+      "expiringSub": "30일 이내 만료",
+      "expired": "만료됨",
+      "expiredSub": "갱신/조치 필요"
+    },
+    "searchPh": "🔍 룰ID / 호스트 / 사유 / 신청자 / 승인자 검색",
+    "filter": {
+      "allStatus": "전체 상태",
+      "approved": "승인",
+      "pending": "대기",
+      "rejected": "반려",
+      "allPeriod": "전체 기간",
+      "valid": "유효",
+      "expiring": "만료 임박 (30일)",
+      "expired": "만료됨"
+    },
+    "listTitle": "등록된 예외 ({n}건)",
+    "empty": "등록된 예외가 없습니다.",
+    "emptyLink": "새 예외 신청",
+    "th": {
+      "id": "ID",
+      "ruleHost": "룰 / 호스트",
+      "reason": "사유",
+      "period": "유효기간",
+      "daysLeft": "잔여일",
+      "status": "승인 상태",
+      "requestedBy": "신청자",
+      "approvedBy": "승인자",
+      "actions": "액션"
+    },
+    "notSet": "미설정",
+    "expired": "만료",
+    "days": "{n}일",
+    "status": {
+      "approved": "승인",
+      "pending": "대기",
+      "rejected": "반려"
+    },
+    "btnApprove": "승인",
+    "btnReject": "반려",
+    "btnExtend": "기간 연장",
+    "js": {
+      "approveNote": "승인 메모 (선택):",
+      "rejectReason": "반려 사유:",
+      "rejectRequired": "반려 시 사유 입력이 필요합니다.",
+      "newExpiry": "새 만료일 (YYYY-MM-DD):",
+      "fail": "실패: ",
+      "error": "오류"
+    }
+  },
+  "new": {
+    "title": "예외 신청",
+    "heading": "예외 신청 (일괄 설정)",
+    "desc": "취약 판정 항목에 대한 한시적 예외 처리. CISO 승인 후 효력 발생. 점검항목 × 대상(호스트/계정)을 한 번에 등록할 수 있습니다.",
+    "back": "← 예외 관리",
+    "post": {
+      "heading": "사후 예외 대상",
+      "checkItem": "점검항목",
+      "server": "서버",
+      "serverScopeHtml": "<b>이 서버(호스트) 전체</b>에 예외 적용 <span class=\"muted\">(호스트 단위)</span>",
+      "acctSelect": "계정 선택",
+      "acctSelectSub": "(체크)",
+      "allLoginAccts": "로그인계정 전체",
+      "clear": "해제",
+      "showSystemAccts": "시스템(nologin) 계정도 표시",
+      "noAccounts": "이 서버의 계정 목록을 찾지 못했습니다 (스크립트 진단 원본 없음). 아래에 직접 입력/붙여넣기 하세요.",
+      "acctInput": "계정 직접 입력",
+      "acctInputSub": "(쉼표/공백 다중)",
+      "acctInputPh": "예: root, jessy72, test*",
+      "csvPaste": "CSV 붙여넣기",
+      "csvPasteSub": "(한 줄 1계정, 또는 호스트,계정)"
+    },
+    "basic": {
+      "heading": "① 기본 정보",
+      "titleLabel": "제목",
+      "titlePh": "예: 전자금융기반시설 2026 OS 예외 일괄 (2026-1분기)",
+      "policy": "정책",
+      "basisLabel": "관련 근거",
+      "basisPh": "예외의 근거 (진단결과 ID, 승인 티켓번호, 관련 규정·공문, 검토 회의록 등) — 감사 추적·사후 필터용"
+    },
+    "items": {
+      "heading": "② 점검 항목 선택",
+      "headingSub": "(검색·다중 선택)",
+      "searchLabel": "항목 검색",
+      "searchPh": "SRV 코드 또는 제목으로 검색...",
+      "selectAll": "전체선택",
+      "clear": "해제"
+    },
+    "target": {
+      "heading": "③ 대상 (호스트 · 계정)",
+      "postLinkHtml": "🔗 진단 결과 <code>{id}</code> 사후 예외",
+      "hostLabel": "호스트명",
+      "hostPh": "검색·선택 (호스트명/IP). CSV 일괄 시 비움",
+      "acctLabel": "계정명 / 패턴",
+      "acctPh": "계정 단위만 (예: jessy72). 와일드카드 * 가능(예: test*). 호스트 전체면 비움",
+      "csvLabel": "CSV / Excel 일괄",
+      "csvPh": "호스트명,계정명  (한 줄에 하나)\njessy207,jessy72\njessy207,test*\njessy167,   ← 계정 비우면 호스트 전체",
+      "csvHelpBefore": "여러 호스트/계정에 선택 점검항목 예외를 한 번에.",
+      "csvTemplate": "CSV 템플릿",
+      "csvHelpAfter": "· (CSV 입력 시 위 단일 호스트/계정 무시)"
+    },
+    "reason": {
+      "heading": "예외 사유",
+      "typeLabel": "유형",
+      "select": "— 선택 —",
+      "biz": "비즈니스 요구 (서비스 영향)",
+      "legacy": "레거시 시스템 호환성",
+      "comp": "대체 통제 (Compensating Control)",
+      "noPatch": "벤더 패치 미제공",
+      "reviewing": "조치 방안 검토 중",
+      "etc": "기타",
+      "detailLabel": "상세 사유",
+      "detailPh": "예외 처리가 필요한 구체적 사유",
+      "compLabel": "대체 통제",
+      "compPh": "위험 완화 통제 (방화벽 차단, 모니터링 강화 등)"
+    },
+    "period": {
+      "heading": "유효기간",
+      "from": "시작일",
+      "until": "종료일",
+      "indefinite": "무기한",
+      "note": "권장 30~90일. 무기한은 종료일 없이 영구 적용."
+    },
+    "submit": "예외 신청",
+    "js": {
+      "selectedCount": "선택 {n}개",
+      "hintHostScope": "→ 이 호스트의 모든 대상에 예외 적용 (호스트 단위). 계정 지정하려면 위 체크 해제",
+      "hintAccounts": "→ 계정 {n}개에만 예외: {list}",
+      "hintEmpty": "→ 계정을 체크/입력/붙여넣기 하세요 (비우면 호스트 단위와 동일)",
+      "alertNeedAccount": "계정을 1개 이상 선택/입력/붙여넣기 하거나, \"이 서버 전체\" 체크박스를 선택하세요.",
+      "alertNeedItem": "점검 항목을 1개 이상 선택하세요.",
+      "alertPeriod": "종료일은 시작일 이후여야 합니다. (또는 무기한 체크)",
+      "alertCsv": "CSV 형식 확인 (호스트명,계정명).",
+      "savedAlert": "예외 신청 등록 (승인 대기). ",
+      "createdCount": "{n}건 생성.",
+      "fail": "실패: ",
+      "error": "오류"
+    }
+  }
+}

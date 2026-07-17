@@ -1,0 +1,30 @@
+{
+  "title": "Audit Log",
+  "meta": "Total {total} · as of {now}",
+  "kpi": {
+    "total": "Total Audit Records",
+    "keep1000": "Up to 1000 kept",
+    "today": "Today's Activity",
+    "fail": "Failures",
+    "failRate": "Failure rate {n}%",
+    "users": "Active Users",
+    "uniqueUsers": "Unique accounts"
+  },
+  "trend7d": "7-Day Trend",
+  "byAction": "Distribution by Action",
+  "byUser": "Activity by User (Top)",
+  "list": {
+    "title": "Key Action History",
+    "subtitle": "— auto-recorded: login, assessment runs, exceptions/exclusions, remediation, schedules, health checks, etc. (newest first)",
+    "searchPh": "Search user/target/IP…",
+    "allActions": "All actions",
+    "reset": "Reset",
+    "time": "Time",
+    "user": "User",
+    "role": "Role",
+    "action": "Action",
+    "target": "Target",
+    "result": "Result",
+    "empty": "No audit logs recorded. (Actions such as login and assessment runs are recorded automatically)"
+  }
+}

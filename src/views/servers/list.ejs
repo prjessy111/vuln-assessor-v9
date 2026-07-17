@@ -1,13 +1,13 @@
-<%- include('../_header', { title: '서버 관리' }) %>
+<%- include('../_header', { title: t('servers.title') }) %>
 
 <div style="display:flex;justify-content:space-between;align-items:center;">
-  <h1>서버 관리</h1>
-  <a href="/servers/new" class="btn primary">+ 서버 추가</a>
+  <h1><%= t('servers.title') %></h1>
+  <a href="/servers/new" class="btn primary"><%= t('servers.list.addServer') %></a>
 </div>
 
 <table class="data-table">
   <thead>
-    <tr><th>ID</th><th>표시명</th><th>호스트</th><th>OS</th><th>SSH</th><th>raw 경로</th><th>마지막 수집</th><th>액션</th></tr>
+    <tr><th>ID</th><th><%= t('servers.list.th.name') %></th><th><%= t('servers.list.th.host') %></th><th>OS</th><th>SSH</th><th><%= t('servers.list.th.rawPath') %></th><th><%= t('servers.list.th.lastCollected') %></th><th><%= t('servers.list.th.actions') %></th></tr>
   </thead>
   <tbody>
     <% servers.forEach(s => { %>
@@ -20,23 +20,23 @@
         <% if (s.ssh_user) { %>
           <%= s.ssh_user %> <span class="muted small">(<%= s.ssh_auth_type %>)</span>
         <% } else { %>
-          <span class="muted">미설정</span>
+          <span class="muted"><%= t('servers.list.notSet') %></span>
         <% } %>
       </td>
       <td><code class="small"><%= s.remote_raw_path || '-' %></code></td>
       <td class="small"><%= s.last_collected_at || '-' %></td>
       <td>
-        <a href="/servers/<%= s.server_id %>/edit" class="btn-sm">수정</a>
-        <a href="/assess/new?server_id=<%= s.server_id %>" class="btn-sm primary">진단</a>
+        <a href="/servers/<%= s.server_id %>/edit" class="btn-sm"><%= t('common.btn.edit') %></a>
+        <a href="/assess/new?server_id=<%= s.server_id %>" class="btn-sm primary"><%= t('servers.list.diagnose') %></a>
         <form method="post" action="/servers/<%= s.server_id %>/delete" style="display:inline"
-              onsubmit="return confirm('삭제하시겠습니까?');">
-          <button class="btn-sm danger">삭제</button>
+              onsubmit='return confirm(<%- JSON.stringify(t("servers.list.deleteConfirm")) %>);'>
+          <button class="btn-sm danger"><%= t('common.btn.delete') %></button>
         </form>
       </td>
     </tr>
     <% }); %>
     <% if (!servers.length) { %>
-      <tr><td colspan="8" class="empty">등록된 서버가 없습니다.</td></tr>
+      <tr><td colspan="8" class="empty"><%= t('servers.list.empty') %></td></tr>
     <% } %>
   </tbody>
 </table>

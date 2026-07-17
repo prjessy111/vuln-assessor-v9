@@ -1,0 +1,43 @@
+{
+  "title": "알림 관리",
+  "desc": "진단/예약 실행 중 발생한 이벤트(취약점 발견, 실패 등)의 발송 이력입니다. 채널은 환경변수 <code>NOTIFIER_CHANNELS</code>로 설정 (예: <code>console,slack</code>).",
+  "testBtn": "테스트 알림 발송",
+  "kpi": {
+    "total": "전체",
+    "keep500": "최대 500건 보관",
+    "last24h": "최근 24시간",
+    "sendAttempt": "발송 시도",
+    "last7d": "최근 7일",
+    "sendFail": "발송 실패",
+    "partialFail": "채널별 일부 실패 포함",
+    "urgent": "긴급 알림"
+  },
+  "ch": {
+    "title": "채널 설정",
+    "active": "활성 채널",
+    "changeHint": "환경변수로 변경 (쉼표 구분)",
+    "email": "이메일 (SMTP)",
+    "configured": "설정됨",
+    "notConfigured": "미설정",
+    "required": "필요",
+    "envRequired": "환경변수 필요"
+  },
+  "hist": {
+    "title": "발송 이력 (최근 {n}건)",
+    "empty": "발송된 알림이 없습니다. 진단을 실행하거나 위 [테스트 알림 발송] 버튼을 눌러보세요.",
+    "sentAt": "발송 시각",
+    "severity": "심각도",
+    "event": "이벤트",
+    "subject": "제목",
+    "channelResult": "채널 결과"
+  },
+  "js": {
+    "promptSeverity": "심각도 (info / warning / error / success):",
+    "promptTitle": "제목:",
+    "defaultTitle": "테스트 알림",
+    "testBody": "UI에서 트리거된 테스트 알림",
+    "sendResult": "발송 결과: ",
+    "failPrefix": "실패: ",
+    "error": "오류"
+  }
+}

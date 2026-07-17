@@ -1,0 +1,37 @@
+{
+  "listTitle": "診断履歴",
+  "selectServer": "サーバー選択",
+  "selectPh": "--- 選択 ---",
+  "serverHistory": "{name} 診断履歴 ({n}件)",
+  "col": {
+    "select": "選択",
+    "assessId": "診断ID",
+    "executedAt": "実行日時",
+    "executedBy": "実行者",
+    "ruleset": "ルールセット",
+    "total": "全体",
+    "vuln": "脆弱",
+    "safe": "良好",
+    "elapsedMs": "所要(ms)",
+    "action": "アクション"
+  },
+  "compareBtn": "選択した2件を比較",
+  "selectTwo": "比較する診断を2件選択してください。",
+  "compareTitle": "診断比較",
+  "compareHeading": "診断比較: #{a} vs #{b}",
+  "abSummary": "脆弱 {vuln} / 良好 {safe} / N/A {na}",
+  "chg": {
+    "improved": "改善",
+    "worsened": "悪化",
+    "unchanged": "維持",
+    "addedB": "新規(B)",
+    "removedA": "削除(A)"
+  },
+  "cmp": {
+    "ruleId": "項目ID",
+    "severity": "重要度",
+    "statusA": "A判定",
+    "statusB": "B判定",
+    "change": "変化"
+  }
+}

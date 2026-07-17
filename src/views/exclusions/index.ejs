@@ -1,77 +1,75 @@
-<%- include('../_header', { title: '제외 관리', activeMenu: 'exclusions' }) %>
+<%- include('../_header', { title: t('exclusions.index.title'), activeMenu: 'exclusions' }) %>
 
 <div class="page-header">
-  <h1>제외 관리</h1>
+  <h1><%= t('exclusions.index.title') %></h1>
   <p class="muted small">
-    진단 자체에서 영구적으로 제외할 항목을 관리합니다.
-    <strong>예외 관리</strong>가 한시적 면제(승인 + 기간)라면, <strong>제외</strong>는
-    구조적 미해당(예: 해당 OS에 없는 데몬, 정책상 불필요한 항목)을 평가 대상에서 빼는 처리입니다.
+    <%- t('exclusions.index.descHtml') %>
   </p>
   <div class="header-actions">
-    <a href="/exclusions/new" class="btn primary">+ 제외 등록</a>
+    <a href="/exclusions/new" class="btn primary"><%= t('exclusions.index.btnNew') %></a>
   </div>
 </div>
 
 <!-- KPI -->
 <div class="kpi-grid kpi-4col">
   <div class="kpi-card">
-    <div class="kpi-label">전체 제외</div>
+    <div class="kpi-label"><%= t('exclusions.index.kpi.total') %></div>
     <div class="kpi-num"><%= kpi.total %></div>
-    <div class="kpi-sub">등록 건수</div>
+    <div class="kpi-sub"><%= t('exclusions.index.kpi.totalSub') %></div>
   </div>
   <div class="kpi-card kpi-success">
-    <div class="kpi-label">활성 제외</div>
+    <div class="kpi-label"><%= t('exclusions.index.kpi.active') %></div>
     <div class="kpi-num" style="color:#27ae60;"><%= kpi.active %></div>
-    <div class="kpi-sub">현재 적용 중</div>
+    <div class="kpi-sub"><%= t('exclusions.index.kpi.activeSub') %></div>
   </div>
   <div class="kpi-card kpi-avg">
-    <div class="kpi-label">서버 단위</div>
+    <div class="kpi-label"><%= t('exclusions.index.kpi.server') %></div>
     <div class="kpi-num"><%= (kpi.by_target_type && kpi.by_target_type.server) || 0 %></div>
-    <div class="kpi-sub">특정 서버 제외</div>
+    <div class="kpi-sub"><%= t('exclusions.index.kpi.serverSub') %></div>
   </div>
   <div class="kpi-card kpi-avg">
-    <div class="kpi-label">룰 단위</div>
+    <div class="kpi-label"><%= t('exclusions.index.kpi.rule') %></div>
     <div class="kpi-num"><%= (kpi.by_target_type && kpi.by_target_type.rule) || 0 %></div>
-    <div class="kpi-sub">특정 룰 전역 제외</div>
+    <div class="kpi-sub"><%= t('exclusions.index.kpi.ruleSub') %></div>
   </div>
 </div>
 
 <!-- 필터 -->
 <div class="section-box">
   <div class="filter-bar">
-    <input type="text" id="searchInput" placeholder="🔍 룰ID / 서버 / 사유 / 등록자 검색" class="filter-input">
+    <input type="text" id="searchInput" placeholder="<%= t('exclusions.index.searchPh') %>" class="filter-input">
     <select id="typeFilter" class="filter-select">
-      <option value="">전체 유형</option>
-      <option value="server">서버 단위</option>
-      <option value="rule">룰 단위</option>
-      <option value="combo">서버+룰 조합</option>
+      <option value=""><%= t('exclusions.index.filter.allTypes') %></option>
+      <option value="server"><%= t('exclusions.index.filter.server') %></option>
+      <option value="rule"><%= t('exclusions.index.filter.rule') %></option>
+      <option value="combo"><%= t('exclusions.index.filter.combo') %></option>
     </select>
     <select id="enabledFilter" class="filter-select">
-      <option value="">전체 상태</option>
-      <option value="1">활성</option>
-      <option value="0">비활성</option>
+      <option value=""><%= t('exclusions.index.filter.allStatus') %></option>
+      <option value="1"><%= t('exclusions.index.filter.enabled') %></option>
+      <option value="0"><%= t('exclusions.index.filter.disabled') %></option>
     </select>
   </div>
 </div>
 
 <!-- 제외 목록 -->
 <div class="section-box">
-  <h3>등록된 제외 (<%= exclusions.length %>건)</h3>
+  <h3><%= t('exclusions.index.listTitle', { n: exclusions.length }) %></h3>
   <% if (!exclusions.length) { %>
-    <p class="muted">등록된 제외 항목이 없습니다. <a href="/exclusions/new">제외 등록</a>.</p>
+    <p class="muted"><%= t('exclusions.index.empty') %> <a href="/exclusions/new"><%= t('exclusions.index.emptyLink') %></a>.</p>
   <% } else { %>
     <table class="data-table" id="exclusionsTable">
       <thead>
         <tr>
-          <th>활성</th>
-          <th>ID</th>
-          <th>유형</th>
-          <th>대상 룰</th>
-          <th>대상 서버</th>
-          <th>사유</th>
-          <th>등록자</th>
-          <th>등록일</th>
-          <th>액션</th>
+          <th><%= t('exclusions.index.th.enabled') %></th>
+          <th><%= t('exclusions.index.th.id') %></th>
+          <th><%= t('exclusions.index.th.type') %></th>
+          <th><%= t('exclusions.index.th.rule') %></th>
+          <th><%= t('exclusions.index.th.server') %></th>
+          <th><%= t('exclusions.index.th.reason') %></th>
+          <th><%= t('exclusions.index.th.registeredBy') %></th>
+          <th><%= t('exclusions.index.th.registeredAt') %></th>
+          <th><%= t('exclusions.index.th.actions') %></th>
         </tr>
       </thead>
       <tbody>
@@ -89,7 +87,7 @@
             <td>#<%= e.exclusion_id %></td>
             <td>
               <% var tt = e.target_type || 'unknown'; %>
-              <% var label = { server: '서버', rule: '룰', combo: '서버+룰' }[tt] || tt; %>
+              <% var label = { server: t('exclusions.index.type.server'), rule: t('exclusions.index.type.rule'), combo: t('exclusions.index.type.combo') }[tt] || tt; %>
               <span class="status-badge"><%= label %></span>
             </td>
             <td><strong><%= e.rule_id || '-' %></strong></td>
@@ -99,7 +97,7 @@
               <% } else if (e.server_id) { %>
                 #<%= e.server_id %>
               <% } else { %>
-                <span class="muted">전체</span>
+                <span class="muted"><%= t('exclusions.index.allServers') %></span>
               <% } %>
             </td>
             <td class="small" style="max-width:320px;">
@@ -109,7 +107,7 @@
             <td class="small"><%= (e.registered_at || '').slice(0, 10) %></td>
             <td>
               <button class="btn-sm" onclick="toggleExclusion(<%= e.exclusion_id %>)">
-                <%= e.enabled ? '비활성화' : '활성화' %>
+                <%= e.enabled ? t('exclusions.index.btnDisable') : t('exclusions.index.btnEnable') %>
               </button>
             </td>
           </tr>
@@ -127,13 +125,19 @@
 </style>
 
 <script>
+var I18N = <%- JSON.stringify({
+  confirmToggle: t('exclusions.index.js.confirmToggle'),
+  fail: t('exclusions.index.js.fail'),
+  error: t('exclusions.index.js.error')
+}) %>;
+
 function toggleExclusion(id) {
-  if (!confirm('이 제외 항목의 활성 상태를 전환하시겠습니까?')) return;
+  if (!confirm(I18N.confirmToggle)) return;
   fetch('/exclusions/' + id + '/toggle', { method: 'POST' })
     .then(r => r.json())
     .then(j => {
       if (j.status === 'success') location.reload();
-      else alert('실패: ' + (j.error || '오류'));
+      else alert(I18N.fail + (j.error || I18N.error));
     });
 }
 

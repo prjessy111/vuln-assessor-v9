@@ -1,0 +1,37 @@
+{
+  "listTitle": "Assessment History",
+  "selectServer": "Select Server",
+  "selectPh": "--- Select ---",
+  "serverHistory": "{name} Assessment History ({n})",
+  "col": {
+    "select": "Select",
+    "assessId": "Assessment ID",
+    "executedAt": "Executed At",
+    "executedBy": "Executed By",
+    "ruleset": "Ruleset",
+    "total": "Total",
+    "vuln": "Vulnerable",
+    "safe": "Good",
+    "elapsedMs": "Elapsed (ms)",
+    "action": "Action"
+  },
+  "compareBtn": "Compare 2 Selected",
+  "selectTwo": "Select exactly 2 assessments to compare.",
+  "compareTitle": "Assessment Compare",
+  "compareHeading": "Assessment Compare: #{a} vs #{b}",
+  "abSummary": "Vulnerable {vuln} / Good {safe} / N/A {na}",
+  "chg": {
+    "improved": "Improved",
+    "worsened": "Worsened",
+    "unchanged": "Unchanged",
+    "addedB": "New (B)",
+    "removedA": "Removed (A)"
+  },
+  "cmp": {
+    "ruleId": "Rule ID",
+    "severity": "Severity",
+    "statusA": "A Status",
+    "statusB": "B Status",
+    "change": "Change"
+  }
+}

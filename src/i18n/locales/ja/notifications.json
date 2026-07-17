@@ -1,0 +1,43 @@
+{
+  "title": "通知管理",
+  "desc": "診断/スケジュール実行中に発生したイベント(脆弱性検出、失敗など)の送信履歴です。チャネルは環境変数 <code>NOTIFIER_CHANNELS</code> で設定 (例: <code>console,slack</code>)。",
+  "testBtn": "テスト通知送信",
+  "kpi": {
+    "total": "全体",
+    "keep500": "最大500件保管",
+    "last24h": "直近24時間",
+    "sendAttempt": "送信試行",
+    "last7d": "直近7日",
+    "sendFail": "送信失敗",
+    "partialFail": "チャネル別一部失敗を含む",
+    "urgent": "緊急通知"
+  },
+  "ch": {
+    "title": "チャネル設定",
+    "active": "有効チャネル",
+    "changeHint": "環境変数で変更 (カンマ区切り)",
+    "email": "メール (SMTP)",
+    "configured": "設定済み",
+    "notConfigured": "未設定",
+    "required": "が必要",
+    "envRequired": "環境変数が必要"
+  },
+  "hist": {
+    "title": "送信履歴 (直近 {n}件)",
+    "empty": "送信された通知はありません。診断を実行するか、上の[テスト通知送信]ボタンを押してください。",
+    "sentAt": "送信時刻",
+    "severity": "重大度",
+    "event": "イベント",
+    "subject": "タイトル",
+    "channelResult": "チャネル結果"
+  },
+  "js": {
+    "promptSeverity": "重大度 (info / warning / error / success):",
+    "promptTitle": "タイトル:",
+    "defaultTitle": "テスト通知",
+    "testBody": "UIからトリガーされたテスト通知",
+    "sendResult": "送信結果: ",
+    "failPrefix": "失敗: ",
+    "error": "エラー"
+  }
+}

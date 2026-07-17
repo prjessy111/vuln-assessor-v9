@@ -1,0 +1,152 @@
+{
+  "index": {
+    "title": "例外管理",
+    "desc": "脆弱と判定されたが、運用上の理由で一定期間例外処理する項目。承認後にのみ効力が発生。期限切れが近い場合は事前に延長するか対応を完了する必要があります。",
+    "btnNew": "+ 例外申請",
+    "kpi": {
+      "total": "全体",
+      "totalSub": "登録された例外",
+      "active": "有効",
+      "activeSub": "承認 + 有効期間内",
+      "pending": "承認待ち",
+      "pendingSub": "CISOレビュー必要",
+      "expiring": "期限切れ間近",
+      "expiringSub": "30日以内に期限切れ",
+      "expired": "期限切れ",
+      "expiredSub": "更新・対応が必要"
+    },
+    "searchPh": "🔍 ルールID / ホスト / 理由 / 申請者 / 承認者 検索",
+    "filter": {
+      "allStatus": "すべての状態",
+      "approved": "承認",
+      "pending": "待機",
+      "rejected": "差し戻し",
+      "allPeriod": "すべての期間",
+      "valid": "有効",
+      "expiring": "期限切れ間近 (30日)",
+      "expired": "期限切れ"
+    },
+    "listTitle": "登録された例外 ({n}件)",
+    "empty": "登録された例外はありません。",
+    "emptyLink": "新規例外申請",
+    "th": {
+      "id": "ID",
+      "ruleHost": "ルール / ホスト",
+      "reason": "理由",
+      "period": "有効期間",
+      "daysLeft": "残り日数",
+      "status": "承認状態",
+      "requestedBy": "申請者",
+      "approvedBy": "承認者",
+      "actions": "アクション"
+    },
+    "notSet": "未設定",
+    "expired": "期限切れ",
+    "days": "{n}日",
+    "status": {
+      "approved": "承認",
+      "pending": "待機",
+      "rejected": "差し戻し"
+    },
+    "btnApprove": "承認",
+    "btnReject": "差し戻し",
+    "btnExtend": "期間延長",
+    "js": {
+      "approveNote": "承認メモ (任意):",
+      "rejectReason": "差し戻し理由:",
+      "rejectRequired": "差し戻しには理由の入力が必要です。",
+      "newExpiry": "新しい期限日 (YYYY-MM-DD):",
+      "fail": "失敗: ",
+      "error": "エラー"
+    }
+  },
+  "new": {
+    "title": "例外申請",
+    "heading": "例外申請 (一括設定)",
+    "desc": "脆弱判定項目に対する一時的な例外処理。CISO承認後に効力発生。点検項目 × 対象(ホスト/アカウント)を一度に登録できます。",
+    "back": "← 例外管理",
+    "post": {
+      "heading": "事後例外対象",
+      "checkItem": "点検項目",
+      "server": "サーバー",
+      "serverScopeHtml": "<b>このサーバー(ホスト)全体</b>に例外を適用 <span class=\"muted\">(ホスト単位)</span>",
+      "acctSelect": "アカウント選択",
+      "acctSelectSub": "(チェック)",
+      "allLoginAccts": "ログインアカウント全体",
+      "clear": "解除",
+      "showSystemAccts": "システム(nologin)アカウントも表示",
+      "noAccounts": "このサーバーのアカウント一覧が見つかりませんでした (スクリプト診断の原本なし)。下に直接入力/貼り付けしてください。",
+      "acctInput": "アカウント直接入力",
+      "acctInputSub": "(カンマ/スペース区切り)",
+      "acctInputPh": "例: root, jessy72, test*",
+      "csvPaste": "CSV貼り付け",
+      "csvPasteSub": "(1行1アカウント、またはホスト,アカウント)"
+    },
+    "basic": {
+      "heading": "① 基本情報",
+      "titleLabel": "タイトル",
+      "titlePh": "例: 電子金融基盤施設 2026 OS 例外一括 (2026-第1四半期)",
+      "policy": "ポリシー",
+      "basisLabel": "関連根拠",
+      "basisPh": "例外の根拠 (診断結果ID、承認チケット番号、関連規定・公文、検討議事録など) — 監査追跡・事後フィルター用"
+    },
+    "items": {
+      "heading": "② 点検項目選択",
+      "headingSub": "(検索・複数選択)",
+      "searchLabel": "項目検索",
+      "searchPh": "SRVコードまたはタイトルで検索...",
+      "selectAll": "全選択",
+      "clear": "解除"
+    },
+    "target": {
+      "heading": "③ 対象 (ホスト · アカウント)",
+      "postLinkHtml": "🔗 診断結果 <code>{id}</code> 事後例外",
+      "hostLabel": "ホスト名",
+      "hostPh": "検索・選択 (ホスト名/IP)。CSV一括時は空欄",
+      "acctLabel": "アカウント名 / パターン",
+      "acctPh": "アカウント単位のみ (例: jessy72)。ワイルドカード * 可 (例: test*)。ホスト全体なら空欄",
+      "csvLabel": "CSV / Excel 一括",
+      "csvPh": "ホスト名,アカウント名  (1行に1つ)\njessy207,jessy72\njessy207,test*\njessy167,   ← アカウント空欄でホスト全体",
+      "csvHelpBefore": "複数のホスト/アカウントに選択した点検項目の例外を一度に。",
+      "csvTemplate": "CSVテンプレート",
+      "csvHelpAfter": "· (CSV入力時は上の単一ホスト/アカウントを無視)"
+    },
+    "reason": {
+      "heading": "例外理由",
+      "typeLabel": "種類",
+      "select": "— 選択 —",
+      "biz": "ビジネス要求 (サービス影響)",
+      "legacy": "レガシーシステム互換性",
+      "comp": "代替統制 (Compensating Control)",
+      "noPatch": "ベンダーパッチ未提供",
+      "reviewing": "対応方針検討中",
+      "etc": "その他",
+      "detailLabel": "詳細理由",
+      "detailPh": "例外処理が必要な具体的な理由",
+      "compLabel": "代替統制",
+      "compPh": "リスク軽減統制 (ファイアウォール遮断、監視強化など)"
+    },
+    "period": {
+      "heading": "有効期間",
+      "from": "開始日",
+      "until": "終了日",
+      "indefinite": "無期限",
+      "note": "推奨30~90日。無期限は終了日なしで永久適用。"
+    },
+    "submit": "例外申請",
+    "js": {
+      "selectedCount": "選択 {n}個",
+      "hintHostScope": "→ このホストのすべての対象に例外を適用 (ホスト単位)。アカウントを指定するには上のチェックを解除",
+      "hintAccounts": "→ アカウント {n}個のみに例外: {list}",
+      "hintEmpty": "→ アカウントをチェック/入力/貼り付けしてください (空欄ならホスト単位と同じ)",
+      "alertNeedAccount": "アカウントを1つ以上選択/入力/貼り付けするか、「このサーバー全体」チェックボックスを選択してください。",
+      "alertNeedItem": "点検項目を1つ以上選択してください。",
+      "alertPeriod": "終了日は開始日より後である必要があります。(または無期限をチェック)",
+      "alertCsv": "CSV形式を確認してください (ホスト名,アカウント名)。",
+      "savedAlert": "例外申請を登録しました (承認待ち)。",
+      "createdCount": "{n}件作成。",
+      "fail": "失敗: ",
+      "error": "エラー"
+    }
+  }
+}

@@ -1,81 +1,81 @@
-<%- include('../_header', { title: '진단 관리', activeMenu: 'diagnosis' }) %>
+<%- include('../_header', { title: t('diagnosis.list.title'), activeMenu: 'diagnosis' }) %>
 
 <div class="page-header">
-  <h1>진단 관리</h1>
+  <h1><%= t('diagnosis.list.title') %></h1>
   <div class="header-actions">
-    <button class="btn primary" onclick="runAiDiagnosis(1)" style="background:#6c5ce7;border-color:#6c5ce7;">🤖 AI 진단 실행</button>
-    <a href="/diagnosis/upload" class="btn">📁 Raw 파일 임포트</a>
-    <a href="/scheduler/history" class="btn">🔄 자동 수집 이력</a>
-    <a href="/schedules" class="btn">예약 진단</a>
+    <button class="btn primary" onclick="runAiDiagnosis(1)" style="background:#6c5ce7;border-color:#6c5ce7;"><%= t('diagnosis.list.btnAiRun') %></button>
+    <a href="/diagnosis/upload" class="btn"><%= t('diagnosis.list.btnRawImport') %></a>
+    <a href="/scheduler/history" class="btn"><%= t('diagnosis.list.btnAutoHistory') %></a>
+    <a href="/schedules" class="btn"><%= t('diagnosis.list.btnSchedules') %></a>
   </div>
 </div>
 
 <!-- 진단 KPI -->
 <div class="kpi-grid kpi-4col">
   <div class="kpi-card kpi-success">
-    <div class="kpi-label">최근 7일 진단 성공</div>
+    <div class="kpi-label"><%= t('diagnosis.list.kpi.success7d') %></div>
     <div class="kpi-num"><%= kpi.success7d %></div>
-    <div class="kpi-sub">전체 <%= kpi.total7d %>건 중</div>
+    <div class="kpi-sub"><%= t('diagnosis.list.kpi.success7dSub', { n: kpi.total7d }) %></div>
   </div>
   <div class="kpi-card kpi-fail">
-    <div class="kpi-label">진단 실패</div>
+    <div class="kpi-label"><%= t('diagnosis.list.kpi.failed') %></div>
     <div class="kpi-num"><%= kpi.failed7d %></div>
-    <div class="kpi-sub">조치 필요</div>
+    <div class="kpi-sub"><%= t('diagnosis.list.kpi.failedSub') %></div>
   </div>
   <div class="kpi-card kpi-running">
-    <div class="kpi-label">진행 중</div>
+    <div class="kpi-label"><%= t('diagnosis.list.kpi.running') %></div>
     <div class="kpi-num"><%= kpi.running %></div>
-    <div class="kpi-sub">실시간</div>
+    <div class="kpi-sub"><%= t('diagnosis.list.kpi.runningSub') %></div>
   </div>
   <div class="kpi-card kpi-avg">
-    <div class="kpi-label">평균 소요시간</div>
+    <div class="kpi-label"><%= t('diagnosis.list.kpi.avgElapsed') %></div>
     <div class="kpi-num"><%= fmtMs(kpi.avgElapsedMs) %></div>
-    <div class="kpi-sub">최근 30건</div>
+    <div class="kpi-sub"><%= t('diagnosis.list.kpi.avgElapsedSub') %></div>
   </div>
 </div>
 
 <!-- 진단 이력 -->
 <div class="section-box">
-  <h3>최근 진단 이력</h3>
+  <h3><%= t('diagnosis.list.historyTitle') %></h3>
   <div class="filter-row" style="margin-bottom:12px;">
-    <input type="search" id="diagSearch" placeholder="검색 (진단ID/호스트/자산번호/실행자)...">
+    <input type="search" id="diagSearch" placeholder="<%= t('diagnosis.list.searchPh') %>">
     <select id="diagStatus">
-      <option value="">전체 상태</option>
-      <option value="success">성공</option>
-      <option value="failed">실패</option>
-      <option value="running">진행중</option>
+      <option value=""><%= t('diagnosis.list.allStatus') %></option>
+      <option value="success"><%= t('diagnosis.list.optSuccess') %></option>
+      <option value="failed"><%= t('diagnosis.list.optFailed') %></option>
+      <option value="running"><%= t('diagnosis.list.optRunning') %></option>
     </select>
     <select id="diagType">
-      <option value="">전체 유형</option>
+      <option value=""><%= t('diagnosis.list.allType') %></option>
       <option value="ai">AI</option>
       <option value="llm">LLM</option>
     </select>
     <select id="diagSource">
-      <option value="">전체 소스</option>
+      <option value=""><%= t('diagnosis.list.allSource') %></option>
       <option value="secums">SecuMS Raw</option>
       <option value="script">Script</option>
       <option value="both">SecuMS+Script</option>
     </select>
     <input type="date" id="diagFrom">
     <input type="date" id="diagTo">
-    <button class="btn-sm" onclick="applyDiagnosisFilter()">필터 적용</button>
-    <button class="btn-sm" onclick="resetDiagnosisFilter()">초기화</button>
+    <button class="btn-sm" onclick="applyDiagnosisFilter()"><%= t('diagnosis.list.btnApplyFilter') %></button>
+    <button class="btn-sm" onclick="resetDiagnosisFilter()"><%= t('diagnosis.list.btnReset') %></button>
   </div>
   <table class="data-table" id="diagnosisTable">
     <thead>
       <tr>
         <th>#</th>
-        <th>서버</th>
-        <th>자산번호</th>
-        <th>룰셋</th>
-        <th>유형</th>
-        <th>실행 시각</th>
-        <th>소요시간</th>
-        <th>상태</th>
-        <th>결과 / 실패사유</th>
-        <th>검증 실패율</th>
-        <th>실행자</th>
-        <th>액션</th>
+        <th><%= t('diagnosis.list.th.server') %></th>
+        <th><%= t('diagnosis.list.th.assetNo') %></th>
+        <th><%= t('diagnosis.list.th.ruleset') %></th>
+        <th><%= t('diagnosis.list.th.type') %></th>
+        <th><%= t('diagnosis.list.th.executedAt') %></th>
+        <th><%= t('diagnosis.list.th.elapsed') %></th>
+        <th><%= t('diagnosis.list.th.status') %></th>
+        <th><%= t('diagnosis.list.th.result') %></th>
+        <th><%= t('diagnosis.list.th.failRate') %></th>
+        <th><%= t('diagnosis.list.th.executedBy') %></th>
+        <th><%= t('diagnosis.list.th.action') %></th>
       </tr>
     </thead>
     <tbody>
@@ -100,7 +100,7 @@
                if (_dt === 'llm') { _badge = 'LLM' + (_model ? ' · ' + _model : ''); _color = '#6c5ce7'; }
                else if (_dt === 'ai') { _badge = 'AI (mock)'; _color = '#16a085'; }
                else if (_dt === 'ai_llm') { _badge = 'AI+LLM'; _color = '#2980b9'; }
-               else { _badge = _dt || '룰셋'; _color = '#7f8c8d'; } %>
+               else { _badge = _dt || t('diagnosis.list.badgeRuleset'); _color = '#7f8c8d'; } %>
             <span style="background:<%= _color %>;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap;"><%= _badge %></span>
           </td>
           <td class="mono small"><%= d.executed_at %></td>
@@ -109,25 +109,25 @@
           </td>
           <td>
             <% if (d.status === 'success') { %>
-              <span class="status-badge st-success">✓ 성공</span>
+              <span class="status-badge st-success"><%= t('diagnosis.list.stSuccess') %></span>
             <% } else if (d.status === 'failed') { %>
-              <span class="status-badge st-failed">✗ 실패</span>
+              <span class="status-badge st-failed"><%= t('diagnosis.list.stFailed') %></span>
             <% } else if (d.status === 'running') { %>
-              <span class="status-badge st-running">▶ 진행중</span>
+              <span class="status-badge st-running"><%= t('diagnosis.list.stRunning') %></span>
             <% } %>
           </td>
           <td class="long-text small">
             <% if (d.status === 'success') { %>
               <span class="diag-result">
-                점검 <%= d.total_count %>건 — 
-                <span class="b-vuln">취약 <%= d.vuln_count %></span> /
-                <span class="b-safe">양호 <%= d.safe_count %></span> /
-                <span class="b-info">정보제공 <%= d.info_count || 0 %></span> /
-                <span class="b-na">판정불가 <%= d.na_count %></span>
+                <%= t('diagnosis.list.resTotal', { n: d.total_count }) %>
+                <span class="b-vuln"><%= t('diagnosis.list.resVuln', { n: d.vuln_count }) %></span> /
+                <span class="b-safe"><%= t('diagnosis.list.resSafe', { n: d.safe_count }) %></span> /
+                <span class="b-info"><%= t('diagnosis.list.resInfo', { n: d.info_count || 0 }) %></span> /
+                <span class="b-na"><%= t('diagnosis.list.resNa', { n: d.na_count }) %></span>
               </span>
             <% } else if (d.status === 'failed') { %>
               <div class="fail-reason">
-                <strong>실패 사유:</strong> <%= d.error_phase %>
+                <strong><%= t('diagnosis.list.failReason') %></strong> <%= d.error_phase %>
                 <div class="fail-detail"><%= d.error_message %></div>
               </div>
             <% } else if (d.status === 'running') { %>
@@ -144,7 +144,7 @@
                    ? d.validation_failure_rate
                    : (compCount ? Math.round(realFail / compCount * 100) : 0); %>
               <strong style="color:<%= failRate > 0 ? '#c0392b' : '#27ae60' %>;"><%= failRate %>%</strong>
-              <div class="muted small">실패 <%= realFail %> / 검토 <%= needsReview %></div>
+              <div class="muted small"><%= t('diagnosis.list.valFail', { a: realFail, b: needsReview }) %></div>
             <% } else { %>
               <span class="muted">-</span>
             <% } %>
@@ -153,22 +153,22 @@
           <td>
             <% if (d.status === 'success') { %>
               <% if (d.diagnose_type === 'ai' || d.diagnose_type === 'llm') { %>
-                <a href="/diagnosis/<%= d.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">🤖 <%= d.diagnose_type === 'llm' ? 'LLM' : 'AI' %> 결과</a>
+                <a href="/diagnosis/<%= d.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">🤖 <%= d.diagnose_type === 'llm' ? 'LLM' : 'AI' %> <%= t('diagnosis.list.btnResult') %></a>
                 <% if (d.diagnose_type === 'ai' || d.diagnose_type === 'llm') { %>
-                  <a href="/reports/<%= d.assessment_id %>/fsi" class="btn-sm">리포트1</a>
-                  <a href="/reports/<%= d.assessment_id %>/samsung" class="btn-sm">리포트2</a>
-                  <a href="/reports/<%= d.assessment_id %>/policy3" class="btn-sm" style="background:#0984e3;color:#fff;">리포트3(타사)</a>
-                  <a href="/reports/<%= d.assessment_id %>/remediation" class="btn-sm" style="background:#27ae60;color:#fff;">🔧 조치 가이드</a>
+                  <a href="/reports/<%= d.assessment_id %>/fsi" class="btn-sm"><%= t('diagnosis.list.btnReport1') %></a>
+                  <a href="/reports/<%= d.assessment_id %>/samsung" class="btn-sm"><%= t('diagnosis.list.btnReport2') %></a>
+                  <a href="/reports/<%= d.assessment_id %>/policy3" class="btn-sm" style="background:#0984e3;color:#fff;"><%= t('diagnosis.list.btnReport3') %></a>
+                  <a href="/reports/<%= d.assessment_id %>/remediation" class="btn-sm" style="background:#27ae60;color:#fff;"><%= t('diagnosis.list.btnRemGuide') %></a>
                 <% } %>
-                <a href="/diagnosis/<%= d.assessment_id %>/cve" class="btn-sm" style="background:#8e44ad;color:#fff;">🛡 CVE</a>
+                <a href="/diagnosis/<%= d.assessment_id %>/cve" class="btn-sm" style="background:#8e44ad;color:#fff;"><%= t('diagnosis.list.btnCve') %></a>
               <% } else { %>
-                <span class="muted small">(구 룰셋 진단 — AI 진단 재실행 권장)</span>
+                <span class="muted small"><%= t('diagnosis.list.legacyNote') %></span>
               <% } %>
             <% } else if (d.status === 'failed') { %>
-              <a href="/diagnosis/<%= d.assessment_id %>/retry" class="btn-sm">재시도</a>
-              <a href="/diagnosis/<%= d.assessment_id %>/log" class="btn-sm">로그</a>
+              <a href="/diagnosis/<%= d.assessment_id %>/retry" class="btn-sm"><%= t('diagnosis.list.btnRetry') %></a>
+              <a href="/diagnosis/<%= d.assessment_id %>/log" class="btn-sm"><%= t('diagnosis.list.btnLog') %></a>
             <% } else if (d.status === 'running') { %>
-              <a href="/diagnosis/<%= d.assessment_id %>/cancel" class="btn-sm danger">중단</a>
+              <a href="/diagnosis/<%= d.assessment_id %>/cancel" class="btn-sm danger"><%= t('diagnosis.list.btnCancelRun') %></a>
             <% } %>
           </td>
         </tr>
@@ -179,7 +179,7 @@
 
 <!-- 실패 패턴 분석 -->
 <div class="section-box">
-  <h3>실패 패턴 분석 (최근 30일)</h3>
+  <h3><%= t('diagnosis.list.failPatternTitle') %></h3>
   <div class="fail-stats">
     <% failPatterns.forEach(p => { %>
       <div class="fail-pattern-row">
@@ -190,7 +190,7 @@
         <div class="fp-bar">
           <div class="fp-fill" style="width:<%= p.count / failPatterns[0].count * 100 %>%"></div>
         </div>
-        <div class="fp-count"><%= p.count %>회</div>
+        <div class="fp-count"><%= t('diagnosis.list.timesUnit', { n: p.count }) %></div>
       </div>
     <% }); %>
   </div>
@@ -231,11 +231,11 @@ function resetDiagnosisFilter() {
 });
 
 function runAiDiagnosis(serverId) {
-  if (!confirm('AI 진단을 실행합니다.\n\nSecuMS raw DB의 64개 항목을 LLM이 직접 분석하여 판정합니다.\n현재 LLM 설정: ' + (window.LLM_PROVIDER || 'mock') + ' (개발 환경이면 mock)\n\n계속할까요?')) return;
+  if (!confirm(<%- JSON.stringify(t('diagnosis.list.confirmAiRun1')) %> + (window.LLM_PROVIDER || 'mock') + <%- JSON.stringify(t('diagnosis.list.confirmAiRun2')) %>)) return;
   const btn = event.target;
   const orig = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '🤖 AI 진단 중...';
+  btn.textContent = <%- JSON.stringify(t('diagnosis.list.aiRunning')) %>;
   fetch('/diagnosis/ai-run', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -247,13 +247,13 @@ function runAiDiagnosis(serverId) {
         alert(j.message);
         location.href = '/diagnosis/' + j.assessment_id + '/ai';
       } else {
-        alert('실패: ' + (j.error || '오류'));
+        alert(<%- JSON.stringify(t('diagnosis.list.failPrefix')) %> + (j.error || <%- JSON.stringify(t('diagnosis.list.errUnknown')) %>));
         btn.disabled = false;
         btn.textContent = orig;
       }
     })
     .catch(e => {
-      alert('오류: ' + e.message);
+      alert(<%- JSON.stringify(t('diagnosis.list.errPrefix')) %> + e.message);
       btn.disabled = false;
       btn.textContent = orig;
     });

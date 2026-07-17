@@ -1,84 +1,83 @@
-<%- include('../_header', { title: '리포트1', activeMenu: 'reports' }) %>
+<%- include('../_header', { title: t('reports.fsi.all.title'), activeMenu: 'reports' }) %>
 
 <div class="report-header">
-  <h1>진단 리포트 #<%= session.assessment_id %> (리포트1)</h1>
+  <h1><%= t('reports.fsi.all.h1', { id: session.assessment_id }) %></h1>
   <div class="report-actions">
-    <a href="/reports/<%= session.assessment_id %>/fsi/vuln" class="btn" style="background:#c0392b;color:#fff;">🚨 취약점만 보기</a>
-    <a href="/reports/<%= session.assessment_id %>/samsung" class="btn">리포트2로</a>
-    <a href="/reports/<%= session.assessment_id %>/fsi/xlsx" class="btn primary">XLSX 다운로드</a>
-    <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
-    <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
-    <a href="/history?server_id=<%= session.server_id %>" class="btn">이력으로</a>
+    <a href="/reports/<%= session.assessment_id %>/fsi/vuln" class="btn" style="background:#c0392b;color:#fff;"><%= t('reports.common.vulnOnly') %></a>
+    <a href="/reports/<%= session.assessment_id %>/samsung" class="btn"><%= t('reports.fsi.all.toR2') %></a>
+    <a href="/reports/<%= session.assessment_id %>/fsi/xlsx" class="btn primary"><%= t('reports.common.xlsx') %></a>
+    <button type="button" onclick="printReport()" class="btn"><%= t('reports.common.pdf') %></button>
+    <button type="button" onclick="downloadReportHtml()" class="btn"><%= t('reports.common.html') %></button>
+    <a href="/history?server_id=<%= session.server_id %>" class="btn"><%= t('reports.common.toHistory') %></a>
   </div>
 </div>
 
 <table class="meta-table">
-  <tr><th>호스트명</th><td><%= session.hostname %></td>
-      <th>자산번호</th><td><%= session.asset_no || '미등록' %></td></tr>
-  <tr><th>업무명/용도</th><td><%= session.service_name || '미등록' %></td>
+  <tr><th><%= t('reports.common.hostname') %></th><td><%= session.hostname %></td>
+      <th><%= t('reports.common.assetNo') %></th><td><%= session.asset_no || t('reports.common.notRegistered') %></td></tr>
+  <tr><th><%= t('reports.common.serviceName') %></th><td><%= session.service_name || t('reports.common.notRegistered') %></td>
       <th>IP</th><td><%= session.ip_address || '-' %></td></tr>
-  <tr><th>분석환경</th><td><%= session.os_type %> <%= session.os_version ? `(${session.os_version})` : '' %> / <%= session.policy_name %></td>
-      <th>진단일시</th><td><%= session.executed_at %></td></tr>
-  <tr><th>운영 부서</th><td><%= session.department || '-' %></td>
-      <th>실행자</th><td><%= session.executed_by || '-' %></td></tr>
-  <tr><th>데이터 소스</th>
+  <tr><th><%= t('reports.common.analysisEnv') %></th><td><%= session.os_type %> <%= session.os_version ? `(${session.os_version})` : '' %> / <%= session.policy_name %></td>
+      <th><%= t('reports.common.assessedAt') %></th><td><%= session.executed_at %></td></tr>
+  <tr><th><%= t('reports.common.department') %></th><td><%= session.department || '-' %></td>
+      <th><%= t('reports.common.executor') %></th><td><%= session.executed_by || '-' %></td></tr>
+  <tr><th><%= t('reports.fsi.dataSource') %></th>
       <td>
         <% if (session.source_type === 'script') { %>
-          <strong style="color:#6c5ce7;">📄 Script XML (배포·수집)</strong>
+          <strong style="color:#6c5ce7;"><%= t('reports.fsi.scriptSource') %></strong>
         <% } else { %>
-          <strong style="color:#27ae60;">🗄️ SecuMS raw DB</strong>
+          <strong style="color:#27ae60;"><%= t('reports.fsi.secumsSource') %></strong>
         <% } %>
       </td>
-      <th>진단엔진</th><td><%= session.llm_engine %></td></tr>
+      <th><%= t('reports.fsi.engine') %></th><td><%= session.llm_engine %></td></tr>
 </table>
 
 <div class="summary-cards">
   <div class="summary-card vuln">
-    <div>취약 중항목</div><div class="num"><%= session.vuln_count %></div>
-    <div class="small muted">소항목 <%= session.sub_vuln || 0 %>건</div>
+    <div><%= t('reports.common.vulnMid') %></div><div class="num"><%= session.vuln_count %></div>
+    <div class="small muted"><%= t('reports.common.subCount', { n: session.sub_vuln || 0 }) %></div>
   </div>
   <div class="summary-card new-flag">
-    <div>신규</div><div class="num"><%= session.new_vuln_count || 0 %></div>
+    <div><%= t('reports.common.new') %></div><div class="num"><%= session.new_vuln_count || 0 %></div>
   </div>
   <div class="summary-card recurring">
-    <div>기존(미조치)</div><div class="num"><%= (session.vuln_count - (session.new_vuln_count || 0)) %></div>
+    <div><%= t('reports.common.existingUnfixed') %></div><div class="num"><%= (session.vuln_count - (session.new_vuln_count || 0)) %></div>
   </div>
   <div class="summary-card safe">
-    <div>양호</div><div class="num"><%= session.safe_count %></div>
+    <div><%= t('reports.common.safe') %></div><div class="num"><%= session.safe_count %></div>
   </div>
   <div class="summary-card na">
-    <div>점검불가</div><div class="num"><%= session.na_count %></div>
+    <div><%= t('reports.common.na') %></div><div class="num"><%= session.na_count %></div>
   </div>
 </div>
 
-<h2>점검 결과 전체 (<%= allRows.length %>건)</h2>
+<h2><%= t('reports.fsi.all.listTitle', { n: allRows.length }) %></h2>
 <p class="muted small">
-  AI 진단의 모든 항목을 표시합니다 (취약 / 양호 / 정보제공 / 판정불가).
-  취약 항목만 보려면 <a href="/reports/<%= session.assessment_id %>/fsi/vuln">취약점 리포트1</a>을 이용하세요.
+  <%- t('reports.fsi.all.descHtml', { url: '/reports/' + session.assessment_id + '/fsi/vuln' }) %>
 </p>
 
 <div class="fsi-table-wrap">
 <table class="fsi-table">
   <thead>
     <tr>
-      <th>관리번호</th>
-      <th>항목번호</th>
-      <th>자산번호</th>
-      <th>호스트명</th>
-      <th>업무명/용도</th>
+      <th><%= t('reports.fsi.th.mgmtNo') %></th>
+      <th><%= t('reports.fsi.th.itemNo') %></th>
+      <th><%= t('reports.fsi.th.assetNo') %></th>
+      <th><%= t('reports.fsi.th.hostname') %></th>
+      <th><%= t('reports.fsi.th.serviceName') %></th>
       <th>IP</th>
-      <th>취약점</th>
-      <th>평가항목</th>
-      <th>위험도</th>
-      <th>소항목</th>
-      <th>취약항목 (사유)</th>
-      <th>신규여부</th>
-      <th>담당자</th>
-      <th>전달일자</th>
-      <th>조치일자</th>
-      <th>조치여부</th>
-      <th>미조치사유</th>
-      <th>비고</th>
+      <th><%= t('reports.fsi.th.vuln') %></th>
+      <th><%= t('reports.fsi.th.category') %></th>
+      <th><%= t('reports.fsi.th.severity') %></th>
+      <th><%= t('reports.fsi.th.sub') %></th>
+      <th><%= t('reports.fsi.th.reason') %></th>
+      <th><%= t('reports.fsi.th.isNew') %></th>
+      <th><%= t('reports.fsi.th.assignee') %></th>
+      <th><%= t('reports.fsi.th.deliveredAt') %></th>
+      <th><%= t('reports.fsi.th.fixedAt') %></th>
+      <th><%= t('reports.fsi.th.fixStatus') %></th>
+      <th><%= t('reports.fsi.th.unfixedReason') %></th>
+      <th><%= t('reports.fsi.th.remark') %></th>
     </tr>
   </thead>
   <tbody>
@@ -95,20 +94,20 @@
         <td class="small"><%= r.category %></td>
         <td>
           <% if (r.status === '취약') { %>
-            <span class="sev sev-<%= r.severity %>"><%= r.severity %></span>
+            <span class="sev sev-<%= r.severity %>"><%= td(r.severity) %></span>
           <% } else if (r.status === '양호') { %>
-            <span style="color:#27ae60;font-weight:600;">✓ 양호</span>
+            <span style="color:#27ae60;font-weight:600;"><%= t('reports.fsi.goodMark') %></span>
           <% } else if (r.status === '정보제공' || r.status === '정보') { %>
-            <span class="muted">ℹ 정보제공</span>
+            <span class="muted"><%= t('reports.fsi.infoMark') %></span>
           <% } else { %>
-            <span class="muted">? 판정불가</span>
+            <span class="muted"><%= t('reports.fsi.naMark') %></span>
           <% } %>
         </td>
         <td class="small">
           <% if (r.subs && r.subs.length) {
                const sv = r.subs.filter(s => s.status === '취약').length; %>
             <span class="sub-badge">
-              <strong><%= sv %></strong>/<%= r.subs.length %>건 취약
+              <%- t('reports.fsi.subVulnHtml', { sv: sv, m: r.subs.length }) %>
             </span>
           <% } else { %>
             <span class="muted">-</span>
@@ -117,11 +116,11 @@
         <td class="long-text small">
           <%= r.reason %>
           <% if (r.evidence) { %><br><span class="muted">→ <%= r.evidence %></span><% } %>
-          <% if (r.status === '취약' && r.recommend) { %><br><span style="color:#1e8449;font-weight:600;">🔧 조치법: <%= r.recommend %></span><% } %>
+          <% if (r.status === '취약' && r.recommend) { %><br><span style="color:#1e8449;font-weight:600;"><%= t('reports.fsi.fixLabel') %><%= r.recommend %></span><% } %>
         </td>
         <td>
           <span class="newflag newflag-<%= r.is_new ? 'new' : 'old' %>">
-            <%= r.is_new ? '신규' : '기존' %>
+            <%= td(r.is_new ? '신규' : '기존') %>
           </span>
         </td>
         <td class="editable"><%= r.assignee || '-' %></td>
@@ -131,17 +130,17 @@
           <span class="fix-status fs-<%= r.fix_status === '조치완료' ? 'done' :
                                           r.fix_status === '진행중' ? 'progress' :
                                           r.fix_status === '예외' ? 'exempt' : 'pending' %>">
-            <%= r.fix_status %>
+            <%= td(r.fix_status) %>
           </span>
           <% if (r.fix_status !== '조치완료' && r.fix_status !== '예외') { %>
             <% if (r.subs && r.subs.length) { %>
               <div class="cascade-hint">
-                조치완료 시<br>소항목 <%= r.subs.length %>건 일괄 종료
+                <%- t('reports.fsi.cascadeHintHtml', { n: r.subs.length }) %>
               </div>
             <% } %>
           <% } else { %>
             <% if (r.subs && r.subs.length) { %>
-              <div class="cascade-done">↳ 소항목 <%= r.subs.length %>건 동기화됨</div>
+              <div class="cascade-done"><%= t('reports.fsi.cascadeDone', { n: r.subs.length }) %></div>
             <% } %>
           <% } %>
         </td>
@@ -150,21 +149,21 @@
       </tr>
     <% }); %>
     <% if (!vulnRows.length) { %>
-      <tr><td colspan="18" class="empty" style="padding:32px;text-align:center;">진단 결과가 없습니다.</td></tr>
+      <tr><td colspan="18" class="empty" style="padding:32px;text-align:center;"><%= t('reports.fsi.all.empty') %></td></tr>
     <% } %>
   </tbody>
 </table>
 </div>
 
 <div class="legend">
-  <strong>범례:</strong>
-  <span class="sub-badge"><strong>N</strong>/M건 취약</span> 소항목 중 N건 취약 (M개 중)
-  <span class="newflag newflag-new">신규</span> 이번 진단에서 처음 발견
-  <span class="newflag newflag-old">기존</span> 이전 진단부터 존재
-  <span class="fix-status fs-pending">미조치</span>
-  <span class="fix-status fs-progress">진행중</span>
-  <span class="fix-status fs-done">조치완료</span>
-  <span class="fix-status fs-exempt">예외</span>
+  <strong><%= t('reports.fsi.legend.title') %></strong>
+  <span class="sub-badge"><%- t('reports.fsi.legend.subBadgeHtml') %></span> <%= t('reports.fsi.legend.subDesc') %>
+  <span class="newflag newflag-new"><%= td('신규') %></span> <%= t('reports.fsi.legend.newDesc') %>
+  <span class="newflag newflag-old"><%= td('기존') %></span> <%= t('reports.fsi.legend.oldDesc') %>
+  <span class="fix-status fs-pending"><%= td('미조치') %></span>
+  <span class="fix-status fs-progress"><%= td('진행중') %></span>
+  <span class="fix-status fs-done"><%= td('조치완료') %></span>
+  <span class="fix-status fs-exempt"><%= td('예외') %></span>
 </div>
 
 <%- include('../_footer') %>

@@ -1,4 +1,4 @@
-<%- include('../_header', { title: '조치 가이드', activeMenu: 'reports' }) %>
+<%- include('../_header', { title: t('reports.remediation.title'), activeMenu: 'reports' }) %>
 <style>
   .rm-item { background:#fff; border:1px solid #e1e5ea; border-radius:8px; margin:8px 0; box-shadow:0 1px 2px rgba(0,0,0,.04); }
   .rm-item summary { list-style:none; cursor:pointer; padding:12px 16px; display:flex; align-items:center; gap:10px; font-size:14px; }
@@ -15,37 +15,37 @@
 </style>
 
 <div class="report-header">
-  <h1>조치 가이드 #<%= session.assessment_id %> <span class="muted" style="font-size:0.6em;">— 취약 항목만</span></h1>
+  <h1><%= t('reports.remediation.h1', { id: session.assessment_id }) %> <span class="muted" style="font-size:0.6em;"><%= t('reports.remediation.vulnOnlySuffix') %></span></h1>
   <div class="report-actions">
-    <a href="/reports/<%= session.assessment_id %>/fsi" class="btn">리포트1</a>
-    <a href="/reports/<%= session.assessment_id %>/fsi/vuln/xlsx" class="btn primary">XLSX(조치법 시트 포함)</a>
-    <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
-    <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
+    <a href="/reports/<%= session.assessment_id %>/fsi" class="btn"><%= t('reports.common.report1') %></a>
+    <a href="/reports/<%= session.assessment_id %>/fsi/vuln/xlsx" class="btn primary"><%= t('reports.remediation.xlsxWithFix') %></a>
+    <button type="button" onclick="printReport()" class="btn"><%= t('reports.common.pdf') %></button>
+    <button type="button" onclick="downloadReportHtml()" class="btn"><%= t('reports.common.html') %></button>
   </div>
 </div>
-<p class="muted small"><%= session.hostname || session.server_name %> · 취약 <%= vulnRows.length %>건 · <b>항목을 클릭하면 조치법이 펼쳐집니다</b> (기본 접힘)</p>
+<p class="muted small"><%- t('reports.remediation.metaHtml', { host: session.hostname || session.server_name, n: vulnRows.length }) %></p>
 
 <div class="rm-toolbar">
-  <button type="button" class="btn-sm" onclick="document.querySelectorAll('.rm-item').forEach(d=>d.open=true)">모두 펼치기</button>
-  <button type="button" class="btn-sm" onclick="document.querySelectorAll('.rm-item').forEach(d=>d.open=false)">모두 접기</button>
+  <button type="button" class="btn-sm" onclick="document.querySelectorAll('.rm-item').forEach(d=>d.open=true)"><%= t('reports.remediation.expandAll') %></button>
+  <button type="button" class="btn-sm" onclick="document.querySelectorAll('.rm-item').forEach(d=>d.open=false)"><%= t('reports.remediation.collapseAll') %></button>
 </div>
 
 <% if (!vulnRows.length) { %>
-  <div class="section-box" style="text-align:center;color:#27ae60;padding:24px;">✓ 취약 항목이 없습니다.</div>
+  <div class="section-box" style="text-align:center;color:#27ae60;padding:24px;"><%= t('reports.remediation.empty') %></div>
 <% } else { %>
   <% vulnRows.forEach(function (r) { %>
     <details class="rm-item">
       <summary>
         <span class="rm-code"><%= r.rule_id %></span>
         <span><%= r.title %></span>
-        <span class="rm-sev sev-<%= r.severity %>"><%= r.severity %></span>
+        <span class="rm-sev sev-<%= r.severity %>"><%= td(r.severity) %></span>
       </summary>
       <div class="rm-body">
-        <div class="lbl">취약 사유</div>
+        <div class="lbl"><%= t('reports.remediation.vulnReason') %></div>
         <div><%= r.reason || '-' %></div>
-        <% if (r.evidence) { %><div class="lbl">증거</div><div class="muted"><%= r.evidence %></div><% } %>
-        <div class="lbl">조치법</div>
-        <div class="rm-fix">🔧 <%= r.recommend || '(조치법 데이터 없음)' %></div>
+        <% if (r.evidence) { %><div class="lbl"><%= t('reports.remediation.evidence') %></div><div class="muted"><%= r.evidence %></div><% } %>
+        <div class="lbl"><%= t('reports.remediation.fix') %></div>
+        <div class="rm-fix">🔧 <%= r.recommend || t('reports.remediation.noFixData') %></div>
       </div>
     </details>
   <% }); %>

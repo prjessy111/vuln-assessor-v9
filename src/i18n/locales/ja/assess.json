@@ -1,0 +1,18 @@
+{
+  "intro": "以下の2つの方法のいずれかでrawファイルを指定します。",
+  "targetServer": "対象サーバー",
+  "methodA": "方法A. 収集済みrawファイルから選択 (推奨)",
+  "th": {
+    "select": "選択",
+    "fileName": "ファイル名",
+    "size": "サイズ",
+    "collectedAt": "収集日時"
+  },
+  "noRawFiles": "収集済みのrawファイルがありません。<a href=\"/collect\">Raw収集</a>メニューから先に収集してください。",
+  "methodB": "方法B. 直接アップロード",
+  "uploadHint": "SQLiteファイル、最大50MB。上のリストから選択しない場合のみ使用。",
+  "options": "オプション",
+  "rulesetVer": "ルールセットバージョン",
+  "executedBy": "実行者",
+  "phExecutedBy": "名前またはID (任意)"
+}

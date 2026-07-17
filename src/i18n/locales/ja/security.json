@@ -1,0 +1,42 @@
+{
+  "pageTitle": "セキュリティ等級",
+  "heading": "サーバー別診断履歴",
+  "meta": "基準日: {now} · ポリシー: 전자금융기반시설_2026",
+  "list": {
+    "title": "サーバー別点検結果",
+    "subtitle": "— 遵守率 = 良好項目 ÷ 全項目 (実際の診断集計)",
+    "searchPh": "ホスト/IP 検索…",
+    "allOs": "全OS",
+    "reset": "リセット",
+    "hostname": "ホスト名",
+    "policy": "ポリシー",
+    "vulnCount": "脆弱性件数",
+    "compliance": "遵守率 (良好/全体)",
+    "lastChecked": "最終点検日",
+    "operator": "運用者",
+    "domain": "ドメイン",
+    "channel": "通信方式",
+    "empty": "対象サーバーがありません"
+  },
+  "detail": {
+    "pageTitle": "サーバー別点検履歴 — {host}",
+    "backList": "← 一覧",
+    "hostname": "ホスト名",
+    "operator": "運用者",
+    "channel": "通信方式",
+    "histTitle": "点検履歴",
+    "histSubtitle": "— 診断時刻の新しい順 · 遵守率 = 良好 ÷ 全体",
+    "assessedAt": "診断時刻",
+    "type": "種別",
+    "source": "ソース",
+    "elapsed": "所要時間",
+    "total": "全体",
+    "vuln": "脆弱",
+    "safe": "良好",
+    "na": "判定不可",
+    "compliance": "遵守率 (良好/全体)",
+    "result": "結果",
+    "resultBtn": "結果",
+    "empty": "診断履歴がありません"
+  }
+}

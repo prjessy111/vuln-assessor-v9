@@ -1,0 +1,93 @@
+{
+  "index": {
+    "title": "排除管理",
+    "descHtml": "管理从诊断本身永久排除的项目。<strong>例外管理</strong>是临时豁免(批准 + 期限)，而<strong>排除</strong>是将结构性不适用项(例: 该OS上不存在的守护进程、策略上不需要的项目)从评估对象中移除的处理。",
+    "btnNew": "+ 登记排除",
+    "kpi": {
+      "total": "全部排除",
+      "totalSub": "登记条数",
+      "active": "有效排除",
+      "activeSub": "当前适用中",
+      "server": "服务器级",
+      "serverSub": "排除特定服务器",
+      "rule": "规则级",
+      "ruleSub": "全局排除特定规则"
+    },
+    "searchPh": "🔍 搜索规则ID / 服务器 / 理由 / 登记人",
+    "filter": {
+      "allTypes": "全部类型",
+      "server": "服务器级",
+      "rule": "规则级",
+      "combo": "服务器+规则组合",
+      "allStatus": "全部状态",
+      "enabled": "有效",
+      "disabled": "停用"
+    },
+    "listTitle": "已登记排除 ({n}条)",
+    "empty": "没有已登记的排除项目。",
+    "emptyLink": "登记排除",
+    "th": {
+      "enabled": "有效",
+      "id": "ID",
+      "type": "类型",
+      "rule": "目标规则",
+      "server": "目标服务器",
+      "reason": "理由",
+      "registeredBy": "登记人",
+      "registeredAt": "登记日",
+      "actions": "操作"
+    },
+    "type": {
+      "server": "服务器",
+      "rule": "规则",
+      "combo": "服务器+规则"
+    },
+    "allServers": "全部",
+    "btnDisable": "停用",
+    "btnEnable": "启用",
+    "js": {
+      "confirmToggle": "确定切换此排除项目的有效状态吗?",
+      "fail": "失败: ",
+      "error": "错误"
+    }
+  },
+  "new": {
+    "title": "登记排除",
+    "descHtml": "登记从诊断对象永久排除的项目。仅在结构上无法/无意义检查时使用 (例: 该OS未安装的守护进程、策略上未使用的功能)。如需临时豁免请使用<a href=\"/exceptions/new\">例外申请</a>。",
+    "back": "← 排除管理",
+    "target": {
+      "heading": "目标项目",
+      "itemLabel": "检查项目",
+      "itemSelect": "— 选择检查项目 —",
+      "hostLabel": "主机名",
+      "hostPh": "例: jessy207 (CSV批量时可留空)",
+      "acctLabel": "账户名",
+      "acctPh": "系统账户等 (例: bin, daemon)。整机则留空",
+      "csvLabel": "CSV批量登记",
+      "csvPh": "主机名,账户名  (每行一个)\njessy207,bin\njessy207,daemon\njessy167,   ← 账户留空则整机",
+      "csvHelp": "将系统账户等多个主机/账户从同一检查项目一次性排除。(输入CSV时忽略上方单个主机/账户)"
+    },
+    "reason": {
+      "heading": "排除理由",
+      "typeLabel": "类型",
+      "select": "— 选择 —",
+      "structural": "结构性不适用 (该项目不存在)",
+      "osUnsupported": "OS/发行版不支持",
+      "policyUnused": "策略上未使用的功能",
+      "duplicate": "已被其他规则重复检查",
+      "falsePositive": "反复误报",
+      "etc": "其他",
+      "detailLabel": "详细理由",
+      "detailPh": "将此项目从诊断对象永久排除的具体依据 (备审计追踪)"
+    },
+    "submit": "登记排除",
+    "js": {
+      "alertNeedItem": "请选择检查项目。",
+      "alertCsv": "请确认CSV格式 (主机名,账户名)。",
+      "savedAlert": "排除项目已登记。",
+      "countSuffix": " ({n}条)",
+      "fail": "失败: ",
+      "error": "错误"
+    }
+  }
+}

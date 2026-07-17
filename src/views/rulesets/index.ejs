@@ -1,51 +1,51 @@
-<%- include('../_header', { title: '룰셋 관리', activeMenu: 'rulesets' }) %>
+<%- include('../_header', { title: t('rulesets.index.title'), activeMenu: 'rulesets' }) %>
 
 <div class="page-header">
-  <h1>룰셋 관리</h1>
-  <p class="muted">진단 항목(룰)을 추가/수정/비활성화합니다. <strong>운영자가 직접 룰을 작성</strong>할 수 있습니다.</p>
+  <h1><%= t('rulesets.index.title') %></h1>
+  <p class="muted"><%- t('rulesets.index.introHtml') %></p>
 </div>
 
 <!-- 룰셋 메타 -->
 <div class="ruleset-meta">
   <div class="rs-card">
-    <div class="rs-label">현재 룰셋</div>
+    <div class="rs-label"><%= t('rulesets.index.meta.current') %></div>
     <div class="rs-value">secums-unix-v2.0</div>
   </div>
   <div class="rs-card">
-    <div class="rs-label">활성 룰</div>
-    <div class="rs-value">14건</div>
+    <div class="rs-label"><%= t('rulesets.index.meta.active') %></div>
+    <div class="rs-value"><%= t('common.unit.count', { n: 14 }) %></div>
   </div>
   <div class="rs-card">
-    <div class="rs-label">사용자 정의</div>
-    <div class="rs-value rs-user">3건</div>
+    <div class="rs-label"><%= t('rulesets.index.meta.userDefined') %></div>
+    <div class="rs-value rs-user"><%= t('common.unit.count', { n: 3 }) %></div>
   </div>
   <div class="rs-card">
-    <div class="rs-label">마지막 수정</div>
+    <div class="rs-label"><%= t('rulesets.index.meta.lastModified') %></div>
     <div class="rs-value mono small">2026-05-23 06:45</div>
   </div>
 </div>
 
 <!-- 3가지 룰 추가 방식 -->
 <div class="section-box">
-  <h3>새 진단 항목 추가</h3>
+  <h3><%= t('rulesets.index.addTitle') %></h3>
   <div class="rule-add-methods">
     <div class="add-method">
       <div class="method-icon">📝</div>
-      <h4>1. 폼으로 입력</h4>
-      <p class="muted small">제목, 카테고리, 조건만 채우면 YAML이 자동 생성됩니다. 비개발자도 작성 가능.</p>
-      <a href="/rulesets/new?mode=form" class="btn primary">폼으로 추가</a>
+      <h4><%= t('rulesets.index.m1Title') %></h4>
+      <p class="muted small"><%= t('rulesets.index.m1Desc') %></p>
+      <a href="/rulesets/new?mode=form" class="btn primary"><%= t('rulesets.index.m1Btn') %></a>
     </div>
     <div class="add-method">
       <div class="method-icon">⌨️</div>
-      <h4>2. YAML 에디터</h4>
-      <p class="muted small">고급 사용자용. 실시간 문법 검증 + 샘플 데이터로 미리보기.</p>
-      <a href="/rulesets/new?mode=yaml" class="btn">YAML 편집</a>
+      <h4><%= t('rulesets.index.m2Title') %></h4>
+      <p class="muted small"><%= t('rulesets.index.m2Desc') %></p>
+      <a href="/rulesets/new?mode=yaml" class="btn"><%= t('rulesets.index.m2Btn') %></a>
     </div>
     <div class="add-method">
       <div class="method-icon">🤖</div>
-      <h4>3. AI 자동 제안</h4>
-      <p class="muted small">raw 데이터를 분석해서 점검 가능한 항목을 AI가 자동 제안. 검토 후 채택.</p>
-      <a href="/rulesets/new?mode=ai" class="btn">AI 제안 받기</a>
+      <h4><%= t('rulesets.index.m3Title') %></h4>
+      <p class="muted small"><%= t('rulesets.index.m3Desc') %></p>
+      <a href="/rulesets/new?mode=ai" class="btn"><%= t('rulesets.index.m3Btn') %></a>
     </div>
   </div>
 </div>
@@ -53,29 +53,29 @@
 <!-- 룰 목록 -->
 <div class="section-box">
   <div class="rules-toolbar">
-    <h3>전체 룰 목록</h3>
+    <h3><%= t('rulesets.index.allRules') %></h3>
     <div class="filters">
-      <select><option>전체 카테고리</option><option>계정관리</option><option>서비스관리</option><option>파일권한</option></select>
-      <select><option>전체 OS</option><option>linux</option><option>windows</option></select>
-      <select><option>전체 위험도</option><option>상</option><option>중</option><option>하</option></select>
-      <input type="search" placeholder="룰 ID/제목 검색...">
+      <select><option><%= t('rulesets.index.filter.allCategory') %></option><option><%= t('rulesets.index.filter.catAccount') %></option><option><%= t('rulesets.index.filter.catService') %></option><option><%= t('rulesets.index.filter.catFilePerm') %></option></select>
+      <select><option><%= t('rulesets.index.filter.allOs') %></option><option>linux</option><option>windows</option></select>
+      <select><option><%= t('rulesets.index.filter.allSev') %></option><option><%= t('common.sev.high') %></option><option><%= t('common.sev.mid') %></option><option><%= t('common.sev.low') %></option></select>
+      <input type="search" placeholder="<%= t('rulesets.index.filter.searchPh') %>">
     </div>
   </div>
-  
+
   <table class="data-table rules-table">
     <thead>
       <tr>
-        <th>룰 ID</th>
-        <th>제목</th>
-        <th>카테고리</th>
+        <th><%= t('rulesets.index.th.ruleId') %></th>
+        <th><%= t('rulesets.index.th.title') %></th>
+        <th><%= t('rulesets.index.th.category') %></th>
         <th>OS</th>
-        <th>위험도</th>
-        <th>평가 방식</th>
-        <th>유형</th>
-        <th>출처</th>
-        <th>최근 수정</th>
-        <th>활성</th>
-        <th>액션</th>
+        <th><%= t('rulesets.index.th.severity') %></th>
+        <th><%= t('rulesets.index.th.evalMethod') %></th>
+        <th><%= t('rulesets.index.th.type') %></th>
+        <th><%= t('rulesets.index.th.source') %></th>
+        <th><%= t('rulesets.index.th.updatedAt') %></th>
+        <th><%= t('rulesets.index.th.enabled') %></th>
+        <th><%= t('rulesets.index.th.actions') %></th>
       </tr>
     </thead>
     <tbody>
@@ -88,30 +88,30 @@
           </td>
           <td class="small"><%= r.category %></td>
           <td><span class="os-badge os-<%= r.os_target %>"><%= r.os_target.toUpperCase() %></span></td>
-          <td><span class="sev sev-<%= r.severity %>"><%= r.severity %></span></td>
+          <td><span class="sev sev-<%= r.severity %>"><%= td(r.severity) %></span></td>
           <td>
             <% if (r.eval_type === 'simple') { %>
               <span class="method-badge simple">SQL</span>
             <% } else if (r.eval_type === 'llm') { %>
               <span class="method-badge llm">AI</span>
             <% } else { %>
-              <span class="method-badge mixed">하이브리드</span>
+              <span class="method-badge mixed"><%= t('rulesets.index.badge.hybrid') %></span>
             <% } %>
           </td>
           <td>
             <% if (r.is_per_row) { %>
-              <span class="rule-type-badge per-row">계정별</span>
+              <span class="rule-type-badge per-row"><%= t('rulesets.index.badge.perRow') %></span>
             <% } else { %>
-              <span class="rule-type-badge host">호스트</span>
+              <span class="rule-type-badge host"><%= t('rulesets.index.badge.host') %></span>
             <% } %>
           </td>
           <td>
             <% if (r.source === 'builtin') { %>
-              <span class="src-badge src-builtin">기본</span>
+              <span class="src-badge src-builtin"><%= t('rulesets.index.badge.builtin') %></span>
             <% } else if (r.source === 'user') { %>
-              <span class="src-badge src-user">사용자</span>
+              <span class="src-badge src-user"><%= t('rulesets.index.badge.user') %></span>
             <% } else if (r.source === 'ai') { %>
-              <span class="src-badge src-ai">AI 제안</span>
+              <span class="src-badge src-ai"><%= t('rulesets.index.badge.aiSuggest') %></span>
             <% } %>
           </td>
           <td class="mono small"><%= r.updated_at %></td>
@@ -122,9 +122,9 @@
             </label>
           </td>
           <td>
-            <a href="/rulesets/<%= r.rule_id %>" class="btn-sm">보기</a>
-            <a href="/rulesets/<%= r.rule_id %>/edit" class="btn-sm">편집</a>
-            <a href="/rulesets/<%= r.rule_id %>/test" class="btn-sm">테스트</a>
+            <a href="/rulesets/<%= r.rule_id %>" class="btn-sm"><%= t('rulesets.index.view') %></a>
+            <a href="/rulesets/<%= r.rule_id %>/edit" class="btn-sm"><%= t('rulesets.index.edit') %></a>
+            <a href="/rulesets/<%= r.rule_id %>/test" class="btn-sm"><%= t('rulesets.index.test') %></a>
           </td>
         </tr>
       <% }); %>

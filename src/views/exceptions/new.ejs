@@ -1,12 +1,11 @@
-<%- include('../_header', { title: '예외 신청', activeMenu: 'exceptions' }) %>
+<%- include('../_header', { title: t('exceptions.new.title'), activeMenu: 'exceptions' }) %>
 
 <div class="page-header">
-  <h1>예외 신청 (일괄 설정)</h1>
+  <h1><%= t('exceptions.new.heading') %></h1>
   <p class="muted small">
-    취약 판정 항목에 대한 한시적 예외 처리. CISO 승인 후 효력 발생.
-    점검항목 × 대상(호스트/계정)을 한 번에 등록할 수 있습니다.
+    <%= t('exceptions.new.desc') %>
   </p>
-  <div class="header-actions"><a href="/exceptions" class="btn">← 예외 관리</a></div>
+  <div class="header-actions"><a href="/exceptions" class="btn"><%= t('exceptions.new.back') %></a></div>
 </div>
 
 <form id="exceptionForm" class="form-container">
@@ -14,7 +13,7 @@
 <% if (isPost) { %>
   <!-- 사후 예외: 항목·서버 고정. 호스트 단위=체크박스 / 그 외 단위(계정 등)=자유 입력 -->
   <div class="form-section">
-    <h3>사후 예외 대상</h3>
+    <h3><%= t('exceptions.new.post.heading') %></h3>
     <input type="hidden" name="result_id" value="<%= prefill.result_id %>">
     <input type="hidden" name="scope_type" value="result">
     <input type="hidden" name="hostname" value="<%= prefill.hostname || '' %>">
@@ -23,20 +22,20 @@
     <input type="hidden" name="related_basis" value="진단결과 <%= prefill.result_id %> 사후 예외">
     <input type="hidden" id="postRuleId" value="<%= prefill.rule_id || '' %>">
     <input type="hidden" id="postItemTitle" value="<%= prefill.title || '' %>">
-    <p class="muted small">점검항목 <code><%= prefill.rule_id || '-' %></code> <%= prefill.title ? ('· ' + prefill.title) : '' %> · 서버 <b><%= prefill.hostname || '-' %></b></p>
+    <p class="muted small"><%= t('exceptions.new.post.checkItem') %> <code><%= prefill.rule_id || '-' %></code> <%= prefill.title ? ('· ' + prefill.title) : '' %> · <%= t('exceptions.new.post.server') %> <b><%= prefill.hostname || '-' %></b></p>
 
     <!-- 호스트 단위: 체크박스 (편하게) -->
-    <label style="display:block;margin:8px 0;"><input type="checkbox" id="serverScope" checked> <b>이 서버(호스트) 전체</b>에 예외 적용 <span class="muted">(호스트 단위)</span></label>
+    <label style="display:block;margin:8px 0;"><input type="checkbox" id="serverScope" checked> <%- t('exceptions.new.post.serverScopeHtml') %></label>
 
     <!-- 계정 단위: ① 체크박스 ② 다중 입력 ③ CSV -->
     <div id="acctArea" style="border-left:3px solid #e1e5ea;padding-left:12px;margin-top:6px;">
       <p id="scopeHint" class="muted small" style="margin:0 0 8px;"></p>
       <% if (accounts && accounts.length) { %>
         <div class="form-row inline" style="align-items:center;">
-          <label>계정 선택 <span class="muted small">(체크)</span></label>
-          <button type="button" class="btn-sm" onclick="acctAll(true)">로그인계정 전체</button>
-          <button type="button" class="btn-sm" onclick="acctAll(false)">해제</button>
-          <label style="font-weight:400;margin-left:8px;"><input type="checkbox" id="showAllAcct"> 시스템(nologin) 계정도 표시</label>
+          <label><%= t('exceptions.new.post.acctSelect') %> <span class="muted small"><%= t('exceptions.new.post.acctSelectSub') %></span></label>
+          <button type="button" class="btn-sm" onclick="acctAll(true)"><%= t('exceptions.new.post.allLoginAccts') %></button>
+          <button type="button" class="btn-sm" onclick="acctAll(false)"><%= t('exceptions.new.post.clear') %></button>
+          <label style="font-weight:400;margin-left:8px;"><input type="checkbox" id="showAllAcct"> <%= t('exceptions.new.post.showSystemAccts') %></label>
         </div>
         <div id="acctList" style="max-height:160px;overflow:auto;border:1px solid #e1e5ea;border-radius:6px;padding:8px;margin-bottom:8px;">
           <% accounts.forEach(a => { %>
@@ -47,14 +46,14 @@
           <% }) %>
         </div>
       <% } else { %>
-        <p class="muted small">이 서버의 계정 목록을 찾지 못했습니다 (스크립트 진단 원본 없음). 아래에 직접 입력/붙여넣기 하세요.</p>
+        <p class="muted small"><%= t('exceptions.new.post.noAccounts') %></p>
       <% } %>
       <div class="form-row inline">
-        <label>계정 직접 입력 <span class="muted small">(쉼표/공백 다중)</span></label>
-        <input type="text" id="postUserText" placeholder="예: root, jessy72, test*">
+        <label><%= t('exceptions.new.post.acctInput') %> <span class="muted small"><%= t('exceptions.new.post.acctInputSub') %></span></label>
+        <input type="text" id="postUserText" placeholder="<%= t('exceptions.new.post.acctInputPh') %>">
       </div>
       <div class="form-row">
-        <label>CSV 붙여넣기 <span class="muted small">(한 줄 1계정, 또는 호스트,계정)</span></label>
+        <label><%= t('exceptions.new.post.csvPaste') %> <span class="muted small"><%= t('exceptions.new.post.csvPasteSub') %></span></label>
         <textarea id="postCsv" rows="3" placeholder="root&#10;jessy72&#10;test*"></textarea>
       </div>
     </div>
@@ -63,15 +62,15 @@
 
   <!-- ① 기본 정보 -->
   <div class="form-section">
-    <h3>① 기본 정보</h3>
+    <h3><%= t('exceptions.new.basic.heading') %></h3>
     <div class="form-row inline">
-      <label>제목 *</label>
+      <label><%= t('exceptions.new.basic.titleLabel') %> *</label>
       <input type="text" name="title" required
-             placeholder="예: 전자금융기반시설 2026 OS 예외 일괄 (2026-1분기)"
+             placeholder="<%= t('exceptions.new.basic.titlePh') %>"
              value="<%= (prefill && prefill.title) || '' %>">
     </div>
     <div class="form-row inline">
-      <label>정책</label>
+      <label><%= t('exceptions.new.basic.policy') %></label>
       <select name="policy">
         <option value="전자금융기반시설_2026_OS">전자금융기반시설_2026_OS</option>
       </select>
@@ -85,20 +84,20 @@
       </span>
     </div>
     <div class="form-row">
-      <label>관련 근거 *</label>
+      <label><%= t('exceptions.new.basic.basisLabel') %> *</label>
       <textarea name="related_basis" required rows="2"
-                placeholder="예외의 근거 (진단결과 ID, 승인 티켓번호, 관련 규정·공문, 검토 회의록 등) — 감사 추적·사후 필터용"><%= (prefill && prefill.related_basis) || '' %></textarea>
+                placeholder="<%= t('exceptions.new.basic.basisPh') %>"><%= (prefill && prefill.related_basis) || '' %></textarea>
     </div>
   </div>
 
   <!-- ② 점검 항목 선택 (검색 + 다중) -->
   <div class="form-section">
-    <h3>② 점검 항목 선택 <span class="muted small">(검색·다중 선택)</span></h3>
+    <h3><%= t('exceptions.new.items.heading') %> <span class="muted small"><%= t('exceptions.new.items.headingSub') %></span></h3>
     <div class="form-row inline">
-      <label>항목 검색</label>
-      <input type="text" id="itemSearch" placeholder="SRV 코드 또는 제목으로 검색...">
-      <button type="button" class="btn-sm" onclick="toggleAllItems(true)">전체선택</button>
-      <button type="button" class="btn-sm" onclick="toggleAllItems(false)">해제</button>
+      <label><%= t('exceptions.new.items.searchLabel') %></label>
+      <input type="text" id="itemSearch" placeholder="<%= t('exceptions.new.items.searchPh') %>">
+      <button type="button" class="btn-sm" onclick="toggleAllItems(true)"><%= t('exceptions.new.items.selectAll') %></button>
+      <button type="button" class="btn-sm" onclick="toggleAllItems(false)"><%= t('exceptions.new.items.clear') %></button>
       <span class="muted small" id="itemCount"></span>
     </div>
     <div id="itemList" style="max-height:220px;overflow:auto;border:1px solid #e1e5ea;border-radius:6px;padding:8px;">
@@ -115,15 +114,15 @@
 
   <!-- ③ 대상 (호스트 + 계정) : 단일 / 패턴 / CSV import -->
   <div class="form-section">
-    <h3>③ 대상 (호스트 · 계정)</h3>
+    <h3><%= t('exceptions.new.target.heading') %></h3>
     <% if (prefill && prefill.result_id) { %>
       <input type="hidden" name="result_id" value="<%= prefill.result_id %>">
       <input type="hidden" name="scope_type" value="result">
-      <p class="muted small">🔗 진단 결과 <code><%= prefill.result_id %></code> 사후 예외</p>
+      <p class="muted small"><%- t('exceptions.new.target.postLinkHtml', { id: prefill.result_id }) %></p>
     <% } %>
     <div class="form-row inline">
-      <label>호스트명</label>
-      <input type="text" name="hostname" list="hostList" placeholder="검색·선택 (호스트명/IP). CSV 일괄 시 비움"
+      <label><%= t('exceptions.new.target.hostLabel') %></label>
+      <input type="text" name="hostname" list="hostList" placeholder="<%= t('exceptions.new.target.hostPh') %>"
              value="<%= (prefill && prefill.hostname) || '' %>">
       <datalist id="hostList">
         <% (servers || []).forEach(s => { %>
@@ -132,14 +131,14 @@
       </datalist>
     </div>
     <div class="form-row inline">
-      <label>계정명 / 패턴</label>
-      <input type="text" name="username" placeholder="계정 단위만 (예: jessy72). 와일드카드 * 가능(예: test*). 호스트 전체면 비움"
+      <label><%= t('exceptions.new.target.acctLabel') %></label>
+      <input type="text" name="username" placeholder="<%= t('exceptions.new.target.acctPh') %>"
              value="<%= (prefill && prefill.username) || '' %>">
     </div>
     <div class="form-row">
-      <label>CSV / Excel 일괄</label>
-      <textarea name="targets_csv" rows="4" placeholder="호스트명,계정명  (한 줄에 하나)&#10;jessy207,jessy72&#10;jessy207,test*&#10;jessy167,   ← 계정 비우면 호스트 전체"></textarea>
-      <span class="muted small">여러 호스트/계정에 선택 점검항목 예외를 한 번에. <a href="/exceptions/template.csv">CSV 템플릿</a> · (CSV 입력 시 위 단일 호스트/계정 무시)</span>
+      <label><%= t('exceptions.new.target.csvLabel') %></label>
+      <textarea name="targets_csv" rows="4" placeholder="<%= t('exceptions.new.target.csvPh') %>"></textarea>
+      <span class="muted small"><%= t('exceptions.new.target.csvHelpBefore') %> <a href="/exceptions/template.csv"><%= t('exceptions.new.target.csvTemplate') %></a> <%= t('exceptions.new.target.csvHelpAfter') %></span>
     </div>
   </div>
 
@@ -147,58 +146,73 @@
 
   <!-- 사유 -->
   <div class="form-section">
-    <h3>예외 사유</h3>
+    <h3><%= t('exceptions.new.reason.heading') %></h3>
     <div class="form-row inline">
-      <label>유형 *</label>
+      <label><%= t('exceptions.new.reason.typeLabel') %> *</label>
       <select name="reason_type" required>
-        <option value="">— 선택 —</option>
-        <option value="비즈니스 요구">비즈니스 요구 (서비스 영향)</option>
-        <option value="레거시 호환">레거시 시스템 호환성</option>
-        <option value="대체 통제">대체 통제 (Compensating Control)</option>
-        <option value="패치 불가">벤더 패치 미제공</option>
-        <option value="검토 중">조치 방안 검토 중</option>
-        <option value="기타">기타</option>
+        <option value=""><%= t('exceptions.new.reason.select') %></option>
+        <option value="비즈니스 요구"><%= t('exceptions.new.reason.biz') %></option>
+        <option value="레거시 호환"><%= t('exceptions.new.reason.legacy') %></option>
+        <option value="대체 통제"><%= t('exceptions.new.reason.comp') %></option>
+        <option value="패치 불가"><%= t('exceptions.new.reason.noPatch') %></option>
+        <option value="검토 중"><%= t('exceptions.new.reason.reviewing') %></option>
+        <option value="기타"><%= t('exceptions.new.reason.etc') %></option>
       </select>
     </div>
     <div class="form-row">
-      <label>상세 사유 *</label>
-      <textarea name="reason" required rows="4" placeholder="예외 처리가 필요한 구체적 사유"></textarea>
+      <label><%= t('exceptions.new.reason.detailLabel') %> *</label>
+      <textarea name="reason" required rows="4" placeholder="<%= t('exceptions.new.reason.detailPh') %>"></textarea>
     </div>
     <div class="form-row">
-      <label>대체 통제</label>
-      <textarea name="compensating_control" rows="2" placeholder="위험 완화 통제 (방화벽 차단, 모니터링 강화 등)"></textarea>
+      <label><%= t('exceptions.new.reason.compLabel') %></label>
+      <textarea name="compensating_control" rows="2" placeholder="<%= t('exceptions.new.reason.compPh') %>"></textarea>
     </div>
   </div>
 
   <!-- 유효기간 -->
   <div class="form-section">
-    <h3>유효기간</h3>
+    <h3><%= t('exceptions.new.period.heading') %></h3>
     <div class="form-row inline">
-      <label>시작일 *</label>
+      <label><%= t('exceptions.new.period.from') %> *</label>
       <input type="date" name="effective_from" id="effFrom" required value="<%= new Date().toISOString().slice(0,10) %>">
     </div>
     <div class="form-row inline">
-      <label>종료일</label>
+      <label><%= t('exceptions.new.period.until') %></label>
       <input type="date" name="effective_until" id="effUntil">
-      <label style="font-weight:400;margin-left:10px;"><input type="checkbox" name="indefinite" id="indefinite" value="1"> 무기한</label>
+      <label style="font-weight:400;margin-left:10px;"><input type="checkbox" name="indefinite" id="indefinite" value="1"> <%= t('exceptions.new.period.indefinite') %></label>
     </div>
-    <p class="muted small">권장 30~90일. 무기한은 종료일 없이 영구 적용.</p>
+    <p class="muted small"><%= t('exceptions.new.period.note') %></p>
   </div>
 
   <div class="form-actions">
-    <button type="submit" class="btn primary">예외 신청</button>
-    <a href="/exceptions" class="btn">취소</a>
+    <button type="submit" class="btn primary"><%= t('exceptions.new.submit') %></button>
+    <a href="/exceptions" class="btn"><%= t('common.btn.cancel') %></a>
   </div>
 </form>
 
 <script>
+var I18N = <%- JSON.stringify({
+  selectedCount: t('exceptions.new.js.selectedCount'),
+  hintHostScope: t('exceptions.new.js.hintHostScope'),
+  hintAccounts: t('exceptions.new.js.hintAccounts'),
+  hintEmpty: t('exceptions.new.js.hintEmpty'),
+  alertNeedAccount: t('exceptions.new.js.alertNeedAccount'),
+  alertNeedItem: t('exceptions.new.js.alertNeedItem'),
+  alertPeriod: t('exceptions.new.js.alertPeriod'),
+  alertCsv: t('exceptions.new.js.alertCsv'),
+  savedAlert: t('exceptions.new.js.savedAlert'),
+  createdCount: t('exceptions.new.js.createdCount'),
+  fail: t('exceptions.new.js.fail'),
+  error: t('exceptions.new.js.error')
+}) %>;
+
 // 항목 검색 필터 (일괄 모드에만 존재 — 사후 예외 간소폼에선 #itemList 없음)
 var itemSearch = document.getElementById('itemSearch');
 var itemListEl = document.getElementById('itemList');
 function refreshItemCount(){
   if (!itemListEl) return;
   var n = document.querySelectorAll('#itemList input[name="rule_ids"]:checked').length;
-  var cnt = document.getElementById('itemCount'); if (cnt) cnt.textContent = '선택 ' + n + '개';
+  var cnt = document.getElementById('itemCount'); if (cnt) cnt.textContent = I18N.selectedCount.replace('{n}', n);
 }
 if (itemSearch && itemListEl) {
   itemSearch.addEventListener('input', function(){
@@ -239,13 +253,13 @@ function paintScope(){
   if (!ss) return;
   if (ss.checked) {
     if (area) area.style.opacity = '0.45';
-    if (hint) hint.textContent = '→ 이 호스트의 모든 대상에 예외 적용 (호스트 단위). 계정 지정하려면 위 체크 해제';
+    if (hint) hint.textContent = I18N.hintHostScope;
   } else {
     if (area) area.style.opacity = '1';
     var acc = collectPostAccounts();
     if (hint) hint.textContent = acc.length
-      ? '→ 계정 ' + acc.length + '개에만 예외: ' + acc.slice(0,8).join(', ') + (acc.length>8?' …':'')
-      : '→ 계정을 체크/입력/붙여넣기 하세요 (비우면 호스트 단위와 동일)';
+      ? I18N.hintAccounts.replace('{n}', acc.length).replace('{list}', acc.slice(0,8).join(', ') + (acc.length>8?' …':''))
+      : I18N.hintEmpty;
   }
 }
 function acctAll(on){
@@ -298,33 +312,33 @@ document.getElementById('exceptionForm').onsubmit = async function(e){
       data.username = '';                       // 호스트 단위
     } else {
       var accts = collectPostAccounts();          // 체크박스 + 다중입력 + CSV 통합
-      if (!accts.length) { alert('계정을 1개 이상 선택/입력/붙여넣기 하거나, "이 서버 전체" 체크박스를 선택하세요.'); return; }
+      if (!accts.length) { alert(I18N.alertNeedAccount); return; }
       data.targets = accts.map(function(u){ return { hostname: data.hostname || '', username: u }; });
       delete data.username;
     }
   } else {
     data.rule_ids = Array.from(document.querySelectorAll('#itemList input[name="rule_ids"]:checked')).map(function(c){return c.value;});
   }
-  if (!data.rule_ids.length || !data.rule_ids[0]) { alert('점검 항목을 1개 이상 선택하세요.'); return; }
+  if (!data.rule_ids.length || !data.rule_ids[0]) { alert(I18N.alertNeedItem); return; }
   // 기간 검증
   if (!data.indefinite && (!data.effective_until || data.effective_until <= data.effective_from)) {
-    alert('종료일은 시작일 이후여야 합니다. (또는 무기한 체크)'); return;
+    alert(I18N.alertPeriod); return;
   }
   // CSV 일괄
   if (data.targets_csv && data.targets_csv.trim()) {
     data.targets = data.targets_csv.trim().split(/\r?\n/).map(function(line){
       var p = line.split(','); return { hostname:(p[0]||'').trim(), username:(p[1]||'').trim() };
-    }).filter(function(t){ return t.hostname || t.username; });
-    if (!data.targets.length) { alert('CSV 형식 확인 (호스트명,계정명).'); return; }
+    }).filter(function(t2){ return t2.hostname || t2.username; });
+    if (!data.targets.length) { alert(I18N.alertCsv); return; }
   }
   delete data.targets_csv;
 
   var res = await fetch('/exceptions/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
   var j = await res.json();
   if (j.status === 'success') {
-    alert('예외 신청 등록 (승인 대기). ' + (j.count>1 ? j.count+'건 생성.' : ''));
+    alert(I18N.savedAlert + (j.count>1 ? I18N.createdCount.replace('{n}', j.count) : ''));
     location.href = '/exceptions';
-  } else { alert('실패: ' + (j.error || '오류')); }
+  } else { alert(I18N.fail + (j.error || I18N.error)); }
 };
 </script>
 

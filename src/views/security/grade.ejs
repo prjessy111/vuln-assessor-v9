@@ -1,4 +1,4 @@
-<%- include('../_header', { title: '보안등급', activeMenu: 'security-grade' }) %>
+<%- include('../_header', { title: t('security.pageTitle'), activeMenu: 'security-grade' }) %>
 <style>
   .grade-badge { display:inline-block; min-width:20px; padding:1px 8px; border-radius:10px; font-weight:800; font-size:12px; color:#fff; }
   .g-A{background:#1aa260;} .g-B{background:#2980b9;} .g-C{background:#f39c12;} .g-D{background:#e67e22;} .g-F{background:#c0392b;} .g--{background:#95a5a6;}
@@ -9,35 +9,35 @@
 </style>
 
 <div class="page-header">
-  <h1>서버별 진단 이력</h1>
+  <h1><%= t('security.heading') %></h1>
   <div class="header-actions">
-    <span class="muted small">기준일: <%= now %> · 정책: 전자금융기반시설_2026</span>
+    <span class="muted small"><%= t('security.meta', { now: now }) %></span>
   </div>
 </div>
 
 <div class="section-box">
-  <h3>서버별 점검 결과 <span class="muted small" style="font-weight:normal;">— 준수율 = 양호 항목 ÷ 전체 항목 (실제 진단 집계)</span></h3>
+  <h3><%= t('security.list.title') %> <span class="muted small" style="font-weight:normal;"><%= t('security.list.subtitle') %></span></h3>
   <div class="gfilter">
-    <input type="search" id="gSearch" placeholder="호스트/IP 검색…">
+    <input type="search" id="gSearch" placeholder="<%= t('security.list.searchPh') %>">
     <select id="gOs">
-      <option value="">전체 OS</option>
+      <option value=""><%= t('security.list.allOs') %></option>
       <option value="linux">Linux</option>
       <option value="windows">Windows</option>
     </select>
-    <button class="btn-sm" onclick="resetG()">초기화</button>
+    <button class="btn-sm" onclick="resetG()"><%= t('security.list.reset') %></button>
   </div>
   <div class="table-scroll" style="overflow-x:auto;">
   <table class="data-table" id="gradeTable">
     <thead>
       <tr>
-        <th class="sortable" onclick="sortG(0,'str')">호스트명</th>
-        <th>정책</th>
+        <th class="sortable" onclick="sortG(0,'str')"><%= t('security.list.hostname') %></th>
+        <th><%= t('security.list.policy') %></th>
         <th class="sortable" onclick="sortG(2,'str')">OS</th>
         <th>IP</th>
-        <th class="sortable" onclick="sortG(4,'num')">취약점 개수</th>
-        <th class="sortable" onclick="sortG(5,'num')">준수율 (양호/전체)</th>
-        <th>최근 점검일</th>
-        <th>운영자</th><th>도메인</th><th>통신방식</th>
+        <th class="sortable" onclick="sortG(4,'num')"><%= t('security.list.vulnCount') %></th>
+        <th class="sortable" onclick="sortG(5,'num')"><%= t('security.list.compliance') %></th>
+        <th><%= t('security.list.lastChecked') %></th>
+        <th><%= t('security.list.operator') %></th><th><%= t('security.list.domain') %></th><th><%= t('security.list.channel') %></th>
       </tr>
     </thead>
     <tbody>
@@ -60,7 +60,7 @@
           <td><span class="ch-badge"><%= a.channel %></span></td>
         </tr>
       <% }); %>
-      <% if (!agents.length) { %><tr><td colspan="10" class="empty">대상 서버가 없습니다</td></tr><% } %>
+      <% if (!agents.length) { %><tr><td colspan="10" class="empty"><%= t('security.list.empty') %></td></tr><% } %>
     </tbody>
   </table>
   </div>

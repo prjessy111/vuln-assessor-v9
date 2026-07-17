@@ -1,0 +1,97 @@
+<%- include('../_header', { title: t('remediation.audit.title'), activeMenu: 'remediation' }) %>
+<style>
+  .aud-detail { background:#fafbfc; border-top:1px solid #eee; padding:10px 14px; font-size:12.5px; }
+  .aud-detail .lbl { color:#888; font-size:11px; margin-top:8px; }
+  .aud-hist div, .aud-ev div { padding:2px 0; }
+  .badge-pf { display:inline-block; padding:1px 5px; border-radius:3px; font-size:10px; color:#fff; }
+  .pf-DB{background:#2980b9;} .pf-WAS{background:#16a085;} .pf-OS{background:#7f8c8d;}
+  .rv-ok{color:#1e824c;font-weight:600;} .rv-no{color:#c0392b;} .rv-warn{color:#c0392b;font-weight:600;}
+  .aud-toggle{cursor:pointer;}
+  @media print { .no-print{display:none!important;} }
+</style>
+
+<div class="page-header">
+  <h1><%= t('remediation.audit.title') %></h1>
+  <p class="muted small">
+    <%- t('remediation.audit.introMain') %>
+    <%= t('remediation.audit.introStd') %>
+    <%- t('remediation.audit.introLink', { link: '<a href="/remediation">' + t('common.nav.remediation') + '</a>' }) %>
+  </p>
+</div>
+
+<div class="kpi-grid kpi-5col">
+  <div class="kpi-card kpi-total"><div class="kpi-label"><%= t('remediation.audit.kpi.records') %></div><div class="kpi-num"><%= stats.total %></div></div>
+  <div class="kpi-card kpi-success"><div class="kpi-label"><%= td('조치완료') %></div><div class="kpi-num"><%= stats.completed %></div></div>
+  <div class="kpi-card" style="border-top-color:#1e824c;"><div class="kpi-label"><%= t('remediation.audit.kpi.verified') %></div><div class="kpi-num" style="color:#1e824c;"><%= stats.verified %></div><div class="kpi-sub"><%= t('remediation.audit.kpi.verifiedSub') %></div></div>
+  <div class="kpi-card" style="border-top-color:#8e44ad;"><div class="kpi-label"><%= t('remediation.audit.kpi.withEvidence') %></div><div class="kpi-num" style="color:#8e44ad;"><%= stats.with_evidence %></div></div>
+  <div class="kpi-card" style="border-top-color:#c0392b;"><div class="kpi-label"><%= t('remediation.audit.kpi.mismatch') %></div><div class="kpi-num" style="color:#c0392b;"><%= stats.mismatch %></div><div class="kpi-sub"><%= t('remediation.audit.kpi.mismatchSub') %></div></div>
+</div>
+
+<div class="section-box no-print" style="text-align:right;">
+  <button class="btn-sm" onclick="window.print()"><%= t('remediation.audit.btnPrint') %></button>
+  <a class="btn-sm" href="/remediation"><%= t('remediation.audit.btnBack') %></a>
+</div>
+
+<div class="section-box">
+  <h3><%= t('remediation.audit.listHeading', { n: rows.length }) %></h3>
+  <% if (!rows.length) { %>
+    <div class="empty" style="padding:28px;text-align:center;color:#888;">
+      <%= t('remediation.audit.emptyLine1') %><br>
+      <%- t('remediation.audit.emptyLine2', { link: '<a href="/remediation">' + t('common.nav.remediation') + '</a>' }) %>
+    </div>
+  <% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th><%= t('remediation.audit.th.discovered') %></th><th><%= t('remediation.audit.th.host') %></th><th><%= t('remediation.audit.th.platform') %></th><th><%= t('remediation.audit.th.rule') %></th><th><%= t('remediation.audit.th.vuln') %></th>
+        <th><%= t('remediation.audit.th.severity') %></th><th><%= t('remediation.audit.th.fixStatus') %></th><th><%= t('remediation.audit.th.assignee') %></th><th><%= t('remediation.audit.th.fixedAt') %></th><th><%= t('remediation.audit.th.reverify') %></th><th><%= t('remediation.audit.th.evidence') %></th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(function(r, i){ %>
+        <tr>
+          <td class="mono small"><%= (r.discovered_at||'').slice(0,10) %></td>
+          <td class="small"><strong><%= r.hostname %></strong></td>
+          <td><span class="badge-pf pf-<%= r.platform %>"><%= r.platform %></span></td>
+          <td class="mono small"><%= r.rule_id %></td>
+          <td class="small"><%= r.title %></td>
+          <td class="small"><%= td(r.severity) %></td>
+          <td class="small">
+            <% if (r.fix_status==='조치완료'){ %><span class="status-pill status-success">✓ <%= td('완료') %></span>
+            <% } else if (r.fix_status==='진행중'){ %><span class="status-pill status-running"><%= td('진행중') %></span>
+            <% } else if (r.fix_status==='예외'){ %><span class="status-pill status-exception"><%= td('예외') %></span>
+            <% } else { %><span class="status-pill status-fail"><%= td('미조치') %></span><% } %>
+          </td>
+          <td class="small"><%= r.assignee || '-' %></td>
+          <td class="mono small"><%= (r.fixed_at||'').slice(0,10) || '-' %></td>
+          <td class="small <%= r.fix_status==='조치완료' && !r.reverify_ok ? 'rv-warn' : (r.reverify_ok ? 'rv-ok' : 'rv-no') %>"><%= td(r.reverify) %></td>
+          <td class="small text-center"><%= r.evidence_files.length ? ('📎 '+r.evidence_files.length) : '-' %></td>
+          <td class="no-print"><span class="btn-sm aud-toggle" onclick="var d=document.getElementById('aud-'+<%= i %>);d.style.display=d.style.display==='none'?'':'none';"><%= t('remediation.audit.btnHistory') %></span></td>
+        </tr>
+        <tr id="aud-<%= i %>" style="display:none;">
+          <td colspan="12" class="aud-detail">
+            <% if (r.fix_method) { %><div class="lbl"><%= t('remediation.audit.fixMethod') %></div><div><%= r.fix_method %></div><% } %>
+            <div class="lbl"><%= t('remediation.audit.historyTimeline') %></div>
+            <div class="aud-hist">
+              <% if (!r.history.length) { %><span class="muted"><%= t('remediation.audit.noHistory') %></span><% } %>
+              <% r.history.slice().reverse().forEach(function(h){ %>
+                <div>• <b><%= h.at %></b> <%= h.by||'' %><% if(h.from||h.to){ %> [<%= h.from||'' %>→<%= h.to||'' %>]<% } %><% if(h.fix_method){ %> — <%= h.fix_method %><% } %><% if(h.note){ %> (<%= h.note %>)<% } %></div>
+              <% }); %>
+            </div>
+            <div class="lbl"><%= t('remediation.audit.evidenceFiles') %></div>
+            <div class="aud-ev">
+              <% if (!r.evidence_files.length) { %><span class="muted"><%= t('remediation.audit.noEvidence') %></span><% } %>
+              <% r.evidence_files.forEach(function(f){ %>
+                <div>📎 <a href="/remediation/<%= encodeURIComponent(r.result_id) %>/evidence/<%= encodeURIComponent(f.filename) %>" target="_blank"><%= f.original_name %></a>
+                  <span class="muted">(<%= Math.round((f.size||0)/1024) %>KB · <%= f.uploaded_by %> · <%= f.uploaded_at %>)</span></div>
+              <% }); %>
+            </div>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+
+<%- include('../_footer') %>

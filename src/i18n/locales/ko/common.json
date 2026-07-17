@@ -1,0 +1,53 @@
+{
+  "appTitle": "취약점 진단 시스템",
+  "nav": {
+    "dashboard": "대시보드",
+    "diagGroup": "진단",
+    "diagnosis": "진단 관리",
+    "collection": "수집 관리",
+    "schedules": "예약 진단",
+    "agent": "자율 에이전트",
+    "rptGroup": "리포트·현황",
+    "reports": "리포트",
+    "inspectionStatus": "진단 현황",
+    "securityGrade": "서버별 진단 이력",
+    "cveSync": "CVE 동기화",
+    "vulnGroup": "취약점 관리",
+    "vuln": "취약점 관리",
+    "remediation": "조치 관리",
+    "exceptions": "예외 관리",
+    "exclusions": "제외 관리",
+    "servers": "서버 관리",
+    "opsGroup": "운영",
+    "notifications": "알림",
+    "audit": "감사 로그",
+    "users": "사용자 관리",
+    "logout": "로그아웃",
+    "changePassword": "비밀번호 변경"
+  },
+  "btn": {
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삭제",
+    "edit": "수정",
+    "search": "검색",
+    "back": "목록으로",
+    "download": "다운로드",
+    "run": "실행",
+    "reassess": "재진단",
+    "runAssess": "진단 실행",
+    "newCollect": "+ 새 수집",
+    "aiResult": "🤖 AI 결과"
+  },
+  "sev": { "high": "상", "mid": "중", "low": "하" },
+  "unit": { "count": "{n}건" },
+  "login": {
+    "title": "로그인 — ADV (AI Diagnosis Verify)",
+    "id": "아이디",
+    "password": "비밀번호",
+    "submit": "로그인",
+    "firstRunTitle": "최초 실행 안내",
+    "firstRunAdmin": "기본 관리자:",
+    "firstRunChange": "첫 로그인 후 즉시 비밀번호를 변경하세요."
+  }
+}

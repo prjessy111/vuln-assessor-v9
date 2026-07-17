@@ -1,0 +1,42 @@
+{
+  "pageTitle": "Security Grade",
+  "heading": "Assessment History by Server",
+  "meta": "As of: {now} · Policy: 전자금융기반시설_2026",
+  "list": {
+    "title": "Check Results by Server",
+    "subtitle": "— Compliance = good items ÷ total items (actual assessment aggregate)",
+    "searchPh": "Search host/IP…",
+    "allOs": "All OS",
+    "reset": "Reset",
+    "hostname": "Hostname",
+    "policy": "Policy",
+    "vulnCount": "Vulnerabilities",
+    "compliance": "Compliance (Good/Total)",
+    "lastChecked": "Last Checked",
+    "operator": "Operator",
+    "domain": "Domain",
+    "channel": "Channel",
+    "empty": "No target servers"
+  },
+  "detail": {
+    "pageTitle": "Server Check History — {host}",
+    "backList": "← List",
+    "hostname": "Hostname",
+    "operator": "Operator",
+    "channel": "Channel",
+    "histTitle": "Check History",
+    "histSubtitle": "— newest first by assessment time · Compliance = good ÷ total",
+    "assessedAt": "Assessed At",
+    "type": "Type",
+    "source": "Source",
+    "elapsed": "Elapsed",
+    "total": "Total",
+    "vuln": "Vulnerable",
+    "safe": "Good",
+    "na": "Undetermined",
+    "compliance": "Compliance (Good/Total)",
+    "result": "Result",
+    "resultBtn": "Result",
+    "empty": "No assessment history"
+  }
+}

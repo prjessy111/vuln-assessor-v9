@@ -1,0 +1,37 @@
+{
+  "listTitle": "진단 이력",
+  "selectServer": "서버 선택",
+  "selectPh": "--- 선택 ---",
+  "serverHistory": "{name} 진단 이력 ({n}건)",
+  "col": {
+    "select": "선택",
+    "assessId": "진단ID",
+    "executedAt": "실행일시",
+    "executedBy": "실행자",
+    "ruleset": "룰셋",
+    "total": "전체",
+    "vuln": "취약",
+    "safe": "양호",
+    "elapsedMs": "소요(ms)",
+    "action": "액션"
+  },
+  "compareBtn": "선택한 2건 비교",
+  "selectTwo": "비교할 진단 2건을 선택하세요.",
+  "compareTitle": "진단 비교",
+  "compareHeading": "진단 비교: #{a} vs #{b}",
+  "abSummary": "취약 {vuln} / 양호 {safe} / N/A {na}",
+  "chg": {
+    "improved": "개선",
+    "worsened": "악화",
+    "unchanged": "유지",
+    "addedB": "신규(B)",
+    "removedA": "제거(A)"
+  },
+  "cmp": {
+    "ruleId": "항목ID",
+    "severity": "중요도",
+    "statusA": "A 판정",
+    "statusB": "B 판정",
+    "change": "변화"
+  }
+}

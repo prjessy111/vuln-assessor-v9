@@ -1,0 +1,30 @@
+{
+  "title": "审计日志",
+  "meta": "共 {total}条 · 基准 {now}",
+  "kpi": {
+    "total": "全部审计记录",
+    "keep1000": "最多保留1000条",
+    "today": "今日活动",
+    "fail": "失败",
+    "failRate": "失败率 {n}%",
+    "users": "活跃用户",
+    "uniqueUsers": "唯一账户数"
+  },
+  "trend7d": "最近7天趋势",
+  "byAction": "按操作分布",
+  "byUser": "按用户活动 (前列)",
+  "list": {
+    "title": "主要操作记录",
+    "subtitle": "— 登录·诊断执行·例外/排除·处置·计划·健康检查等自动记录 (最新优先)",
+    "searchPh": "搜索用户/对象/IP…",
+    "allActions": "全部操作",
+    "reset": "重置",
+    "time": "时间",
+    "user": "用户",
+    "role": "角色",
+    "action": "操作",
+    "target": "对象",
+    "result": "结果",
+    "empty": "暂无审计日志记录。(登录·诊断执行等操作时自动记录)"
+  }
+}

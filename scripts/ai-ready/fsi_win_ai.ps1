@@ -7,7 +7,10 @@ param(
     [switch]$Full,
     [switch]$DeepLibScan,
     [string]$OutputDir = "",
-    [string]$OutputName = ""
+    [string]$OutputName = "",
+    [string]$MssqlServer = "",
+    [string]$MssqlUser = "",
+    [string]$MssqlPassword = ""
 )
 
 $ErrorActionPreference = "SilentlyContinue"
@@ -270,12 +273,12 @@ Write-FsiItem "SRV-163" 'reg query "HKLM\Software\Microsoft\Windows NT\CurrentVe
 
 # [네트워크 및 서비스 설정]
 Write-FsiItem "SRV-001" '2026 확인방법: SNMP community + WMI 서비스 + DCOM 인증수준(LegacyAuthenticationLevel) + LAN Manager 인증수준(LmCompatibilityLevel/NTLMv2)' { Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\services\SNMP\Parameters\ValidCommunities" -EA SilentlyContinue; sc.exe query SNMP; sc.exe query Winmgmt; Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Ole" -Name LegacyAuthenticationLevel -EA SilentlyContinue | Select LegacyAuthenticationLevel; Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name LmCompatibilityLevel -EA SilentlyContinue | Select LmCompatibilityLevel }
-Write-FsiItem "SRV-002" 'REG QUERY "HKLM\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\PermittedManagers"' { Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\PermittedManagers" }
+Write-FsiItem "SRV-002" 'SNMP 서비스 상태 게이트 + REG QUERY PermittedManagers' { if (Get-Service SNMP -ErrorAction SilentlyContinue) { $pm = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\PermittedManagers" -ErrorAction SilentlyContinue; if ($pm) { $pm } else { '(SNMP 서비스 설치됨 + PermittedManagers 미설정 -> 허용 관리자 제한 없음)' } } else { 'SNMP service not installed -> target_absent' } }
 Write-FsiItem "SRV-003" 'sc query SNMP; REG QUERY "HKLM\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\PermittedManagers"' { sc.exe query SNMP; Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\SNMP\Parameters\PermittedManagers" }
 Write-FsiItem "SRV-004" 'netstat -an | findstr :25' { $netstatData | Select-String ":25"; sc.exe query SMTPSVC }
 Write-FsiItem "SRV-013" 'netstat -an | findstr :21' { $netstatData | Select-String ":21"; sc.exe query MSFTPSVC; sc.exe query FTPSVC }
 Write-FsiItem "SRV-037" 'sc query MSFTPSVC; sc query FTPSVC; netstat -an | findstr :21' { sc.exe query MSFTPSVC; sc.exe query FTPSVC; $netstatData | Select-String ":21" }
-Write-FsiItem "SRV-018" 'REG QUERY HKLM\SYSTEM\CurrentControlSet\Services\Lanmanserver\Parameters /v AutoShareServer' { Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\Lanmanserver\Parameters" | Select AutoShareServer, AutoShareWks }
+Write-FsiItem "SRV-018" 'net share(공유 현황) + REG AutoShareServer/Wks' { net share; Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\Lanmanserver\Parameters" | Select AutoShareServer, AutoShareWks }
 Write-FsiItem "SRV-020" 'net share' { if ($FastMode) { net share } else { net share; Get-SmbShare | Where-Object { $_.Path } | ForEach-Object { "SHARE $($_.Name) -> $($_.Path)"; Get-Acl $_.Path | Format-List Path, AccessToString } } }
 Write-FsiItem "SRV-023" 'REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v MinEncryptionLevel' { Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name MinEncryptionLevel | Select MinEncryptionLevel }
 Write-FsiItem "SRV-024" '2026: 취약한 Telnet 인증 방식(tlntadmn config) + Telnet 서비스 상태' { tlntadmn config 2>$null; sc.exe query TlntSvr }
@@ -284,7 +287,7 @@ Write-FsiItem "SRV-029" 'REG QUERY "HKLM\System\CurrentControlSet\Services\LanMa
 Write-FsiItem "SRV-031" 'REG QUERY HKLM\SYSTEM\CurrentControlSet\Control\LSA /v RestrictAnonymous' { Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\LSA" | Select RestrictAnonymous, RestrictAnonymousSam }
 Write-FsiItem "SRV-032" 'netsh interface show interface' { if ($FastMode) { netsh interface show interface } else { Get-NetAdapter | Format-Table Name, InterfaceDescription, Status; "--- NetbiosOptions per interface (0=default/enabled, 1=enabled, 2=disabled) ---"; Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces\*' -Name NetbiosOptions -ErrorAction SilentlyContinue | Format-List PSChildName, NetbiosOptions } }
 Write-FsiItem "SRV-034" '2026: NetBIOS over TCP/IP(NetbiosOptions) + 불필요 서비스(Alerter/ClipSrv/Messenger/SimpTcp)' { Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces\Tcpip_*" -Name NetbiosOptions -EA SilentlyContinue | Select PSChildName, NetbiosOptions; sc.exe query Alerter; sc.exe query ClipSrv; sc.exe query Messenger; sc.exe query SimpTcp }
-Write-FsiItem "SRV-063" 'reg query HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters /v NoRecursion' { Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\DNS\Parameters" -Name NoRecursion | Select NoRecursion }
+Write-FsiItem "SRV-063" 'DNS 서비스 상태 게이트 + reg query NoRecursion' { if (Get-Service DNS -ErrorAction SilentlyContinue) { $nr = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\DNS\Parameters" -Name NoRecursion -ErrorAction SilentlyContinue; if ($nr) { $nr | Select NoRecursion } else { '(DNS 서버 서비스 실행 중 + NoRecursion 미설정 -> 기본값: 재귀 질의 허용)' } } else { 'DNS Server service not installed -> target_absent' } }
 Write-FsiItem "SRV-066" 'sc query dns; reg query DNS Server Zones' { sc.exe query DNS; reg.exe query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\DNS Server\Zones" /s; reg.exe query "HKLM\System\CurrentControlSet\Services\DNS\Zones" /s }
 Write-FsiItem "SRV-067" 'reg query W3SVC ADCLaunch; type %SystemRoot%\msdfmap.ini' { reg.exe query "HKLM\SYSTEM\CurrentControlSet\Services\W3SVC\Parameters\ADCLaunch"; Get-Content "$env:SystemRoot\msdfmap.ini" }
 Write-FsiItem "SRV-080" 'reg query "HKLM\System\CurrentControlSet\Control\Print\Providers\LanMan Print Services\Servers" /v AddPrinterDrivers' { Get-ItemProperty "HKLM:\System\CurrentControlSet\Control\Print\Providers\LanMan Print Services\Servers" -Name AddPrinterDrivers | Select AddPrinterDrivers }
@@ -307,7 +310,7 @@ Write-FsiItem "SRV-111" 'reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\
 Write-FsiItem "SRV-109" 'secedit /EXPORT /CFG securitypolicy; event log policy evidence' { $secData | Select-String "Audit|EventLog|Retention|MaximumLogSize"; Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\*" | Select PSChildName, MaxSize, Retention, RestrictGuestAccess }
 Write-FsiItem "SRV-116" 'reg query HKLM\system\currentcontrolset\control\lsa /v crashonauditfail' { Get-ItemProperty "HKLM:\system\currentcontrolset\control\lsa" -Name crashonauditfail | Select crashonauditfail }
 Invoke-FsiMaybeSlowItem "SRV-117" 'systeminfo' { systeminfo } 'Skipped in fast mode because full systeminfo can be slow. Run -Full for complete evidence.'
-Write-FsiItem "SRV-119" 'Windows Update policy and service status' { sc.exe query wuauserv; Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"; Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update" }
+Write-FsiItem "SRV-119" 'Anti-Virus process scan + Windows Update status' { $av = Get-Process | Where-Object { $_.ProcessName -match 'V3|AYAgent|ViRobot|hvrtray|ccSvcHst|^Smc$|SepMasterService|mcshield|masvc|^avp$|TmListen|NTRTscan|ekrn|SavService|bdagent' } | Select-Object -ExpandProperty ProcessName -Unique; if ($av) { "AV_PROCESS_DETECTED=$($av -join ',')" } else { 'AV_PROCESS_DETECTED=none (백신 프로세스 미검출 - 백신 미설치 또는 미실행)' }; sc.exe query wuauserv; Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"; Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update" }
 Invoke-FsiMaybeSlowItem "SRV-120" 'wmic qfe list' { Get-HotFix | Format-Table HotFixID, InstalledOn, Description } 'Skipped in fast mode because hotfix inventory can be slow. Run -Full for complete evidence.'
 # 설치 소프트웨어 인벤토리 (레지스트리 Uninstall) — 서드파티 SW CVE 매칭용 (rpm -qa 의 Windows 대응).
 # Win32_Product 는 느리고 MSI 복구를 유발할 수 있어 사용하지 않고 레지스트리를 직접 열거.
@@ -351,6 +354,96 @@ Write-FsiItem "SRV-059" 'reg query W3SVC SSIEnableCmdDirective' { reg.exe query 
 Write-FsiItem "SRV-097" 'FTP/IIS site permission evidence' { sc.exe query MSFTPSVC; sc.exe query FTPSVC; & "$env:windir\System32\inetsrv\appcmd.exe" list site; Get-Acl "C:\inetpub\ftproot", "C:\inetpub\wwwroot" | Format-List Path, AccessToString }
 Write-FsiItem "SRV-041" 'cacls C:\inetpub\scripts' { if (Test-Path "C:\inetpub") { Get-Acl "C:\inetpub\scripts", "C:\inetpub\wwwroot" | Format-List Path, AccessToString } else { "PATH_NOT_FOUND: C:\inetpub does not exist -> IIS not installed" } }
 Write-FsiItem "SRV-060" 'type %CATALINA_HOME%\conf\tomcat-users.xml' { $t = "$env:CATALINA_HOME\conf\tomcat-users.xml"; if ($env:CATALINA_HOME -and (Test-Path $t)) { Get-Content $t } else { "PATH_NOT_FOUND: tomcat-users.xml not present -> Tomcat not installed" } }
+
+# [WAS(Tomcat)] 금융보안원 WAS 기준 SRV-200~214 — Windows Tomcat 설정파일 수집 (판정은 mock 룰)
+$tcHomes = @()
+foreach ($d in @($env:CATALINA_BASE, $env:CATALINA_HOME)) { if ($d -and (Test-Path (Join-Path $d 'conf\server.xml'))) { $tcHomes += $d } }
+foreach ($pat in @('C:\tomcat*','C:\apache-tomcat*','C:\Program Files\*omcat*','C:\Program Files (x86)\*omcat*','D:\tomcat*','D:\apache-tomcat*','C:\opt\tomcat*','C:\was\*','D:\was\*')) {
+  Get-ChildItem -Path $pat -Directory -ErrorAction SilentlyContinue | ForEach-Object { if (Test-Path (Join-Path $_.FullName 'conf\server.xml')) { $tcHomes += $_.FullName } }
+}
+$tcHomes = @($tcHomes | Select-Object -Unique)
+$tcAbsent = ($tcHomes.Count -eq 0)
+function TcGrep($rel, $pat) { $o=@(); foreach($h in $tcHomes){ $f=Join-Path $h $rel; if(Test-Path $f){ (Get-Content $f -ErrorAction SilentlyContinue) | Select-String $pat | ForEach-Object { $o += $_.Line } } }; $o }
+
+Write-FsiItem "SRV-200" 'Tomcat 관리자 콘솔 접근통제(RemoteAddrValve)' { if($tcAbsent){"Tomcat 미설치(CATALINA 미탐지) -> 관리 콘솔 부재(대상 없음)";return}; foreach($h in $tcHomes){ Get-ChildItem (Join-Path $h 'webapps') -Directory -ErrorAction SilentlyContinue | Where-Object {$_.Name -in @('manager','host-manager')} | ForEach-Object { ($_.FullName -replace '\\','/') }; Get-Content (Join-Path $h 'webapps\manager\META-INF\context.xml'),(Join-Path $h 'conf\Catalina\localhost\manager.xml') -ErrorAction SilentlyContinue | Select-String 'RemoteAddrValve|RemoteCIDRValve|allow=' | ForEach-Object {$_.Line} } }
+Write-FsiItem "SRV-201" 'Tomcat 기본/관리 계정(tomcat-users.xml)' { if($tcAbsent){"Tomcat 미설치 -> 관리 계정 미정의(대상 없음)";return}; TcGrep 'conf\tomcat-users.xml' 'user |username=|rolename=|roles=' }
+Write-FsiItem "SRV-202" 'Tomcat 패스워드 평문 저장' { if($tcAbsent){"Tomcat 미설치 -> 계정 미정의(대상 없음)";return}; TcGrep 'conf\tomcat-users.xml' 'password'; TcGrep 'conf\server.xml' 'CredentialHandler|MessageDigest|digest=' }
+Write-FsiItem "SRV-203" 'Tomcat 디렉터리 리스팅(web.xml listings)' { if($tcAbsent){"Tomcat 미설치 -> 기본값 listings=false(양호)";return}; TcGrep 'conf\web.xml' 'listings' }
+Write-FsiItem "SRV-204" 'Tomcat 세션 타임아웃(web.xml)' { if($tcAbsent){"Tomcat 미설치 -> 대상 없음";return}; TcGrep 'conf\web.xml' 'session-timeout' }
+Write-FsiItem "SRV-205" 'Tomcat 에러페이지/서버정보 노출' { if($tcAbsent){"Tomcat 미설치 -> 대상 없음";return}; TcGrep 'conf\server.xml' 'ErrorReportValve|showServerInfo|showReport'; TcGrep 'conf\web.xml' 'error-page' }
+Write-FsiItem "SRV-206" 'Tomcat 서버 버전 노출(Connector server / ServerInfo)' { if($tcAbsent){"Tomcat 미설치 -> 대상 없음";return}; $o=@(); $o += (TcGrep 'conf\server.xml' 'server='); foreach($h in $tcHomes){ Get-ChildItem -Path $h -Recurse -Filter 'ServerInfo.properties' -ErrorAction SilentlyContinue | Select-Object -First 2 | ForEach-Object {$o += $_.FullName} }; if($o.Count){ $o } else { "Connector server 속성/ServerInfo 오버라이드 없음 -> 기본 배너로 버전 노출" } }
+Write-FsiItem "SRV-207" 'Tomcat 불필요 기본 웹앱(examples/docs)' { if($tcAbsent){"Tomcat 미설치 -> 불필요 앱 제거 상태(양호)";return}; foreach($h in $tcHomes){ Get-ChildItem (Join-Path $h 'webapps') -Directory -ErrorAction SilentlyContinue | Where-Object {$_.Name -in @('examples','docs','host-manager','manager')} | ForEach-Object { ($_.FullName -replace '\\','/') } } }
+Write-FsiItem "SRV-208" 'Tomcat TRACE 메서드(allowTrace)' { if($tcAbsent){"Tomcat 미설치 -> 기본값 allowTrace=false(양호)";return}; TcGrep 'conf\server.xml' 'allowTrace' }
+Write-FsiItem "SRV-209" 'Tomcat AJP 커넥터 보안(Ghostcat)' { if($tcAbsent){"Tomcat 미설치 -> AJP Connector 미정의(양호)";return}; TcGrep 'conf\server.xml' 'AJP|8009|secretRequired|secret=|requiredSecret' }
+Write-FsiItem "SRV-210" 'Tomcat SSL/TLS 프로토콜' { if($tcAbsent){"Tomcat 미설치 -> 대상 없음";return}; TcGrep 'conf\server.xml' 'SSLEnabled|scheme="https"|sslEnabledProtocols|sslProtocol|SSLv2|SSLv3' }
+Write-FsiItem "SRV-211" 'Tomcat 접근 로그(AccessLogValve)' { if($tcAbsent){"Tomcat 미설치 -> 대상 없음";return}; TcGrep 'conf\server.xml' 'AccessLogValve|prefix=|pattern=' }
+Write-FsiItem "SRV-212" 'Tomcat 설정 파일 접근 권한(ACL)' { if($tcAbsent){"Tomcat 미설치 -> 대상 없음";return}; foreach($h in $tcHomes){ foreach($f in @('conf\server.xml','conf\tomcat-users.xml','conf\catalina.properties')){ $p=Join-Path $h $f; if(Test-Path $p){ "$f :"; (Get-Acl $p).AccessToString } } } }
+Write-FsiItem "SRV-213" 'Tomcat shutdown 포트/명령(server.xml)' { if($tcAbsent){"Tomcat 미설치 -> 대상 없음";return}; TcGrep 'conf\server.xml' '<Server |shutdown=|port="8005"|port="-1"' }
+Write-FsiItem "SRV-214" 'Tomcat 실행 계정 권한(프로세스 소유자)' { if($tcAbsent){"Tomcat 미설치 -> 미실행(대상 없음)";return}; Get-CimInstance Win32_Process -Filter "Name='java.exe'" -ErrorAction SilentlyContinue | Where-Object {$_.CommandLine -match 'catalina|tomcat'} | ForEach-Object { $ow=$_.GetOwner(); "PID $($_.ProcessId) owner=$($ow.Domain)\$($ow.User)" } }
+
+# [DBMS(MSSQL)] 금융보안원 DBMS 기준 SRV-230~247 — 로컬 MSSQL 을 OS 스캔에 함께 수집.
+#   기본: WinRM 계정 통합인증(Integrated). 별도 계정 필요 시 FSI_MSSQL_USER/FSI_MSSQL_PASS(+FSI_MSSQL_SERVER) 지정.
+#   SQL Server 미설치/접속불가면 DB 항목을 아예 생략(팬텀 항목 방지).
+try { Add-Type -AssemblyName System.Data -ErrorAction SilentlyContinue } catch {}
+$sqlConn = $null; $sqlErr = ''
+# DB 접속정보: web UI 가 저장한 fsi_config.ini([mssql] server/instance/port/user/password) 를 스크립트가 읽는다.
+# 우선순위: 파라미터 > config.ini > 환경변수 > 로컬 자동탐지
+$cfg = @{}
+$cfgPath = if ($env:FSI_CONFIG_PATH -and (Test-Path $env:FSI_CONFIG_PATH)) { $env:FSI_CONFIG_PATH } else { Join-Path $scriptDir 'fsi_config.ini' }
+if (Test-Path $cfgPath) {
+  $sec = ''
+  foreach ($ln in (Get-Content $cfgPath -ErrorAction SilentlyContinue)) {
+    $t = $ln.Trim()
+    if ($t -match '^\[(.+)\]$') { $sec = $matches[1].ToLower() }
+    elseif ($sec -eq 'mssql' -and $t -match '^([^;#=][^=]*)=(.*)$') { $cfg[$matches[1].Trim().ToLower()] = $matches[2].Trim() }
+  }
+}
+$cfgServer = ''
+if ($cfg['server']) { $cfgServer = $cfg['server']; if ($cfg['instance']) { $cfgServer = "$cfgServer\$($cfg['instance'])" }; if ($cfg['port']) { $cfgServer = "$cfgServer,$($cfg['port'])" } }
+$mssqlServer = if ($MssqlServer) { $MssqlServer } elseif ($cfgServer) { $cfgServer } elseif ($env:FSI_MSSQL_SERVER) { $env:FSI_MSSQL_SERVER } else { '' }
+$mssqlUser   = if ($MssqlUser)   { $MssqlUser }   elseif ($cfg['user'])     { $cfg['user'] }     elseif ($env:FSI_MSSQL_USER) { $env:FSI_MSSQL_USER } else { '' }
+$mssqlPass   = if ($MssqlPassword) { $MssqlPassword } elseif ($cfg['password']) { $cfg['password'] } elseif ($env:FSI_MSSQL_PASS) { $env:FSI_MSSQL_PASS } else { '' }
+$sqlRunning = @(Get-Service -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^MSSQL' -and $_.Status -eq 'Running' }).Count -gt 0
+if ($sqlRunning -or $mssqlServer -or $mssqlUser) {
+  $cands = if ($mssqlServer) { @($mssqlServer) } else { @('localhost','.','.\SQLEXPRESS','localhost\SQLEXPRESS') }
+  foreach ($sv in $cands) {
+    try {
+      $auth = if ($mssqlUser) { "User ID=$mssqlUser;Password=$mssqlPass;" } else { "Integrated Security=SSPI;" }
+      $c = New-Object System.Data.SqlClient.SqlConnection ("Server=$sv;Database=master;$auth" + "Connect Timeout=8;Encrypt=False;TrustServerCertificate=True;Application Name=ADV_FSI;")
+      $c.Open(); $sqlConn = $c; break
+    } catch { $sqlErr = $_.Exception.Message }
+  }
+}
+function SqlQ($sql) {
+  if (-not $sqlConn) { return "DB_CONNECTION_FAILED: $sqlErr" }
+  try {
+    $cmd = $sqlConn.CreateCommand(); $cmd.CommandTimeout = 20; $cmd.CommandText = $sql
+    $r = $cmd.ExecuteReader(); $sb = New-Object System.Text.StringBuilder; $n = 0
+    do { while ($r.Read()) { $p=@(); for ($i=0; $i -lt $r.FieldCount; $i++) { $v = if ($r.IsDBNull($i)) {'NULL'} else {$r.GetValue($i).ToString()}; $p += "$($r.GetName($i))=$v" }; [void]$sb.AppendLine(($p -join ' | ')); $n++ } } while ($r.NextResult())
+    $r.Close(); if ($n -eq 0) { '(0 rows)' } else { $sb.ToString().Trim() }
+  } catch { "QUERY_ERROR: $($_.Exception.Message)" }
+}
+if ($sqlConn) {
+  Write-FsiItem "SRV-230" 'MSSQL sa 계정명 변경' { SqlQ "SELECT name, is_disabled FROM sys.server_principals WHERE sid = 0x01;" }
+  Write-FsiItem "SRV-231" 'MSSQL sa 계정 비활성화' { SqlQ "SELECT name, is_disabled FROM sys.sql_logins WHERE sid = 0x01;" }
+  Write-FsiItem "SRV-232" 'MSSQL 로그인 패스워드 정책' { SqlQ "SELECT name, is_policy_checked, is_expiration_checked, is_disabled FROM sys.sql_logins WHERE name NOT LIKE '##%';" }
+  Write-FsiItem "SRV-233" 'MSSQL 인증 모드' { SqlQ "SELECT CAST(SERVERPROPERTY('IsIntegratedSecurityOnly') AS int) AS IntegratedSecurityOnly;" }
+  Write-FsiItem "SRV-234" 'MSSQL sysadmin 역할 구성원' { SqlQ "SELECT p.name AS member, p.type_desc, p.is_disabled FROM sys.server_role_members m JOIN sys.server_principals r ON m.role_principal_id=r.principal_id JOIN sys.server_principals p ON m.member_principal_id=p.principal_id WHERE r.name='sysadmin';" }
+  Write-FsiItem "SRV-235" 'MSSQL guest CONNECT 권한' { SqlQ "DECLARE @s nvarchar(max)=N'DECLARE @r TABLE(dbname sysname, perm nvarchar(128), state nvarchar(64));'; SELECT @s=@s+'INSERT INTO @r SELECT '''+name+''', dp2.permission_name, dp2.state_desc FROM ['+name+'].sys.database_permissions dp2 JOIN ['+name+'].sys.database_principals u ON dp2.grantee_principal_id=u.principal_id WHERE u.name=''guest'' AND dp2.permission_name=''CONNECT'' AND dp2.state_desc=''GRANT'';' FROM sys.databases WHERE state=0 AND name NOT IN ('tempdb'); SET @s=@s+N' SELECT dbname, perm, state FROM @r;'; EXEC sp_executesql @s;" }
+  Write-FsiItem "SRV-236" 'MSSQL public 역할 권한' { SqlQ "SELECT sp.permission_name, sp.state_desc FROM sys.server_permissions sp JOIN sys.server_principals pr ON sp.grantee_principal_id=pr.principal_id WHERE pr.name='public' AND sp.state_desc='GRANT';" }
+  Write-FsiItem "SRV-237" 'MSSQL xp_cmdshell' { SqlQ "SELECT name, value_in_use FROM sys.configurations WHERE name='xp_cmdshell';" }
+  Write-FsiItem "SRV-238" 'MSSQL OLE Automation' { SqlQ "SELECT name, value_in_use FROM sys.configurations WHERE name='Ole Automation Procedures';" }
+  Write-FsiItem "SRV-239" 'MSSQL Ad Hoc Distributed Queries' { SqlQ "SELECT name, value_in_use FROM sys.configurations WHERE name='Ad Hoc Distributed Queries';" }
+  Write-FsiItem "SRV-240" 'MSSQL CLR Enabled' { SqlQ "SELECT name, value_in_use FROM sys.configurations WHERE name='clr enabled';" }
+  Write-FsiItem "SRV-241" 'MSSQL Cross DB Ownership Chaining' { SqlQ "SELECT name, value_in_use FROM sys.configurations WHERE name='cross db ownership chaining';" }
+  Write-FsiItem "SRV-242" 'MSSQL Remote Admin Connections' { SqlQ "SELECT name, value_in_use FROM sys.configurations WHERE name='remote admin connections';" }
+  Write-FsiItem "SRV-243" 'MSSQL remote access' { SqlQ "SELECT name, value_in_use FROM sys.configurations WHERE name='remote access';" }
+  Write-FsiItem "SRV-244" 'MSSQL 로그인 감사 수준' { SqlQ "DECLARE @al int; EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'AuditLevel', @al OUTPUT; SELECT ISNULL(@al,-1) AS AuditLevel;" }
+  Write-FsiItem "SRV-245" 'MSSQL 감사(C2/Audit)' { SqlQ "SELECT name, value_in_use FROM sys.configurations WHERE name='c2 audit mode'; SELECT name AS audit_name, is_state_enabled FROM sys.server_audits;" }
+  Write-FsiItem "SRV-246" 'MSSQL 버전/패치' { SqlQ "SELECT CAST(SERVERPROPERTY('ProductVersion') AS varchar(64)) AS ProductVersion, CAST(SERVERPROPERTY('ProductLevel') AS varchar(32)) AS ProductLevel, CAST(SERVERPROPERTY('Edition') AS varchar(128)) AS Edition;" }
+  Write-FsiItem "SRV-247" 'MSSQL TDE 암호화' { SqlQ "SELECT name, is_encrypted FROM sys.databases WHERE database_id > 4;" }
+  try { $sqlConn.Close() } catch {}
+}
 
 # 4. XML 꼬리 닫기 및 임시파일 청소
 

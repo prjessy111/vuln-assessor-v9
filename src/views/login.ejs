@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="<%= typeof lang !== 'undefined' ? lang : 'ko' %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로그인 — ADV (AI Diagnosis Verify)</title>
+  <title><%= t('common.login.title') %></title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     body {
@@ -123,23 +123,23 @@
 
     <% if (typeof firstRun !== 'undefined' && firstRun) { %>
       <div class="first-run-notice">
-        <strong>최초 실행 안내</strong><br>
-        기본 관리자: <code>admin</code> / <code>admin123!</code><br>
-        첫 로그인 후 즉시 비밀번호를 변경하세요.
+        <strong><%= t('common.login.firstRunTitle') %></strong><br>
+        <%= t('common.login.firstRunAdmin') %> <code>admin</code> / <code>admin123!</code><br>
+        <%= t('common.login.firstRunChange') %>
       </div>
     <% } %>
 
     <form class="login-form" method="POST" action="/login">
       <input type="hidden" name="from" value="<%= typeof from !== 'undefined' ? from : '/' %>">
       <div class="form-row">
-        <label>아이디</label>
+        <label><%= t('common.login.id') %></label>
         <input type="text" name="username" autofocus required autocomplete="username">
       </div>
       <div class="form-row">
-        <label>비밀번호</label>
+        <label><%= t('common.login.password') %></label>
         <input type="password" name="password" required autocomplete="current-password">
       </div>
-      <button type="submit">로그인</button>
+      <button type="submit"><%= t('common.login.submit') %></button>
     </form>
 
     <div class="login-footer">

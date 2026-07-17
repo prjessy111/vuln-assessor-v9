@@ -1,4 +1,4 @@
-<%- include('../_header', { title: '3-way 정합성', activeMenu: 'reports' }) %>
+<%- include('../_header', { title: t('reports.threeway.title'), activeMenu: 'reports' }) %>
 <style>
   .tw-cards { display:flex; flex-wrap:wrap; gap:12px; margin:16px 0; }
   .tw-card { flex:1 1 110px; background:#fff; border:1px solid #e1e5ea; border-radius:8px; padding:12px 14px; text-align:center; }
@@ -31,88 +31,87 @@
 </style>
 
 <div class="report-header">
-  <h1>3-way 정합성 비교 — <%= hostname %></h1>
+  <h1><%= t('reports.threeway.h1', { host: hostname }) %></h1>
   <div class="report-actions">
-    <a href="/reports" class="btn">리포트 목록</a>
+    <a href="/reports" class="btn"><%= t('reports.threeway.reportList') %></a>
   </div>
 </div>
 
 <!-- 탐지 정확도 (③ SecuMS 자체판정 정답지 대비) — 모수 중 몇 개 일치 -->
 <div style="display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;">
   <div style="flex:1 1 300px;background:#eafaf1;border:2px solid #27ae60;border-radius:10px;padding:16px 18px;">
-    <div style="font-size:0.92rem;color:#555;">① SecuMS raw AI — 탐지 정확도</div>
+    <div style="font-size:0.92rem;color:#555;"><%= t('reports.threeway.acc1') %></div>
     <div style="font-size:2.4rem;font-weight:800;color:#27ae60;line-height:1.1;"><%= summary.accuracy.secums.rate %>%</div>
-    <div style="font-size:0.95rem;color:#2d3436;">정답지 <b><%= summary.accuracy.secums.denom %></b>개 중 <b><%= summary.accuracy.secums.correct %></b>개 일치</div>
+    <div style="font-size:0.95rem;color:#2d3436;"><%- t('reports.threeway.accDetailHtml', { d: summary.accuracy.secums.denom, c: summary.accuracy.secums.correct }) %></div>
   </div>
   <div style="flex:1 1 300px;background:#eef4fd;border:2px solid #0984e3;border-radius:10px;padding:16px 18px;">
-    <div style="font-size:0.92rem;color:#555;">② Script AI — 탐지 정확도</div>
+    <div style="font-size:0.92rem;color:#555;"><%= t('reports.threeway.acc2') %></div>
     <div style="font-size:2.4rem;font-weight:800;color:#0984e3;line-height:1.1;"><%= summary.accuracy.script.rate %>%</div>
-    <div style="font-size:0.95rem;color:#2d3436;">정답지 <b><%= summary.accuracy.script.denom %></b>개 중 <b><%= summary.accuracy.script.correct %></b>개 일치</div>
+    <div style="font-size:0.95rem;color:#2d3436;"><%- t('reports.threeway.accDetailHtml', { d: summary.accuracy.script.denom, c: summary.accuracy.script.correct }) %></div>
   </div>
 </div>
 <div class="tw-legend" style="margin-top:-6px;">
-  ※ <b>탐지 정확도</b> = ③ SecuMS 자체판정(정답지)이 <b>취약/양호로 판정한 항목(모수)</b> 중, 각 AI가 <b>동일하게 판정</b>한 비율. 각 소스가 실제 진단한 항목 기준이며, 아래 표의 일치율(세 값 모두 일치)과는 별개 지표입니다.
+  <%- t('reports.threeway.accNoteHtml') %>
 </div>
 
 <table class="meta-table">
-  <tr><th>호스트명</th><td><%= hostname %></td>
+  <tr><th><%= t('reports.common.hostname') %></th><td><%= hostname %></td>
       <th>OS</th><td><%= summary.os %></td></tr>
-  <tr><th>① SecuMS raw AI</th><td><%= secums_id ? ('#' + secums_id) : '(레코드 없음)' %></td>
-      <th>② Script AI</th><td><%= script_id ? ('#' + script_id) : '(레코드 없음)' %></td></tr>
+  <tr><th>① SecuMS raw AI</th><td><%= secums_id ? ('#' + secums_id) : t('reports.threeway.noRecord') %></td>
+      <th>② Script AI</th><td><%= script_id ? ('#' + script_id) : t('reports.threeway.noRecord') %></td></tr>
 </table>
 
 <div class="tw-legend">
-  <b>①</b> SecuMS raw DB 기반 AI 진단 &nbsp;·&nbsp; <b>②</b> Script XML 기반 AI 진단 &nbsp;·&nbsp;
-  <b>③</b> SecuMS 제품 자체판정 &nbsp;|&nbsp; 다리: 리포트1 (SRV ↔ os-xxx ↔ 제목)
+  <%- t('reports.threeway.bridgeHtml') %>
 </div>
 
 <div style="background:#f5f6fa;border:1px solid #e1e5ea;border-radius:8px;padding:12px 14px;margin:12px 0;">
-  <div style="font-weight:600;margin-bottom:6px;">③ SecuMS 자체판정 정답지</div>
+  <div style="font-weight:600;margin-bottom:6px;"><%= t('reports.threeway.answerTitle') %></div>
   <% if (typeof secums_answer !== 'undefined' && secums_answer) { %>
-    <div style="color:#27ae60;">✅ 업로드된 상세리포트 사용 중 — <%= secums_answer.count %>개 항목 (<%= secums_answer.updated_at %>)</div>
+    <div style="color:#27ae60;"><%= t('reports.threeway.answerUploaded', { n: secums_answer.count, at: secums_answer.updated_at }) %></div>
   <% } else { %>
-    <div style="color:#b9770e;">⚠️ 업로드된 정답지 없음 → raw DB의 RESULT 값을 ③으로 사용 (코드 불일치 시 부정확). 상세리포트 업로드를 권장합니다.</div>
+    <div style="color:#b9770e;"><%= t('reports.threeway.answerMissing') %></div>
   <% } %>
   <form id="answerForm" style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
     <input type="file" name="detail_report" accept=".xlsx" required>
-    <button type="submit" class="btn" style="background:#0984e3;border-color:#0984e3;color:#fff;">SecuMS 상세리포트 업로드</button>
-    <span class="muted" style="font-size:0.82rem;">OS_Detail_Report_*.xlsx (서버별 SRV 판정 BAD/OK 포함)</span>
+    <button type="submit" class="btn" style="background:#0984e3;border-color:#0984e3;color:#fff;"><%= t('reports.threeway.uploadBtn') %></button>
+    <span class="muted" style="font-size:0.82rem;"><%= t('reports.threeway.uploadHint') %></span>
   </form>
 </div>
 
 <div class="tw-cards">
-  <div class="tw-card"><div>전체</div><div class="num"><%= summary.total %></div></div>
-  <div class="tw-card"><div>비교가능</div><div class="num"><%= summary.comparable %></div></div>
-  <div class="tw-card agree"><div>일치</div><div class="num"><%= summary.agree %></div></div>
-  <div class="tw-card bad"><div>불일치</div><div class="num"><%= summary.mismatch %></div></div>
-  <div class="tw-card wait"><div>비교불가</div><div class="num"><%= summary.no_data %></div></div>
-  <div class="tw-card rate"><div>일치율</div><div class="num"><%= summary.agreement_rate %>%</div></div>
+  <div class="tw-card"><div><%= t('reports.common.total') %></div><div class="num"><%= summary.total %></div></div>
+  <div class="tw-card"><div><%= t('reports.threeway.comparable') %></div><div class="num"><%= summary.comparable %></div></div>
+  <div class="tw-card agree"><div><%= t('reports.common.agree') %></div><div class="num"><%= summary.agree %></div></div>
+  <div class="tw-card bad"><div><%= t('reports.threeway.mismatch') %></div><div class="num"><%= summary.mismatch %></div></div>
+  <div class="tw-card wait"><div><%= t('reports.threeway.noData') %></div><div class="num"><%= summary.no_data %></div></div>
+  <div class="tw-card rate"><div><%= t('reports.common.agreeRate') %></div><div class="num"><%= summary.agreement_rate %>%</div></div>
 </div>
 
 <div class="tw-toolbar">
-  <label><input type="checkbox" id="onlyMismatch" onchange="applyFilter()"> 불일치만 보기</label>
-  <label><input type="checkbox" id="hideNoData" onchange="applyFilter()"> 비교불가 숨기기</label>
+  <label><input type="checkbox" id="onlyMismatch" onchange="applyFilter()"> <%= t('reports.threeway.onlyMismatch') %></label>
+  <label><input type="checkbox" id="hideNoData" onchange="applyFilter()"> <%= t('reports.threeway.hideNoData') %></label>
 </div>
 
 <div class="tw-legend" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#f8f9fb;border:1px solid #e1e5ea;border-radius:8px;padding:8px 12px;margin:8px 0;">
-  <b>판정 범례:</b>
-  <span class="v 취약">취약</span>
-  <span class="v 양호">양호</span>
-  <span class="v 정보제공">정보제공</span>
-  <span class="v 판정불가">판정불가</span>
-  <span class="v 미점검">미점검</span>
-  <span style="color:#666;font-size:0.8rem;">· <b>정보제공</b>=스캔만으론 판정 불가한 정보성/운영절차 항목 · <b>판정불가</b>=수집데이터 부족 · 이 둘은 <b>일치 비교에서 제외</b>(취약/양호만 비교)</span>
+  <b><%= t('reports.threeway.verdictLegend') %></b>
+  <span class="v 취약"><%= td('취약') %></span>
+  <span class="v 양호"><%= td('양호') %></span>
+  <span class="v 정보제공"><%= td('정보제공') %></span>
+  <span class="v 판정불가"><%= td('판정불가') %></span>
+  <span class="v 미점검"><%= td('미점검') %></span>
+  <span style="color:#666;font-size:0.8rem;"><%- t('reports.threeway.legendNoteHtml') %></span>
 </div>
 
 <table class="tw" id="twTable">
   <thead>
     <tr>
-      <th>SRV</th><th>os-xxx</th><th>점검 항목</th>
-      <th>① secums-AI</th><th>② script-AI</th><th>③ secums 판정</th><th>일치</th>
+      <th>SRV</th><th>os-xxx</th><th><%= t('reports.threeway.th.item') %></th>
+      <th>① secums-AI</th><th>② script-AI</th><th><%= t('reports.threeway.th.secumsVerdict') %></th><th><%= t('reports.common.agree') %></th>
     </tr>
   </thead>
   <tbody>
-    <% function cell(v){ if(!v) return '<span class="v none">-</span>'; return '<span class="v '+v+'">'+v+'</span>'; } %>
+    <% function cell(v){ if(!v) return '<span class="v none">-</span>'; return '<span class="v '+v+'">'+td(v)+'</span>'; } %>
     <% rows.forEach(function(r){ %>
       <tr class="<%= r.match === 'mismatch' ? 'mismatch' : (r.match === 'no_data' ? 'nodata' : '') %>" data-match="<%= r.match %>">
         <td class="code"><%= r.srv || '-' %></td>
@@ -122,9 +121,9 @@
         <td><%- cell(r.ai_script) %></td>
         <td><%- cell(r.secums_self) %></td>
         <td>
-          <% if (r.match === 'agree') { %><span class="m-agree">✅ 일치</span>
-          <% } else if (r.match === 'mismatch') { %><span class="m-mismatch">❌ 불일치</span>
-          <% } else { %><span class="m-nodata">— 비교불가</span><% } %>
+          <% if (r.match === 'agree') { %><span class="m-agree"><%= t('reports.threeway.matchAgree') %></span>
+          <% } else if (r.match === 'mismatch') { %><span class="m-mismatch"><%= t('reports.threeway.matchMismatch') %></span>
+          <% } else { %><span class="m-nodata"><%= t('reports.threeway.matchNoData') %></span><% } %>
         </td>
       </tr>
     <% }); %>
@@ -136,19 +135,20 @@ document.getElementById('answerForm').addEventListener('submit', async function(
   e.preventDefault();
   const btn = this.querySelector('button');
   const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = '⏳ 업로드/파싱 중...';
+  btn.disabled = true; btn.textContent = <%- JSON.stringify(t('reports.threeway.js.uploading')) %>;
   try {
     const res = await fetch('/reports/secums-answer/upload', { method: 'POST', body: new FormData(this) });
     const data = await res.json();
     if (data.status === 'ok') {
-      const lines = data.summary.map(function(s){ return s.hostname + ': ' + s.total + '개 (BAD ' + s.bad + ' / OK ' + s.ok + ' / INFO ' + s.info + ')'; }).join('\n');
-      alert('✅ SecuMS 정답지 저장 완료\n\n' + lines + '\n\n새로고침하면 ③에 반영됩니다.');
+      const lineFmt = <%- JSON.stringify(t('reports.threeway.js.lineFmt')) %>;
+      const lines = data.summary.map(function(s){ return s.hostname + ': ' + lineFmt.replace('{total}', s.total).replace('{bad}', s.bad).replace('{ok}', s.ok).replace('{info}', s.info); }).join('\n');
+      alert(<%- JSON.stringify(t('reports.threeway.js.savedHead')) %> + '\n\n' + lines + '\n\n' + <%- JSON.stringify(t('reports.threeway.js.savedTail')) %>);
       location.reload();
     } else {
-      alert('❌ 실패: ' + (data.error || '?'));
+      alert(<%- JSON.stringify(t('reports.threeway.js.failPrefix')) %> + (data.error || '?'));
     }
   } catch (err) {
-    alert('네트워크 오류: ' + err.message);
+    alert(<%- JSON.stringify(t('reports.threeway.js.netErrPrefix')) %> + err.message);
   } finally {
     btn.disabled = false; btn.textContent = orig;
   }

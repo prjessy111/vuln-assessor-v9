@@ -1,0 +1,46 @@
+{
+  "title": "Dashboard",
+  "asOf": "As of: {now}",
+  "kpi": {
+    "totalVuln": "Total Vulnerable Items",
+    "severeHigh": "{n} rated High severity",
+    "newFound": "Newly Found (this run)",
+    "vsTotal": "{pct}% of total",
+    "pending": "Unresolved",
+    "noAssignee": "{n} without assignee",
+    "fixRate": "Remediation Rate",
+    "fixedOf": "{fixed} / {total} done",
+    "servers": "Assessed Servers",
+    "recent7d": "{n} runs in last 7 days"
+  },
+  "chart": {
+    "category": "Vulnerabilities by Category",
+    "total": "Total",
+    "trend4w": "4-Week Vulnerability Trend",
+    "hostVuln": "Vulnerable Items per Host (High/Med/Low stacked)",
+    "tipSev": "High {h} · Med {m} · Low {l} (total {total})"
+  },
+  "wq": {
+    "title": "Unresolved Priority Queue",
+    "subtitle": "— new + high severity + unassigned first",
+    "mgmtNo": "Mgmt No.",
+    "server": "Server",
+    "vuln": "Vulnerability",
+    "severity": "Severity",
+    "isNew": "New",
+    "assignee": "Assignee",
+    "deliveredAt": "Delivered",
+    "fixStatus": "Status",
+    "empty": "No unresolved items 🎉"
+  },
+  "srv": {
+    "title": "Assessment Status by Server",
+    "asset": "Asset",
+    "lastAssess": "Last run:",
+    "total": "Total {n}",
+    "vuln": "Vuln {n}",
+    "safe": "Good {n}",
+    "na": "N/A {n}",
+    "noHistory": "No assessment history"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "index": {
+    "title": "Exclusion Management",
+    "descHtml": "Manage items permanently excluded from assessment itself. While <strong>Exception Management</strong> is a temporary waiver (approval + period), an <strong>Exclusion</strong> removes structurally non-applicable items (e.g. daemons absent on the OS, items unnecessary by policy) from evaluation.",
+    "btnNew": "+ Register Exclusion",
+    "kpi": {
+      "total": "Total Exclusions",
+      "totalSub": "Registered",
+      "active": "Active Exclusions",
+      "activeSub": "Currently applied",
+      "server": "Server-level",
+      "serverSub": "Specific server excluded",
+      "rule": "Rule-level",
+      "ruleSub": "Rule excluded globally"
+    },
+    "searchPh": "🔍 Search rule ID / server / reason / registrant",
+    "filter": {
+      "allTypes": "All Types",
+      "server": "Server-level",
+      "rule": "Rule-level",
+      "combo": "Server+Rule",
+      "allStatus": "All Statuses",
+      "enabled": "Active",
+      "disabled": "Inactive"
+    },
+    "listTitle": "Registered Exclusions ({n})",
+    "empty": "No exclusions registered.",
+    "emptyLink": "Register exclusion",
+    "th": {
+      "enabled": "Active",
+      "id": "ID",
+      "type": "Type",
+      "rule": "Target Rule",
+      "server": "Target Server",
+      "reason": "Reason",
+      "registeredBy": "Registered By",
+      "registeredAt": "Registered At",
+      "actions": "Actions"
+    },
+    "type": {
+      "server": "Server",
+      "rule": "Rule",
+      "combo": "Server+Rule"
+    },
+    "allServers": "All",
+    "btnDisable": "Disable",
+    "btnEnable": "Enable",
+    "js": {
+      "confirmToggle": "Toggle the active state of this exclusion?",
+      "fail": "Failed: ",
+      "error": "Error"
+    }
+  },
+  "new": {
+    "title": "Register Exclusion",
+    "descHtml": "Register items to permanently exclude from assessment. Use only when checking is structurally impossible or meaningless (e.g. daemon not installed on the OS, feature unused by policy). For a temporary waiver, use an <a href=\"/exceptions/new\">Exception Request</a>.",
+    "back": "← Exclusion Management",
+    "target": {
+      "heading": "Target Item",
+      "itemLabel": "Check Item",
+      "itemSelect": "— Select check item —",
+      "hostLabel": "Hostname",
+      "hostPh": "e.g. jessy207 (may be empty for CSV batch)",
+      "acctLabel": "Account",
+      "acctPh": "System accounts etc. (e.g. bin, daemon). Leave empty for whole host",
+      "csvLabel": "CSV Batch",
+      "csvPh": "hostname,account  (one per line)\njessy207,bin\njessy207,daemon\njessy167,   ← empty account = whole host",
+      "csvHelp": "Exclude multiple hosts/accounts (e.g. system accounts) from the same check item at once. (CSV input overrides the single host/account above)"
+    },
+    "reason": {
+      "heading": "Exclusion Reason",
+      "typeLabel": "Type",
+      "select": "— Select —",
+      "structural": "Structurally not applicable (item absent)",
+      "osUnsupported": "OS/distribution not supported",
+      "policyUnused": "Feature unused by policy",
+      "duplicate": "Duplicated by another rule",
+      "falsePositive": "Recurring false positive",
+      "etc": "Other",
+      "detailLabel": "Detailed Reason",
+      "detailPh": "Specific grounds for permanently excluding this item from assessment (for audit trail)"
+    },
+    "submit": "Register Exclusion",
+    "js": {
+      "alertNeedItem": "Select a check item.",
+      "alertCsv": "Check the CSV format (hostname,account).",
+      "savedAlert": "Exclusion registered.",
+      "countSuffix": " ({n} items)",
+      "fail": "Failed: ",
+      "error": "Error"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pageTitle": "安全等级",
+  "heading": "按服务器诊断历史",
+  "meta": "基准日: {now} · 策略: 전자금융기반시설_2026",
+  "list": {
+    "title": "按服务器检查结果",
+    "subtitle": "— 合规率 = 良好项 ÷ 全部项 (实际诊断汇总)",
+    "searchPh": "搜索主机/IP…",
+    "allOs": "全部OS",
+    "reset": "重置",
+    "hostname": "主机名",
+    "policy": "策略",
+    "vulnCount": "漏洞数量",
+    "compliance": "合规率 (良好/全部)",
+    "lastChecked": "最近检查日",
+    "operator": "运维人员",
+    "domain": "域",
+    "channel": "通信方式",
+    "empty": "没有目标服务器"
+  },
+  "detail": {
+    "pageTitle": "服务器检查历史 — {host}",
+    "backList": "← 列表",
+    "hostname": "主机名",
+    "operator": "运维人员",
+    "channel": "通信方式",
+    "histTitle": "检查历史",
+    "histSubtitle": "— 按诊断时间最新排序 · 合规率 = 良好 ÷ 全部",
+    "assessedAt": "诊断时间",
+    "type": "类型",
+    "source": "来源",
+    "elapsed": "耗时",
+    "total": "全部",
+    "vuln": "脆弱",
+    "safe": "良好",
+    "na": "无法判定",
+    "compliance": "合规率 (良好/全部)",
+    "result": "结果",
+    "resultBtn": "结果",
+    "empty": "暂无诊断历史"
+  }
+}

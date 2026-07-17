@@ -1,0 +1,152 @@
+{
+  "index": {
+    "title": "Exception Management",
+    "desc": "Items assessed as vulnerable but temporarily exempted for operational reasons. Takes effect only after approval. Extend or remediate in advance when expiry is near.",
+    "btnNew": "+ New Exception Request",
+    "kpi": {
+      "total": "Total",
+      "totalSub": "Registered exceptions",
+      "active": "Active",
+      "activeSub": "Approved + within validity",
+      "pending": "Pending Approval",
+      "pendingSub": "CISO review required",
+      "expiring": "Expiring Soon",
+      "expiringSub": "Expires within 30 days",
+      "expired": "Expired",
+      "expiredSub": "Renewal/remediation required"
+    },
+    "searchPh": "🔍 Search rule ID / host / reason / requester / approver",
+    "filter": {
+      "allStatus": "All Statuses",
+      "approved": "Approved",
+      "pending": "Pending",
+      "rejected": "Rejected",
+      "allPeriod": "All Periods",
+      "valid": "Valid",
+      "expiring": "Expiring soon (30 days)",
+      "expired": "Expired"
+    },
+    "listTitle": "Registered Exceptions ({n})",
+    "empty": "No exceptions registered.",
+    "emptyLink": "New exception request",
+    "th": {
+      "id": "ID",
+      "ruleHost": "Rule / Host",
+      "reason": "Reason",
+      "period": "Validity",
+      "daysLeft": "Days Left",
+      "status": "Approval Status",
+      "requestedBy": "Requester",
+      "approvedBy": "Approver",
+      "actions": "Actions"
+    },
+    "notSet": "Not set",
+    "expired": "Expired",
+    "days": "{n}d",
+    "status": {
+      "approved": "Approved",
+      "pending": "Pending",
+      "rejected": "Rejected"
+    },
+    "btnApprove": "Approve",
+    "btnReject": "Reject",
+    "btnExtend": "Extend Period",
+    "js": {
+      "approveNote": "Approval note (optional):",
+      "rejectReason": "Rejection reason:",
+      "rejectRequired": "A reason is required to reject.",
+      "newExpiry": "New expiry date (YYYY-MM-DD):",
+      "fail": "Failed: ",
+      "error": "Error"
+    }
+  },
+  "new": {
+    "title": "New Exception Request",
+    "heading": "New Exception Request (Batch)",
+    "desc": "Temporary exception for items assessed as vulnerable. Takes effect after CISO approval. Register check items × targets (hosts/accounts) at once.",
+    "back": "← Exception Management",
+    "post": {
+      "heading": "Post-hoc Exception Target",
+      "checkItem": "Check item",
+      "server": "Server",
+      "serverScopeHtml": "Apply exception to <b>this entire server (host)</b> <span class=\"muted\">(host-level)</span>",
+      "acctSelect": "Select accounts",
+      "acctSelectSub": "(check)",
+      "allLoginAccts": "All login accounts",
+      "clear": "Clear",
+      "showSystemAccts": "Also show system (nologin) accounts",
+      "noAccounts": "Could not find the account list for this server (no raw script assessment output). Enter or paste accounts below.",
+      "acctInput": "Enter accounts",
+      "acctInputSub": "(comma/space separated)",
+      "acctInputPh": "e.g. root, jessy72, test*",
+      "csvPaste": "Paste CSV",
+      "csvPasteSub": "(one account per line, or host,account)"
+    },
+    "basic": {
+      "heading": "① Basic Info",
+      "titleLabel": "Title",
+      "titlePh": "e.g. E-Financial Infrastructure 2026 OS batch exceptions (2026 Q1)",
+      "policy": "Policy",
+      "basisLabel": "Related Basis",
+      "basisPh": "Basis for the exception (assessment result ID, approval ticket no., related regulations/documents, review minutes, etc.) — for audit trail and post-hoc filtering"
+    },
+    "items": {
+      "heading": "② Select Check Items",
+      "headingSub": "(search · multi-select)",
+      "searchLabel": "Search items",
+      "searchPh": "Search by SRV code or title...",
+      "selectAll": "Select All",
+      "clear": "Clear"
+    },
+    "target": {
+      "heading": "③ Targets (Host · Account)",
+      "postLinkHtml": "🔗 Post-hoc exception for assessment result <code>{id}</code>",
+      "hostLabel": "Hostname",
+      "hostPh": "Search/select (hostname/IP). Leave empty for CSV batch",
+      "acctLabel": "Account / Pattern",
+      "acctPh": "Account-level only (e.g. jessy72). Wildcard * allowed (e.g. test*). Leave empty for whole host",
+      "csvLabel": "CSV / Excel Batch",
+      "csvPh": "hostname,account  (one per line)\njessy207,jessy72\njessy207,test*\njessy167,   ← empty account = whole host",
+      "csvHelpBefore": "Apply exceptions for the selected check items to multiple hosts/accounts at once.",
+      "csvTemplate": "CSV template",
+      "csvHelpAfter": "· (CSV input overrides the single host/account above)"
+    },
+    "reason": {
+      "heading": "Exception Reason",
+      "typeLabel": "Type",
+      "select": "— Select —",
+      "biz": "Business requirement (service impact)",
+      "legacy": "Legacy system compatibility",
+      "comp": "Compensating control",
+      "noPatch": "Vendor patch not available",
+      "reviewing": "Remediation under review",
+      "etc": "Other",
+      "detailLabel": "Detailed Reason",
+      "detailPh": "Specific reason why an exception is required",
+      "compLabel": "Compensating Control",
+      "compPh": "Risk-mitigating controls (firewall blocking, enhanced monitoring, etc.)"
+    },
+    "period": {
+      "heading": "Validity Period",
+      "from": "Start Date",
+      "until": "End Date",
+      "indefinite": "Indefinite",
+      "note": "Recommended 30–90 days. Indefinite applies permanently without an end date."
+    },
+    "submit": "Submit Exception Request",
+    "js": {
+      "selectedCount": "{n} selected",
+      "hintHostScope": "→ Applies to all targets on this host (host-level). Uncheck above to specify accounts",
+      "hintAccounts": "→ Exception for {n} account(s) only: {list}",
+      "hintEmpty": "→ Check/enter/paste accounts (empty = same as host-level)",
+      "alertNeedAccount": "Select/enter/paste at least one account, or check the \"entire server\" checkbox.",
+      "alertNeedItem": "Select at least one check item.",
+      "alertPeriod": "End date must be after start date (or check Indefinite).",
+      "alertCsv": "Check the CSV format (hostname,account).",
+      "savedAlert": "Exception request registered (pending approval). ",
+      "createdCount": "{n} created.",
+      "fail": "Failed: ",
+      "error": "Error"
+    }
+  }
+}

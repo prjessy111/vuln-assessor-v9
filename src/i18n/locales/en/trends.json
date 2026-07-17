@@ -1,0 +1,27 @@
+{
+  "pageTitle": "Trend / Compare",
+  "heading": "Assessment Trend / Compare",
+  "desc": "Shows the time-series trend of assessment results and compares new/resolved vulnerabilities between the last two assessments.",
+  "host": "Host",
+  "all": "All",
+  "s1": {
+    "title": "① Assessment Trend (Vulnerable/Good/Undetermined + Agreement)",
+    "vuln": "Vulnerable",
+    "safe": "Good",
+    "na": "Undetermined",
+    "agreement": "Agreement rate (%)",
+    "empty": "No assessment history to display.",
+    "barTip": "#{id} {host} / {source}\nVuln {vuln} Good {safe} N/A {na}",
+    "footnote": "Last {n} assessments. Bar height = item count ratio, top number = SecuMS agreement rate."
+  },
+  "s2": {
+    "title": "② Compare Assessments (New / Resolved Vulnerabilities)",
+    "empty": "There are not 2+ assessments to compare. (same host and source)",
+    "prev": "Previous",
+    "cur": "Current",
+    "added": "🔺 New Vulnerabilities ({n})",
+    "resolved": "✅ Resolved Vulnerabilities ({n})",
+    "none": "None",
+    "chkItem": "Check Item"
+  }
+}

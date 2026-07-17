@@ -1,0 +1,152 @@
+{
+  "index": {
+    "title": "例外管理",
+    "desc": "被判定为脆弱但因运营原因在一定期间内例外处理的项目。仅在批准后生效。临近过期时应提前延长或完成整改。",
+    "btnNew": "+ 例外申请",
+    "kpi": {
+      "total": "全部",
+      "totalSub": "已登记例外",
+      "active": "有效",
+      "activeSub": "已批准 + 有效期内",
+      "pending": "待批准",
+      "pendingSub": "需CISO审核",
+      "expiring": "即将过期",
+      "expiringSub": "30天内过期",
+      "expired": "已过期",
+      "expiredSub": "需更新/整改"
+    },
+    "searchPh": "🔍 搜索规则ID / 主机 / 理由 / 申请人 / 批准人",
+    "filter": {
+      "allStatus": "全部状态",
+      "approved": "批准",
+      "pending": "等待",
+      "rejected": "驳回",
+      "allPeriod": "全部期间",
+      "valid": "有效",
+      "expiring": "即将过期 (30天)",
+      "expired": "已过期"
+    },
+    "listTitle": "已登记例外 ({n}条)",
+    "empty": "没有已登记的例外。",
+    "emptyLink": "新建例外申请",
+    "th": {
+      "id": "ID",
+      "ruleHost": "规则 / 主机",
+      "reason": "理由",
+      "period": "有效期",
+      "daysLeft": "剩余天数",
+      "status": "批准状态",
+      "requestedBy": "申请人",
+      "approvedBy": "批准人",
+      "actions": "操作"
+    },
+    "notSet": "未设置",
+    "expired": "已过期",
+    "days": "{n}天",
+    "status": {
+      "approved": "批准",
+      "pending": "等待",
+      "rejected": "驳回"
+    },
+    "btnApprove": "批准",
+    "btnReject": "驳回",
+    "btnExtend": "延长期限",
+    "js": {
+      "approveNote": "批准备注 (可选):",
+      "rejectReason": "驳回理由:",
+      "rejectRequired": "驳回时必须输入理由。",
+      "newExpiry": "新过期日 (YYYY-MM-DD):",
+      "fail": "失败: ",
+      "error": "错误"
+    }
+  },
+  "new": {
+    "title": "例外申请",
+    "heading": "例外申请 (批量设置)",
+    "desc": "对判定为脆弱的项目进行临时例外处理。CISO批准后生效。可一次登记检查项目 × 对象(主机/账户)。",
+    "back": "← 例外管理",
+    "post": {
+      "heading": "事后例外对象",
+      "checkItem": "检查项目",
+      "server": "服务器",
+      "serverScopeHtml": "对<b>此服务器(主机)全部</b>应用例外 <span class=\"muted\">(主机级)</span>",
+      "acctSelect": "选择账户",
+      "acctSelectSub": "(勾选)",
+      "allLoginAccts": "全部登录账户",
+      "clear": "取消",
+      "showSystemAccts": "同时显示系统(nologin)账户",
+      "noAccounts": "未找到此服务器的账户列表 (无脚本诊断原始数据)。请在下方直接输入/粘贴。",
+      "acctInput": "直接输入账户",
+      "acctInputSub": "(逗号/空格分隔)",
+      "acctInputPh": "例: root, jessy72, test*",
+      "csvPaste": "粘贴CSV",
+      "csvPasteSub": "(每行1个账户，或 主机,账户)"
+    },
+    "basic": {
+      "heading": "① 基本信息",
+      "titleLabel": "标题",
+      "titlePh": "例: 电子金融基础设施 2026 OS 例外批量 (2026年第1季度)",
+      "policy": "策略",
+      "basisLabel": "相关依据",
+      "basisPh": "例外的依据 (诊断结果ID、批准工单号、相关规定/公文、评审会议记录等) — 用于审计追踪/事后筛选"
+    },
+    "items": {
+      "heading": "② 选择检查项目",
+      "headingSub": "(搜索·多选)",
+      "searchLabel": "搜索项目",
+      "searchPh": "按SRV代码或标题搜索...",
+      "selectAll": "全选",
+      "clear": "取消"
+    },
+    "target": {
+      "heading": "③ 对象 (主机 · 账户)",
+      "postLinkHtml": "🔗 诊断结果 <code>{id}</code> 事后例外",
+      "hostLabel": "主机名",
+      "hostPh": "搜索·选择 (主机名/IP)。CSV批量时留空",
+      "acctLabel": "账户名 / 模式",
+      "acctPh": "仅账户级 (例: jessy72)。可用通配符 * (例: test*)。整机则留空",
+      "csvLabel": "CSV / Excel 批量",
+      "csvPh": "主机名,账户名  (每行一个)\njessy207,jessy72\njessy207,test*\njessy167,   ← 账户留空则整机",
+      "csvHelpBefore": "一次为多个主机/账户应用所选检查项目的例外。",
+      "csvTemplate": "CSV模板",
+      "csvHelpAfter": "· (输入CSV时忽略上方单个主机/账户)"
+    },
+    "reason": {
+      "heading": "例外理由",
+      "typeLabel": "类型",
+      "select": "— 选择 —",
+      "biz": "业务需求 (服务影响)",
+      "legacy": "遗留系统兼容性",
+      "comp": "替代控制 (Compensating Control)",
+      "noPatch": "供应商未提供补丁",
+      "reviewing": "整改方案评审中",
+      "etc": "其他",
+      "detailLabel": "详细理由",
+      "detailPh": "需要例外处理的具体理由",
+      "compLabel": "替代控制",
+      "compPh": "风险缓解控制 (防火墙拦截、加强监控等)"
+    },
+    "period": {
+      "heading": "有效期",
+      "from": "开始日",
+      "until": "结束日",
+      "indefinite": "无限期",
+      "note": "建议30~90天。无限期为无结束日永久适用。"
+    },
+    "submit": "提交例外申请",
+    "js": {
+      "selectedCount": "已选 {n}个",
+      "hintHostScope": "→ 对此主机的所有对象应用例外 (主机级)。要指定账户请取消上方勾选",
+      "hintAccounts": "→ 仅对 {n}个账户例外: {list}",
+      "hintEmpty": "→ 请勾选/输入/粘贴账户 (留空则等同主机级)",
+      "alertNeedAccount": "请选择/输入/粘贴至少1个账户，或勾选\"此服务器全部\"复选框。",
+      "alertNeedItem": "请选择至少1个检查项目。",
+      "alertPeriod": "结束日必须晚于开始日。(或勾选无限期)",
+      "alertCsv": "请确认CSV格式 (主机名,账户名)。",
+      "savedAlert": "例外申请已登记 (待批准)。",
+      "createdCount": "已创建{n}条。",
+      "fail": "失败: ",
+      "error": "错误"
+    }
+  }
+}

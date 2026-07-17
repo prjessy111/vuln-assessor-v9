@@ -83,6 +83,24 @@ while [ $# -gt 0 ]; do
 	--config=*)
 		FSI_CONFIG_PATH=`echo "$1" | sed 's/^--config=//'`
 		;;
+	--scan-dirs|--home-dirs)
+		shift
+		if [ $# -gt 0 ]; then
+			_sd=`echo "$1" | tr ',' ' '`
+			FSI_HOME_SCAN_DIRS="$_sd"; FSI_INV_SCAN_DIRS="$_sd"
+		fi
+		;;
+	--scan-dirs=*|--home-dirs=*)
+		_sd=`echo "$1" | sed 's/^--[a-z-]*=//' | tr ',' ' '`
+		FSI_HOME_SCAN_DIRS="$_sd"; FSI_INV_SCAN_DIRS="$_sd"
+		;;
+	--inv-dirs)
+		shift
+		if [ $# -gt 0 ]; then FSI_INV_SCAN_DIRS=`echo "$1" | tr ',' ' '`; fi
+		;;
+	--inv-dirs=*)
+		FSI_INV_SCAN_DIRS=`echo "$1" | sed 's/^--inv-dirs=//' | tr ',' ' '`
+		;;
 	esac
 	if [ $# -gt 0 ]; then
 		shift
@@ -136,6 +154,8 @@ ROOT_HOME=`grep root /etc/passwd | awk -F":" '{print $6}'`
 FSI_HOME_SCAN_DIRS="${FSI_HOME_SCAN_DIRS:-}"
 FSI_ETC_SCAN_DIRS="${FSI_ETC_SCAN_DIRS:-/etc}"
 FSI_DEV_SCAN_DIRS="${FSI_DEV_SCAN_DIRS:-/dev}"
+# CVE 인벤토리(JAR/아카이브) 스캔 경로 — 넓게 훑어 느림. --scan-dirs/--inv-dirs 로 좁힐 수 있음.
+FSI_INV_SCAN_DIRS="${FSI_INV_SCAN_DIRS:-/opt /usr/local /home /app /srv /var/lib /usr/share/java /usr/lib}"
 FSI_ENABLE_FAST_FIND="${FSI_ENABLE_FAST_FIND:-0}"
 FSI_NETSTAT_LIMIT="${FSI_NETSTAT_LIMIT:-200}"
 FSI_PS_LIMIT="${FSI_PS_LIMIT:-200}"
@@ -1253,6 +1273,11 @@ fDumpS "SRV-005"
 		fHR
 		echo "$ cat /etc/sendmail.cf | grep PrivacyOptions | grep -v grep"
 		cat /etc/sendmail.cf | grep PrivacyOptions | grep -v grep  |  sed "s/&/\&amp;/g" |  sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+	# postfix 환경: VRFY 제한은 main.cf 의 disable_vrfy_command 로 설정 (SecuMS 점검 기준)
+	fHR
+	echo "$ postconf disable_vrfy_command ; grep disable_vrfy_command /etc/postfix/main.cf"
+	postconf disable_vrfy_command 2>/dev/null
+	grep -i "disable_vrfy_command" /etc/postfix/main.cf 2>/dev/null | fOrElse "(main.cf에 disable_vrfy_command 미설정)"
 fDumpE
 #------------------------------------------------------------
 fDumpS "SRV-006"
@@ -1303,6 +1328,10 @@ fDumpS "SRV-010"
 	fHR
 	echo "$ grep \"PrivacyOptions\" /etc/sendmail.cf"
 	grep "PrivacyOptions" /etc/sendmail.cf
+	# 메일 queue 처리 명령 권한 (SecuMS 점검 기준: 일반 사용자 실행 제한)
+	fHR
+	echo "$ ls -alL postsuper/postdrop/postqueue/mailq"
+	ls -alL /usr/sbin/postsuper /usr/sbin/postdrop /usr/sbin/postqueue /usr/bin/mailq /usr/bin/newaliases 2>/dev/null
 fDumpE
 #------------------------------------------------------------
 ### 2016.1 remove ###
@@ -1495,11 +1524,20 @@ fDumpS "SRV-026"
 		cat /etc/securettys
 		fHR
 	fi
+	PRL_ACTIVE=0
+	SSHD_SEEN=0
 	for SSHD_CONF in $FILE_SSHD_CONF; do
 		echo "$ $SSHD_CONF | egrep -i \"(PermitRootLogin|denyuser)\""
 		cat $SSHD_CONF | egrep -i "(PermitRootLogin|denyuser)"
+		[ -f "$SSHD_CONF" ] && SSHD_SEEN=1
+		egrep -qi "^[[:space:]]*PermitRootLogin" "$SSHD_CONF" 2>/dev/null && PRL_ACTIVE=1
 		fHR
 	done
+	# 활성 PermitRootLogin 라인이 하나도 없으면 기본값 의존 상태 — 명시적 차단(no) 미적용.
+	# (SecuMS·KISA 기준: 명시 설정 없음 = 취약. 기본 prohibit-password는 키 기반 root 로그인을 허용함)
+	if [ "$SSHD_SEEN" = "1" ] && [ "$PRL_ACTIVE" = "0" ]; then
+		echo "(sshd_config에 PermitRootLogin 명시 설정 없음 — 기본값 의존, root 원격 접속 차단(no) 미적용)"
+	fi
 	#if [ $OS = "HP-UX" ]; then
 	#	fHR
 	#	echo "$ grep PermitRootLogin /opt/ssh/etc/sshd_config"
@@ -1520,6 +1558,11 @@ fDumpS "SRV-027"
 		echo "$ cat $file"
 		cat $file  |  sed "s/&/\&amp;/g" |  sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
 	done
+	# TCP wrapper 미설정이어도 호스트 방화벽으로 접근 제어가 가능하므로 방화벽 상태를 함께 수집
+	fHR
+	echo "$ firewalld/iptables state"
+	echo "FIREWALLD_STATE=`systemctl is-active firewalld 2>/dev/null || echo unknown`"
+	iptables -S 2>/dev/null | head -20
 fDumpE
 #------------------------------------------------------------
 fDumpS "SRV-159"
@@ -1781,6 +1824,8 @@ fDumpE
 fDumpS "SRV-160"
 	echo "$ awk -F\":\" '{print \$1 \"\\t\\t\" \$7}' /etc/passwd"
 	awk -F":" '{print $1 "\t\t" $7}' /etc/passwd
+	# 장기 미사용 판정을 스캔 시점 기준으로 할 수 있도록 수집 일자를 명시
+	echo "scan_epoch_days=`expr \`date -u +%s\` / 86400`"
 	fHR
 	for EnableUser in $lsEnableUser
 	do
@@ -1861,6 +1906,12 @@ fDumpS "SRV-074"
 	if [ -f /etc/shadow ]; then
 		echo "$ awk -F\":\" '{print \$1 \"\\t\\t\" \$3}' /etc/shadow"
 		awk -F":" '{print $1 "\t\t" $3}' /etc/shadow
+		# 판정 가능한 형태로 보강: 계정 / 최종변경일(epoch days) / 패스워드 상태(SET|LOCKED|EMPTY)
+		# + 수집 시점(epoch days) — "장기 미변경"을 스캔일 기준으로 결정론 판정 가능
+		fHR
+		echo "$ awk shadow: name / lastchg_days / pw_state"
+		awk -F: '{ pw=($2==""?"EMPTY":($2=="*"||$2=="!"||$2=="!!"?"LOCKED":"SET")); print $1 "\t" $3 "\t" pw }' /etc/shadow 2>/dev/null
+		echo "scan_epoch_days=`expr \`date -u +%s\` / 86400`"
 	else
 		echo "$ cat /etc/passwd"
 		cat /etc/passwd
@@ -2761,7 +2812,7 @@ fDumpS "jar_inventory"
 		*SKIPPED_FOR_SPEED*) echo "SKIPPED_FOR_SPEED: jar scan skipped in fast mode. Run --full." ;;
 		*)
 			if command -v find >/dev/null 2>&1; then
-				find /opt /usr/local /home /app /srv /var/lib /usr/share/java /usr/lib -name '*.jar' 2>/dev/null | head -3000 | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+				find $FSI_INV_SCAN_DIRS -name '*.jar' 2>/dev/null | head -3000 | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
 			fi
 			;;
 	esac
@@ -2794,7 +2845,7 @@ fDumpS "archive_inventory"
 		*SKIPPED_FOR_SPEED*) echo "SKIPPED_FOR_SPEED" ;;
 		*)
 			if command -v find >/dev/null 2>&1; then
-				find /opt /usr/local /home /app /srv -type f \( -iname '*.war' -o -iname '*.ear' -o -iname '*.tar.gz' -o -iname '*.tgz' -o -iname '*.zip' \) 2>/dev/null | head -500 | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
+				find $FSI_INV_SCAN_DIRS -type f \( -iname '*.war' -o -iname '*.ear' -o -iname '*.tar.gz' -o -iname '*.tgz' -o -iname '*.zip' \) 2>/dev/null | head -500 | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g"
 			fi
 			;;
 	esac
@@ -3366,6 +3417,235 @@ fDumpS "SRV-188"
 	echo "$ backup file/dir permissions (정보제공: 경로 가변)"
 	( for d in /backup /backups /var/backups /etc/backup $FSI_BACKUP_DIRS; do [ -e "$d" ] && { ls -ldL "$d" 2>/dev/null; find "$d" -maxdepth 1 -type f -exec stat -c '%a %U %G %n' {} \; 2>/dev/null | head -40; }; done ) 2>/dev/null \
 	  | sed "s/&/\&amp;/g" | sed "s/</\&lt;/g" | sed "s/>/\&gt;/g" | fOrElse "(백업 경로 미발견 -> 정보제공: 점검 대상 백업 경로 확인 필요)"
+fDumpE
+#============================================================
+# WAS(Tomcat) 점검 — 금융보안원 WAS 취약점 기준 (SRV-200 ~ SRV-214)
+#   설정파일 기반(무인증). CATALINA_HOME/BASE 자동 탐지 후 conf/*.xml 등 원시 증거만 수집.
+#   판정은 mock/LLM 이 raw 출력만 보고 수행 (verdict_source=none).
+#   Tomcat 미탐지 시 각 항목은 부재양호(대상 없음) 신호를 남긴다.
+#============================================================
+# --- Tomcat 인스턴스 탐지 (server.xml 존재하는 CATALINA 홈만) ---
+TC_HOMES=""
+for _d in "$CATALINA_BASE" "$CATALINA_HOME"; do
+	[ -n "$_d" ] && [ -f "$_d/conf/server.xml" ] && TC_HOMES="$TC_HOMES $_d"
+done
+# 실행 프로세스 인자(-Dcatalina.base/-Dcatalina.home=)에서 추출
+for _kv in `ps -ef 2>/dev/null | grep -i catalina | grep -v grep | tr ' ' '\n' | egrep -i 'catalina\.(base|home)=' | sed 's/^.*=//' | sort -u`; do
+	[ -f "$_kv/conf/server.xml" ] && TC_HOMES="$TC_HOMES $_kv"
+done
+# 흔한 설치 경로 + 사이트 지정(FSI_TOMCAT_DIRS)
+for _d in /opt/tomcat* /opt/apache-tomcat* /usr/local/tomcat* /usr/local/apache-tomcat* /usr/share/tomcat* /var/lib/tomcat* /engn001/tomcat* /app/tomcat* /home/tomcat*/tomcat* $FSI_TOMCAT_DIRS; do
+	[ -f "$_d/conf/server.xml" ] && TC_HOMES="$TC_HOMES $_d"
+done
+TC_HOMES=`for _d in $TC_HOMES; do echo "$_d"; done | sort -u | tr '\n' ' '`
+TC_SEDXML='s/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'
+# Tomcat 미설치 시 "미설정/미확인" 대신 명시적 "대상 없음"을 내보낸다 — AI가 부재양호로 판정 가능.
+# 설치되어 있는데 설정 매칭이 없을 때만 fOrElse 폴백 메시지를 사용.
+tc_gate() {
+	if [ -z "`echo $TC_HOMES`" ]; then
+		cat > /dev/null
+		echo "(Tomcat 미설치 -> 대상 없음)"
+	else
+		fOrElse "$1"
+	fi
+}
+#------------------------------------------------------------
+fDumpS "SRV-200"
+	# 관리자 콘솔(manager/host-manager) 접근 통제 — 앱 존재 여부 + RemoteAddrValve/RemoteCIDRValve 제한
+	echo "$ tomcat homes detected: ${TC_HOMES:-(none)}"
+	( for d in $TC_HOMES; do
+		echo "$ ls -d $d/webapps/{manager,host-manager}"
+		ls -d "$d"/webapps/manager "$d"/webapps/host-manager 2>/dev/null
+		echo "$ RemoteAddrValve/RemoteCIDRValve in manager context"
+		cat "$d"/webapps/manager/META-INF/context.xml "$d"/webapps/host-manager/META-INF/context.xml "$d"/conf/Catalina/localhost/manager.xml "$d"/conf/Catalina/localhost/host-manager.xml 2>/dev/null | egrep -i 'RemoteAddrValve|RemoteCIDRValve|allow='
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(Tomcat manager/host-manager 앱 미탐지 또는 Tomcat 미설치 -> 관리 콘솔 부재(대상 없음))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-201"
+	# 기본/추측가능 계정 및 관리 role(manager-gui/admin-gui/manager-script) 부여 — tomcat-users.xml
+	( for d in $TC_HOMES; do
+		echo "$ grep user/role in $d/conf/tomcat-users.xml"
+		egrep -i '<user|<role|username=|rolename=|roles=' "$d/conf/tomcat-users.xml" 2>/dev/null | grep -v '^[[:space:]]*<!--'
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(tomcat-users.xml 계정 항목 없음/파일 부재 -> 관리 계정 미정의(대상 없음))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-202"
+	# 계정 패스워드 평문 저장 — tomcat-users.xml password 속성 + server.xml CredentialHandler/Realm digest 설정
+	( for d in $TC_HOMES; do
+		echo "$ password attr in tomcat-users.xml"
+		egrep -io 'password[[:space:]]*=[[:space:]]*"[^"]*"' "$d/conf/tomcat-users.xml" 2>/dev/null
+		echo "$ CredentialHandler/digest in server.xml"
+		egrep -i 'CredentialHandler|MessageDigest|digest=' "$d/conf/server.xml" 2>/dev/null
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(패스워드 속성/자격증명 핸들러 미확인 -> 계정 미정의(대상 없음))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-203"
+	# 디렉터리 리스팅(Directory Listing) — conf/web.xml DefaultServlet 의 listings 파라미터
+	( for d in $TC_HOMES; do
+		echo "$ listings param in $d/conf/web.xml"
+		awk 'BEGIN{IGNORECASE=1} /listings/{print; getline; print}' "$d/conf/web.xml" 2>/dev/null
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(web.xml listings 파라미터 미설정 -> Tomcat 기본값 listings=false(양호))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-204"
+	# 세션 타임아웃 — conf/web.xml session-timeout (분). 30 이하 권장.
+	( for d in $TC_HOMES; do
+		echo "$ session-timeout in $d/conf/web.xml"
+		egrep -i 'session-timeout' "$d/conf/web.xml" 2>/dev/null
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(session-timeout 미설정 -> 컨테이너 기본값 확인 필요)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-205"
+	# 에러페이지/서버정보 노출 — server.xml ErrorReportValve(showServerInfo/showReport) + web.xml error-page
+	( for d in $TC_HOMES; do
+		echo "$ ErrorReportValve attrs in $d/conf/server.xml"
+		egrep -i 'ErrorReportValve|showServerInfo|showReport' "$d/conf/server.xml" 2>/dev/null
+		echo "$ error-page in $d/conf/web.xml"
+		egrep -i 'error-page|error-code|exception-type' "$d/conf/web.xml" 2>/dev/null | head -20
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(ErrorReportValve 미커스터마이즈 -> 기본 오류페이지가 서버정보/스택 노출(취약 가능))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-206"
+	# 서버 배너/버전 정보 노출 — Connector server 속성 + ServerInfo.properties 오버라이드 존재
+	( for d in $TC_HOMES; do
+		echo "$ Connector server= attr in $d/conf/server.xml"
+		egrep -io 'server[[:space:]]*=[[:space:]]*"[^"]*"' "$d/conf/server.xml" 2>/dev/null
+		echo "$ ServerInfo override presence"
+		ls -l "$d"/lib/org/apache/catalina/util/ServerInfo.properties 2>/dev/null
+		find "$d/lib" -name 'ServerInfo.properties' 2>/dev/null | head -3
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(Connector server 속성/ServerInfo 오버라이드 없음 -> 기본 배너로 버전 노출(취약 가능))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-207"
+	# 불필요한 기본 웹앱 제거 — examples/docs/ROOT(샘플)/host-manager 존재 여부
+	( for d in $TC_HOMES; do
+		echo "$ default webapps under $d/webapps"
+		ls -d "$d"/webapps/examples "$d"/webapps/docs "$d"/webapps/host-manager "$d"/webapps/manager 2>/dev/null
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(기본 예제/문서 웹앱 미존재 -> 불필요 앱 제거 상태(양호))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-208"
+	# 불필요 HTTP 메서드(TRACE) — Connector allowTrace 속성 (true=취약)
+	( for d in $TC_HOMES; do
+		echo "$ allowTrace attr in $d/conf/server.xml"
+		egrep -io 'allowTrace[[:space:]]*=[[:space:]]*"[^"]*"' "$d/conf/server.xml" 2>/dev/null
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(allowTrace 미설정 -> Tomcat 기본값 allowTrace=false(양호))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-209"
+	# AJP 커넥터 보안 — AJP(8009) Connector 존재 + secret/secretRequired/address 제한 (Ghostcat CVE-2020-1938)
+	( for d in $TC_HOMES; do
+		echo "$ AJP Connector in $d/conf/server.xml"
+		egrep -i 'AJP|:8009|jk|secretRequired|secret=|requiredSecret' "$d/conf/server.xml" 2>/dev/null
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(AJP Connector 미정의 -> AJP 비활성(양호))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-210"
+	# SSL/TLS 적용 및 취약 프로토콜 — HTTPS Connector(SSLEnabled/scheme=https) + sslEnabledProtocols/sslProtocol
+	( for d in $TC_HOMES; do
+		echo "$ HTTPS/SSL config in $d/conf/server.xml"
+		egrep -i 'SSLEnabled|scheme="https"|sslEnabledProtocols|sslProtocol|SSLProtocol|ciphers=|SSLv2|SSLv3|TLSv1"' "$d/conf/server.xml" 2>/dev/null
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(HTTPS Connector 미정의 -> 평문(HTTP) 서비스 또는 프록시 종단 확인 필요)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-211"
+	# 접근 로그(AccessLogValve) 설정 — server.xml
+	( for d in $TC_HOMES; do
+		echo "$ AccessLogValve in $d/conf/server.xml"
+		egrep -i 'AccessLogValve|prefix=|pattern=' "$d/conf/server.xml" 2>/dev/null
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(AccessLogValve 미설정 -> 접근 로그 미기록(취약 가능))"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-212"
+	# 설정 파일 접근 권한 — server.xml/tomcat-users.xml/catalina.properties 소유자·권한(group/other)
+	( for d in $TC_HOMES; do
+		echo "$ stat conf files in $d/conf"
+		for f in server.xml tomcat-users.xml catalina.properties context.xml web.xml; do
+			[ -e "$d/conf/$f" ] && stat -c '%a %U %G %n' "$d/conf/$f" 2>/dev/null
+		done
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(Tomcat conf 파일 권한 미수집 -> 대상 없음)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-213"
+	# shutdown 포트/명령어 — server.xml <Server port="8005" shutdown="SHUTDOWN"> 기본값 사용 여부(-1=비활성)
+	( for d in $TC_HOMES; do
+		echo "$ Server shutdown port/command in $d/conf/server.xml"
+		egrep -i '<Server[[:space:]]|shutdown=|port="8005"|port="-1"' "$d/conf/server.xml" 2>/dev/null | head -5
+	done ) 2>/dev/null | sed "$TC_SEDXML" | tc_gate "(Server shutdown 지시자 미확인 -> 대상 없음)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-214"
+	# Tomcat 실행 계정 권한 — java/catalina 프로세스 소유자(root 구동 금지)
+	echo "$ ps -ef | grep catalina (owner)"
+	ps -ef 2>/dev/null | grep -i 'catalina\|org.apache.catalina.startup.Bootstrap' | grep -v grep | awk '{print $1" "$2" "$8" "$9}' | sed "$TC_SEDXML" | tc_gate "(Tomcat 프로세스 미탐지 -> 미실행(대상 없음))"
+fDumpE
+#============================================================
+# [미검증 템플릿] WAS(JEUS) 점검 — 금융보안원 WAS(JEUS) 기준 (SRV-215 ~ SRV-224)
+#   설정파일 기반. JEUS_HOME 자동탐지. 실 JEUS 환경 미검증 → 실서버 출력 대조 후 룰 보정 필요.
+#============================================================
+JEUS_HOMES=""
+for _d in "$JEUS_HOME"; do
+	[ -n "$_d" ] && [ -d "$_d/config" -o -d "$_d/domains" ] && JEUS_HOMES="$JEUS_HOMES $_d"
+done
+for _kv in `ps -ef 2>/dev/null | grep -i jeus | grep -v grep | tr ' ' '\n' | egrep -i 'jeus\.home=|=/.*jeus' | sed 's/^.*=//' | sort -u`; do
+	[ -d "$_kv/config" -o -d "$_kv/domains" ] && JEUS_HOMES="$JEUS_HOMES $_kv"
+done
+for _d in /opt/jeus* /jeus* /usr/jeus* /engn001/jeus* /app/jeus* $FSI_JEUS_DIRS; do
+	[ -d "$_d/config" -o -d "$_d/domains" ] && JEUS_HOMES="$JEUS_HOMES $_d"
+done
+JEUS_HOMES=`for _d in $JEUS_HOMES; do echo "$_d"; done | sort -u | tr '\n' ' '`
+JEUS_SEDXML='s/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'
+# JEUS 설정 파일 후보 경로 수집
+jeus_confs() { for d in $JEUS_HOMES; do ls "$d"/config/*.xml "$d"/domains/*/config/domain.xml "$d"/config/security/*/accounts.xml "$d"/domains/*/config/security/*/accounts.xml 2>/dev/null; done; }
+# JEUS 미설치 시 "미설정/미확인" 대신 명시적 "대상 없음" (tc_gate와 동일 취지)
+jeus_gate() {
+	if [ -z "`echo $JEUS_HOMES`" ]; then
+		cat > /dev/null
+		echo "(JEUS 미설치 -> 대상 없음)"
+	else
+		fOrElse "$1"
+	fi
+}
+#------------------------------------------------------------
+fDumpS "SRV-215"
+	echo "$ jeus homes: ${JEUS_HOMES:-(none)}"
+	( for f in `jeus_confs`; do egrep -i 'webadmin|jeusadmin|access-control|allowed-server|allow-ip|<address>' "$f" 2>/dev/null; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(JEUS 미탐지 또는 관리 콘솔 설정 미확인 -> 대상 없음)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-216"
+	( for f in `jeus_confs`; do egrep -i '<user|name=|principal|administrator' "$f" 2>/dev/null | grep -iv '<!--'; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(JEUS 계정 설정 미확인 -> 대상 없음)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-217"
+	( for f in `jeus_confs`; do egrep -io 'password[^>]{0,60}' "$f" 2>/dev/null; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(JEUS 패스워드 저장 방식 미확인 -> 대상 없음)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-218"
+	( for f in `jeus_confs`; do egrep -i 'dir-listing|directory-listing|listings' "$f" 2>/dev/null; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(dir-listing 미설정 -> 기본값 확인 필요)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-219"
+	( for f in `jeus_confs`; do egrep -i 'session-timeout|timeout' "$f" 2>/dev/null; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(session-timeout 미확인)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-220"
+	( for f in `jeus_confs`; do egrep -i 'error-page|error-code|exception' "$f" 2>/dev/null; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(error-page 미설정 -> 기본 오류페이지 정보노출 가능)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-221"
+	( for f in `jeus_confs`; do egrep -i 'server-header|show-server|server-info|banner' "$f" 2>/dev/null; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(server-header 설정 미확인)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-222"
+	( for d in $JEUS_HOMES; do ls -d "$d"/webapps/examples "$d"/samples "$d"/docs 2>/dev/null; find "$d" -maxdepth 3 -iname 'examples' -o -iname 'samples' 2>/dev/null | head -10; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(샘플/예제 앱 미발견)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-223"
+	( for f in `jeus_confs`; do egrep -i 'access-log|AccessLog|<logging|user-logging' "$f" 2>/dev/null; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(접근 로그 설정 미확인)"
+fDumpE
+#------------------------------------------------------------
+fDumpS "SRV-224"
+	( for f in `jeus_confs`; do [ -e "$f" ] && stat -c '%a %U %G %n' "$f" 2>/dev/null; done ) 2>/dev/null | sed "$JEUS_SEDXML" | jeus_gate "(JEUS 설정 파일 권한 미수집 -> 대상 없음)"
 fDumpE
 #============================================================
 ## End

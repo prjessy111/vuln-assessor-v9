@@ -1,4 +1,4 @@
-<%- include('../_header', { title: '감사 로그', activeMenu: 'audit' }) %>
+<%- include('../_header', { title: t('audit.title'), activeMenu: 'audit' }) %>
 <style>
   .audit-act { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; background:#eef4ff; color:#0b5fff; }
   .r-ok { color:#1aa260; font-weight:700; } .r-fail { color:#c0392b; font-weight:700; }
@@ -7,36 +7,36 @@
 </style>
 
 <div class="page-header">
-  <h1>감사 로그</h1>
+  <h1><%= t('audit.title') %></h1>
   <div class="header-actions">
-    <span class="muted small">총 <%= total %>건 · 기준 <%= now %></span>
+    <span class="muted small"><%= t('audit.meta', { total: total, now: now }) %></span>
   </div>
 </div>
 
 <!-- ── 대시보드 (전체 기준) ── -->
 <div class="kpi-grid kpi-4col">
-  <div class="kpi-card"><div class="kpi-label">전체 감사 이력</div><div class="kpi-num"><%= stat.total %></div><div class="kpi-sub">최대 1000건 보존</div></div>
-  <div class="kpi-card kpi-new"><div class="kpi-label">오늘 활동</div><div class="kpi-num"><%= stat.today %></div><div class="kpi-sub"><%= now.slice(0,10) %></div></div>
-  <div class="kpi-card" style="border-top-color:#c0392b;"><div class="kpi-label">실패</div><div class="kpi-num" style="color:#c0392b;"><%= stat.fail %></div><div class="kpi-sub">실패율 <%= stat.failRate %>%</div></div>
-  <div class="kpi-card" style="border-top-color:#8e44ad;"><div class="kpi-label">활동 사용자</div><div class="kpi-num" style="color:#8e44ad;"><%= stat.users %></div><div class="kpi-sub">고유 계정 수</div></div>
+  <div class="kpi-card"><div class="kpi-label"><%= t('audit.kpi.total') %></div><div class="kpi-num"><%= stat.total %></div><div class="kpi-sub"><%= t('audit.kpi.keep1000') %></div></div>
+  <div class="kpi-card kpi-new"><div class="kpi-label"><%= t('audit.kpi.today') %></div><div class="kpi-num"><%= stat.today %></div><div class="kpi-sub"><%= now.slice(0,10) %></div></div>
+  <div class="kpi-card" style="border-top-color:#c0392b;"><div class="kpi-label"><%= t('audit.kpi.fail') %></div><div class="kpi-num" style="color:#c0392b;"><%= stat.fail %></div><div class="kpi-sub"><%= t('audit.kpi.failRate', { n: stat.failRate }) %></div></div>
+  <div class="kpi-card" style="border-top-color:#8e44ad;"><div class="kpi-label"><%= t('audit.kpi.users') %></div><div class="kpi-num" style="color:#8e44ad;"><%= stat.users %></div><div class="kpi-sub"><%= t('audit.kpi.uniqueUsers') %></div></div>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
   <div class="section-box" style="margin:0;">
-    <h3>최근 7일 추이</h3>
+    <h3><%= t('audit.trend7d') %></h3>
     <% var maxDay = Math.max(1, ...days.map(d => d.n)); %>
     <div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:8px;">
       <% days.forEach(d => { %>
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
           <div class="small mono" style="font-size:11px;"><%= d.n %></div>
-          <div title="<%= d.d %>: <%= d.n %>건" style="width:70%;background:#3B82F6;border-radius:3px 3px 0 0;height:<%= Math.round(d.n / maxDay * 90) %>px;min-height:2px;"></div>
+          <div title="<%= d.d %>: <%= t('common.unit.count', { n: d.n }) %>" style="width:70%;background:#3B82F6;border-radius:3px 3px 0 0;height:<%= Math.round(d.n / maxDay * 90) %>px;min-height:2px;"></div>
           <div class="muted" style="font-size:10px;margin-top:4px;"><%= d.d.slice(5) %></div>
         </div>
       <% }); %>
     </div>
   </div>
   <div class="section-box" style="margin:0;">
-    <h3>액션별 분포</h3>
+    <h3><%= t('audit.byAction') %></h3>
     <% var maxAct = Math.max(1, ...byAction.map(a => a.v)); %>
     <div style="display:flex;flex-direction:column;gap:5px;">
       <% byAction.slice(0,8).forEach(a => { %>
@@ -48,7 +48,7 @@
       <% }); %>
     </div>
     <% if (byUser.length) { %>
-      <h3 style="margin-top:14px;">사용자별 활동 (상위)</h3>
+      <h3 style="margin-top:14px;"><%= t('audit.byUser') %></h3>
       <div class="small" style="display:flex;flex-wrap:wrap;gap:6px;">
         <% byUser.forEach(u => { %><span class="audit-act" style="background:#f3e8ff;color:#8e44ad;"><%= u.k %> · <%= u.v %></span><% }); %>
       </div>
@@ -57,37 +57,37 @@
 </div>
 
 <div class="section-box">
-  <h3>주요 액션 이력 <span class="muted small" style="font-weight:normal;">— 로그인·진단 실행·예외/제외·조치·예약·헬스체크 등 자동 기록 (최신순)</span></h3>
+  <h3><%= t('audit.list.title') %> <span class="muted small" style="font-weight:normal;"><%= t('audit.list.subtitle') %></span></h3>
   <form class="afilter" method="get" action="/audit">
-    <input type="search" name="q" value="<%= q %>" placeholder="사용자/대상/IP 검색…">
+    <input type="search" name="q" value="<%= q %>" placeholder="<%= t('audit.list.searchPh') %>">
     <select name="action" onchange="this.form.submit()">
-      <option value="">전체 액션</option>
+      <option value=""><%= t('audit.list.allActions') %></option>
       <% actions.forEach(a => { %>
         <option value="<%= a %>" <%= act === a ? 'selected' : '' %>><%= a %></option>
       <% }); %>
     </select>
-    <button class="btn-sm" type="submit">검색</button>
-    <a class="btn-sm" href="/audit">초기화</a>
+    <button class="btn-sm" type="submit"><%= t('common.btn.search') %></button>
+    <a class="btn-sm" href="/audit"><%= t('audit.list.reset') %></a>
   </form>
   <div class="table-scroll" style="overflow-x:auto;">
   <table class="data-table">
     <thead>
-      <tr><th>시각</th><th>사용자</th><th>역할</th><th>액션</th><th>대상</th><th>결과</th><th>IP</th></tr>
+      <tr><th><%= t('audit.list.time') %></th><th><%= t('audit.list.user') %></th><th><%= t('audit.list.role') %></th><th><%= t('audit.list.action') %></th><th><%= t('audit.list.target') %></th><th><%= t('audit.list.result') %></th><th>IP</th></tr>
     </thead>
     <tbody>
       <% logs.forEach(l => { %>
         <tr>
           <td class="mono small"><%= l.at %></td>
           <td><strong><%= l.user %></strong></td>
-          <td class="small"><%= l.role %></td>
+          <td class="small"><%= td(l.role) %></td>
           <td><span class="audit-act"><%= l.action %></span></td>
           <td class="small"><%= l.target %></td>
-          <td class="<%= l.result === '성공' ? 'r-ok' : 'r-fail' %>"><%= l.result %></td>
+          <td class="<%= l.result === '성공' ? 'r-ok' : 'r-fail' %>"><%= td(l.result) %></td>
           <td class="mono small"><%= l.ip || '-' %></td>
         </tr>
       <% }); %>
       <% if (!logs.length) { %>
-        <tr><td colspan="7" class="empty">기록된 감사 로그가 없습니다. (로그인·진단 실행 등 액션 시 자동 기록됩니다)</td></tr>
+        <tr><td colspan="7" class="empty"><%= t('audit.list.empty') %></td></tr>
       <% } %>
     </tbody>
   </table>

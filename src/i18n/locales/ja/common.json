@@ -1,0 +1,53 @@
+{
+  "appTitle": "脆弱性診断システム",
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "diagGroup": "診断",
+    "diagnosis": "診断管理",
+    "collection": "収集管理",
+    "schedules": "予約診断",
+    "agent": "自律エージェント",
+    "rptGroup": "レポート・状況",
+    "reports": "レポート",
+    "inspectionStatus": "診断状況",
+    "securityGrade": "サーバー別診断履歴",
+    "cveSync": "CVE同期",
+    "vulnGroup": "脆弱性管理",
+    "vuln": "脆弱性管理",
+    "remediation": "対応管理",
+    "exceptions": "例外管理",
+    "exclusions": "除外管理",
+    "servers": "サーバー管理",
+    "opsGroup": "運用",
+    "notifications": "通知",
+    "audit": "監査ログ",
+    "users": "ユーザー管理",
+    "logout": "ログアウト",
+    "changePassword": "パスワード変更"
+  },
+  "btn": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "search": "検索",
+    "back": "一覧へ戻る",
+    "download": "ダウンロード",
+    "run": "実行",
+    "reassess": "再診断",
+    "runAssess": "診断実行",
+    "newCollect": "+ 新規収集",
+    "aiResult": "🤖 AI結果"
+  },
+  "sev": { "high": "高", "mid": "中", "low": "低" },
+  "unit": { "count": "{n}件" },
+  "login": {
+    "title": "ログイン — ADV (AI Diagnosis Verify)",
+    "id": "ユーザーID",
+    "password": "パスワード",
+    "submit": "ログイン",
+    "firstRunTitle": "初回実行のご案内",
+    "firstRunAdmin": "デフォルト管理者:",
+    "firstRunChange": "初回ログイン後、すぐにパスワードを変更してください。"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "appTitle": "Vulnerability Assessment System",
+  "nav": {
+    "dashboard": "Dashboard",
+    "diagGroup": "Assessment",
+    "diagnosis": "Assessments",
+    "collection": "Collections",
+    "schedules": "Scheduled Runs",
+    "agent": "Autonomous Agent",
+    "rptGroup": "Reports & Status",
+    "reports": "Reports",
+    "inspectionStatus": "Assessment Status",
+    "securityGrade": "Per-Server History",
+    "cveSync": "CVE Sync",
+    "vulnGroup": "Vulnerabilities",
+    "vuln": "Vulnerabilities",
+    "remediation": "Remediation",
+    "exceptions": "Exceptions",
+    "exclusions": "Exclusions",
+    "servers": "Servers",
+    "opsGroup": "Operations",
+    "notifications": "Notifications",
+    "audit": "Audit Log",
+    "users": "Users",
+    "logout": "Logout",
+    "changePassword": "Change password"
+  },
+  "btn": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "back": "Back to list",
+    "download": "Download",
+    "run": "Run",
+    "reassess": "Re-assess",
+    "runAssess": "Run Assessment",
+    "newCollect": "+ New Collection",
+    "aiResult": "🤖 AI Result"
+  },
+  "sev": { "high": "High", "mid": "Med", "low": "Low" },
+  "unit": { "count": "{n}" },
+  "login": {
+    "title": "Sign in — ADV (AI Diagnosis Verify)",
+    "id": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "firstRunTitle": "First-run notice",
+    "firstRunAdmin": "Default admin:",
+    "firstRunChange": "Change the password immediately after your first login."
+  }
+}

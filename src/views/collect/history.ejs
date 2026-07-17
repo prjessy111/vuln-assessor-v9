@@ -1,17 +1,17 @@
-<%- include('../_header', { title: '수집 이력' }) %>
+<%- include('../_header', { title: t('collect.hist.title') }) %>
 
-<h1>Raw 수집 이력</h1>
+<h1><%= t('collect.hist.heading') %></h1>
 
 <% if (selectedServer) { %>
-  <h3><%= selectedServer.name %> (<%= selectedServer.hostname %>) 의 수집 이력</h3>
-  <a href="/collect/history" class="btn-sm">전체 이력 보기</a>
+  <h3><%= t('collect.hist.serverHistory', { name: selectedServer.name, host: selectedServer.hostname }) %></h3>
+  <a href="/collect/history" class="btn-sm"><%= t('collect.hist.viewAll') %></a>
 <% } %>
 
 <table class="data-table">
   <thead>
     <tr>
-      <th>시작</th><th>종료</th><th>서버</th><th>상태</th>
-      <th>파일 경로 / 사유</th><th>크기</th><th>해시</th><th>실행자</th>
+      <th><%= t('collect.hist.thStart') %></th><th><%= t('collect.hist.thEnd') %></th><th><%= t('collect.idx.thServer') %></th><th><%= t('collect.idx.thStatus') %></th>
+      <th><%= t('collect.hist.thPathReason') %></th><th><%= t('collect.idx.thSize') %></th><th><%= t('collect.hist.thHash') %></th><th><%= t('collect.idx.executor') %></th>
     </tr>
   </thead>
   <tbody>
@@ -26,7 +26,7 @@
             <%= selectedServer ? selectedServer.name : `#${c.server_id}` %>
           <% } %>
         </td>
-        <td><span class="badge b-<%= c.status==='성공'?'safe':c.status==='실패'?'vuln':'na' %>"><%= c.status %></span></td>
+        <td><span class="badge b-<%= c.status==='성공'?'safe':c.status==='실패'?'vuln':'na' %>"><%= td(c.status) %></span></td>
         <td class="small">
           <% if (c.status==='성공') { %>
             <code><%= c.raw_file_path %></code>
@@ -40,11 +40,11 @@
       </tr>
     <% }); %>
     <% if (!recent.length) { %>
-      <tr><td colspan="8" class="empty">수집 이력이 없습니다.</td></tr>
+      <tr><td colspan="8" class="empty"><%= t('collect.idx.empty') %></td></tr>
     <% } %>
   </tbody>
 </table>
 
-<a href="/collect" class="btn">수집 화면으로</a>
+<a href="/collect" class="btn"><%= t('collect.hist.backToCollect') %></a>
 
 <%- include('../_footer') %>

@@ -1,0 +1,27 @@
+{
+  "title": "Assessment Status",
+  "asOf": "As of: {now}",
+  "os": {
+    "title": "Check Status by OS",
+    "category": "Category",
+    "total": "Total",
+    "checked": "Checked",
+    "unchecked": "Unchecked",
+    "sum": "Sum",
+    "allDone": "✓ All servers checked",
+    "noServers": "No target servers (check servers.csv)"
+  },
+  "host": {
+    "title": "Host List",
+    "hostname": "Hostname",
+    "vulnCount": "Vulnerabilities",
+    "compliance": "Compliance (Good/Total)",
+    "operator": "Operator",
+    "domain": "Domain",
+    "channel": "Channel",
+    "status": "Check Status",
+    "done": "Done",
+    "unchecked": "Unchecked",
+    "empty": "No target servers"
+  }
+}

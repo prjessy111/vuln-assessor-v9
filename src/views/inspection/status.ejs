@@ -1,4 +1,4 @@
-<%- include('../_header', { title: '진단 현황', activeMenu: 'inspection-status' }) %>
+<%- include('../_header', { title: t('inspection.title'), activeMenu: 'inspection-status' }) %>
 <style>
   .insp-summary { max-width:560px; }
   .insp-summary td.num { text-align:right; font-weight:700; }
@@ -10,17 +10,17 @@
 </style>
 
 <div class="page-header">
-  <h1>진단 현황</h1>
+  <h1><%= t('inspection.title') %></h1>
   <div class="header-actions">
-    <span class="muted small">기준일: <%= now %></span>
+    <span class="muted small"><%= t('inspection.asOf', { now: now }) %></span>
   </div>
 </div>
 
 <!-- OS별 점검 집계 -->
 <div class="section-box">
-  <h3>OS별 점검 현황</h3>
+  <h3><%= t('inspection.os.title') %></h3>
   <table class="data-table insp-summary">
-    <thead><tr><th>구분</th><th>전체</th><th>점검완료</th><th>미점검</th></tr></thead>
+    <thead><tr><th><%= t('inspection.os.category') %></th><th><%= t('inspection.os.total') %></th><th><%= t('inspection.os.checked') %></th><th><%= t('inspection.os.unchecked') %></th></tr></thead>
     <tbody>
       <% osSummary.forEach(o => { %>
         <tr>
@@ -31,7 +31,7 @@
         </tr>
       <% }); %>
       <tr style="background:#f7f9fc;">
-        <td><strong>합계</strong></td>
+        <td><strong><%= t('inspection.os.sum') %></strong></td>
         <td class="num"><%= totalCount %></td>
         <td class="num"><%= checkedCount %></td>
         <td class="num <%= (totalCount-checkedCount) ? 'warn' : '' %>"><%= totalCount - checkedCount %></td>
@@ -39,22 +39,22 @@
     </tbody>
   </table>
   <% if (totalCount === checkedCount && totalCount > 0) { %>
-    <p class="muted small">✓ 전체 서버 점검 완료</p>
+    <p class="muted small"><%= t('inspection.os.allDone') %></p>
   <% } else if (totalCount === 0) { %>
-    <p class="muted small">대상 서버가 없습니다 (servers.csv 확인)</p>
+    <p class="muted small"><%= t('inspection.os.noServers') %></p>
   <% } %>
 </div>
 
 <!-- 호스트 목록 -->
 <div class="section-box">
-  <h3>호스트 목록</h3>
+  <h3><%= t('inspection.host.title') %></h3>
   <div class="table-scroll" style="overflow-x:auto;">
   <table class="data-table">
     <thead>
       <tr>
-        <th>호스트명</th><th>OS</th><th>IP</th>
-        <th>취약점 개수</th><th>준수율 (양호/전체)</th>
-        <th>운영자</th><th>도메인</th><th>통신방식</th><th>점검상태</th>
+        <th><%= t('inspection.host.hostname') %></th><th>OS</th><th>IP</th>
+        <th><%= t('inspection.host.vulnCount') %></th><th><%= t('inspection.host.compliance') %></th>
+        <th><%= t('inspection.host.operator') %></th><th><%= t('inspection.host.domain') %></th><th><%= t('inspection.host.channel') %></th><th><%= t('inspection.host.status') %></th>
       </tr>
     </thead>
     <tbody>
@@ -73,12 +73,12 @@
           <td class="small"><%= a.domain %></td>
           <td><span class="ch-badge"><%= a.channel %></span></td>
           <td>
-            <% if (a.checked) { %><span class="chk-yes">완료</span>
-            <% } else { %><span class="chk-no">미점검</span><% } %>
+            <% if (a.checked) { %><span class="chk-yes"><%= t('inspection.host.done') %></span>
+            <% } else { %><span class="chk-no"><%= t('inspection.host.unchecked') %></span><% } %>
           </td>
         </tr>
       <% }); %>
-      <% if (!agents.length) { %><tr><td colspan="9" class="empty">대상 서버가 없습니다</td></tr><% } %>
+      <% if (!agents.length) { %><tr><td colspan="9" class="empty"><%= t('inspection.host.empty') %></td></tr><% } %>
     </tbody>
   </table>
   </div>

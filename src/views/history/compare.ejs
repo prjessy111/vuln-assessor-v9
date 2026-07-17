@@ -1,42 +1,49 @@
-<%- include('../_header', { title: '진단 비교' }) %>
+<%- include('../_header', { title: t('history.compareTitle') }) %>
 
-<h1>진단 비교: #<%= sessA.assessment_id %> vs #<%= sessB.assessment_id %></h1>
+<h1><%= t('history.compareHeading', { a: sessA.assessment_id, b: sessB.assessment_id }) %></h1>
 
 <table class="meta-table">
   <tr>
     <th>A</th>
-    <td><%= sessA.executed_at %> | 취약 <%= sessA.vuln_count %> / 양호 <%= sessA.safe_count %> / N/A <%= sessA.na_count %></td>
+    <td><%= sessA.executed_at %> | <%= t('history.abSummary', { vuln: sessA.vuln_count, safe: sessA.safe_count, na: sessA.na_count }) %></td>
   </tr>
   <tr>
     <th>B</th>
-    <td><%= sessB.executed_at %> | 취약 <%= sessB.vuln_count %> / 양호 <%= sessB.safe_count %> / N/A <%= sessB.na_count %></td>
+    <td><%= sessB.executed_at %> | <%= t('history.abSummary', { vuln: sessB.vuln_count, safe: sessB.safe_count, na: sessB.na_count }) %></td>
   </tr>
 </table>
 
 <%
   const counts = { 개선: 0, 악화: 0, 유지: 0, '신규(B)': 0, '제거(A)': 0 };
   rows.forEach(r => counts[r.change]++);
+  const chgLabel = {
+    '개선': t('history.chg.improved'),
+    '악화': t('history.chg.worsened'),
+    '유지': t('history.chg.unchanged'),
+    '신규(B)': t('history.chg.addedB'),
+    '제거(A)': t('history.chg.removedA')
+  };
 %>
 <div class="summary-cards">
-  <div class="summary-card safe"><div>개선</div><div class="num"><%= counts.개선 %></div></div>
-  <div class="summary-card vuln"><div>악화</div><div class="num"><%= counts.악화 %></div></div>
-  <div class="summary-card total"><div>유지</div><div class="num"><%= counts.유지 %></div></div>
-  <div class="summary-card na"><div>신규(B)</div><div class="num"><%= counts['신규(B)'] %></div></div>
-  <div class="summary-card na"><div>제거(A)</div><div class="num"><%= counts['제거(A)'] %></div></div>
+  <div class="summary-card safe"><div><%= chgLabel['개선'] %></div><div class="num"><%= counts.개선 %></div></div>
+  <div class="summary-card vuln"><div><%= chgLabel['악화'] %></div><div class="num"><%= counts.악화 %></div></div>
+  <div class="summary-card total"><div><%= chgLabel['유지'] %></div><div class="num"><%= counts.유지 %></div></div>
+  <div class="summary-card na"><div><%= chgLabel['신규(B)'] %></div><div class="num"><%= counts['신규(B)'] %></div></div>
+  <div class="summary-card na"><div><%= chgLabel['제거(A)'] %></div><div class="num"><%= counts['제거(A)'] %></div></div>
 </div>
 
 <table class="data-table">
   <thead>
-    <tr><th>항목ID</th><th>중요도</th><th>A 판정</th><th>B 판정</th><th>변화</th></tr>
+    <tr><th><%= t('history.cmp.ruleId') %></th><th><%= t('history.cmp.severity') %></th><th><%= t('history.cmp.statusA') %></th><th><%= t('history.cmp.statusB') %></th><th><%= t('history.cmp.change') %></th></tr>
   </thead>
   <tbody>
     <% rows.forEach(r => { %>
       <tr class="change-<%= r.change %>">
         <td><%= r.rule_id %></td>
-        <td><span class="sev sev-<%= r.severity %>"><%= r.severity %></span></td>
-        <td><%= r.status_a || '-' %></td>
-        <td><%= r.status_b || '-' %></td>
-        <td><strong><%= r.change %></strong></td>
+        <td><span class="sev sev-<%= r.severity %>"><%= td(r.severity) %></span></td>
+        <td><%= td(r.status_a) || '-' %></td>
+        <td><%= td(r.status_b) || '-' %></td>
+        <td><strong><%= chgLabel[r.change] || r.change %></strong></td>
       </tr>
     <% }); %>
   </tbody>

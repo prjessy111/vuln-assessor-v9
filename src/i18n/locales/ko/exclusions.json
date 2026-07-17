@@ -1,0 +1,93 @@
+{
+  "index": {
+    "title": "제외 관리",
+    "descHtml": "진단 자체에서 영구적으로 제외할 항목을 관리합니다. <strong>예외 관리</strong>가 한시적 면제(승인 + 기간)라면, <strong>제외</strong>는 구조적 미해당(예: 해당 OS에 없는 데몬, 정책상 불필요한 항목)을 평가 대상에서 빼는 처리입니다.",
+    "btnNew": "+ 제외 등록",
+    "kpi": {
+      "total": "전체 제외",
+      "totalSub": "등록 건수",
+      "active": "활성 제외",
+      "activeSub": "현재 적용 중",
+      "server": "서버 단위",
+      "serverSub": "특정 서버 제외",
+      "rule": "룰 단위",
+      "ruleSub": "특정 룰 전역 제외"
+    },
+    "searchPh": "🔍 룰ID / 서버 / 사유 / 등록자 검색",
+    "filter": {
+      "allTypes": "전체 유형",
+      "server": "서버 단위",
+      "rule": "룰 단위",
+      "combo": "서버+룰 조합",
+      "allStatus": "전체 상태",
+      "enabled": "활성",
+      "disabled": "비활성"
+    },
+    "listTitle": "등록된 제외 ({n}건)",
+    "empty": "등록된 제외 항목이 없습니다.",
+    "emptyLink": "제외 등록",
+    "th": {
+      "enabled": "활성",
+      "id": "ID",
+      "type": "유형",
+      "rule": "대상 룰",
+      "server": "대상 서버",
+      "reason": "사유",
+      "registeredBy": "등록자",
+      "registeredAt": "등록일",
+      "actions": "액션"
+    },
+    "type": {
+      "server": "서버",
+      "rule": "룰",
+      "combo": "서버+룰"
+    },
+    "allServers": "전체",
+    "btnDisable": "비활성화",
+    "btnEnable": "활성화",
+    "js": {
+      "confirmToggle": "이 제외 항목의 활성 상태를 전환하시겠습니까?",
+      "fail": "실패: ",
+      "error": "오류"
+    }
+  },
+  "new": {
+    "title": "제외 등록",
+    "descHtml": "진단 대상에서 영구적으로 제외할 항목을 등록합니다. 구조적으로 점검이 불가/무의미한 경우만 사용하세요 (예: 해당 OS 미설치 데몬, 정책상 미사용 기능). 한시적 면제가 필요하면 <a href=\"/exceptions/new\">예외 신청</a>을 사용하세요.",
+    "back": "← 제외 관리",
+    "target": {
+      "heading": "대상 항목",
+      "itemLabel": "점검 항목",
+      "itemSelect": "— 점검 항목 선택 —",
+      "hostLabel": "호스트명",
+      "hostPh": "예: jessy207 (CSV 일괄 시 비워도 됨)",
+      "acctLabel": "계정명",
+      "acctPh": "시스템 계정 등 (예: bin, daemon). 호스트 전체면 비움",
+      "csvLabel": "CSV 일괄 등록",
+      "csvPh": "호스트명,계정명  (한 줄에 하나)\njessy207,bin\njessy207,daemon\njessy167,   ← 계정 비우면 호스트 전체",
+      "csvHelp": "시스템 계정 등 여러 호스트/계정을 같은 점검항목에서 한 번에 제외. (CSV 입력 시 위 단일 호스트/계정은 무시)"
+    },
+    "reason": {
+      "heading": "제외 사유",
+      "typeLabel": "유형",
+      "select": "— 선택 —",
+      "structural": "구조적 미해당 (해당 항목 부재)",
+      "osUnsupported": "OS/배포판 미지원",
+      "policyUnused": "정책상 사용하지 않는 기능",
+      "duplicate": "다른 룰로 중복 점검됨",
+      "falsePositive": "반복적 오탐",
+      "etc": "기타",
+      "detailLabel": "상세 사유",
+      "detailPh": "이 항목을 진단 대상에서 영구 제외해야 하는 구체적 근거 (감사 추적 대비)"
+    },
+    "submit": "제외 등록",
+    "js": {
+      "alertNeedItem": "점검 항목을 선택하세요.",
+      "alertCsv": "CSV 형식을 확인하세요 (호스트명,계정명).",
+      "savedAlert": "제외 항목이 등록되었습니다.",
+      "countSuffix": " ({n}건)",
+      "fail": "실패: ",
+      "error": "오류"
+    }
+  }
+}

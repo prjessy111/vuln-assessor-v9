@@ -1,25 +1,22 @@
-<%- include('../_header', { title: 'Windows CVE 자동 진단', activeMenu: 'diagnosis' }) %>
+<%- include('../_header', { title: t('cve.scanWin.title'), activeMenu: 'diagnosis' }) %>
 
 <div class="page-header">
-  <h1>Windows CVE 자동 진단 #<%= assessment_id %></h1>
+  <h1><%= t('cve.scanWin.heading', { id: assessment_id }) %></h1>
   <p class="muted small">
-    설치된 <strong><%= result.packages_count %>개 핫픽스(KB)</strong>와 OS 빌드를 기준으로,
-    알려진 Windows 보안 취약점(CVE)의 패치 적용 여부를 결정론적으로 판정한 결과입니다.
-    누락된 보안 업데이트(KB)는 미패치(AFFECTED)로 분류됩니다.
+    <%- t('cve.scanWin.intro', { n: result.packages_count }) %>
   </p>
   <div class="header-actions">
-    <a href="/diagnosis/<%= assessment_id %>/ai" class="btn" style="background:#6c5ce7;color:#fff;">🤖 AI 결과로</a>
-    <a href="/cve/sync" class="btn">CVE Feed 동기화</a>
+    <a href="/diagnosis/<%= assessment_id %>/ai" class="btn" style="background:#6c5ce7;color:#fff;"><%= t('cve.scan.btnAiResult') %></a>
+    <a href="/cve/sync" class="btn"><%= t('cve.scan.btnSync') %></a>
     <button type="button" onclick="printReport()" class="btn">🖨 PDF</button>
     <button type="button" onclick="downloadReportHtml()" class="btn">📄 HTML</button>
   </div>
 </div>
 
 <div class="info-box" style="background:#eef2ff; border-left:4px solid #6c5ce7; padding:0.75rem 1rem; margin:0 0 1rem; border-radius:4px;">
-  <strong>🪟 Windows 패치 기반 진단</strong>
+  <strong><%= t('cve.scanWin.banner') %></strong>
   <span class="muted small">
-    — OS: <strong><%= result.env.os_distro %></strong> (빌드 <%= result.env.os_version %>)
-    · 설치 핫픽스 <strong><%= result.packages_count %></strong>건
+    <%- t('cve.scanWin.bannerDetail', { os: result.env.os_distro, build: result.env.os_version, n: result.packages_count }) %>
     <% if (result.hotfixes && result.hotfixes.length) { %>
       (<%= result.hotfixes.map(h => h.id).join(', ') %>)
     <% } %>
@@ -27,21 +24,21 @@
 </div>
 
 <% if (result.error) { %>
-  <div class="alert alert-warning"><strong>⚠ 오류:</strong> <%= result.error %></div>
+  <div class="alert alert-warning"><strong><%= t('cve.scan.errorLabel') %></strong> <%= result.error %></div>
 <% } else { %>
 
 <!-- 환경 정보 -->
 <table class="info-table">
   <tr>
-    <th>호스트명</th><td><%= result.env.hostname %></td>
+    <th><%= t('cve.scan.hostname') %></th><td><%= result.env.hostname %></td>
     <th>OS</th><td><%= result.env.os_distro %> (<%= result.env.os_version %>)</td>
   </tr>
   <tr>
-    <th>설치 핫픽스</th><td><strong><%= result.packages_count %>건</strong></td>
-    <th>매칭된 CVE</th><td><strong><%= result.summary.total %>건</strong> (취약 <%= result.summary.actually_vulnerable %>)</td>
+    <th><%= t('cve.scanWin.installedHotfix') %></th><td><strong><%= t('common.unit.count', { n: result.packages_count }) %></strong></td>
+    <th><%= t('cve.scan.matchedCve') %></th><td><strong><%= t('common.unit.count', { n: result.summary.total }) %></strong> (<%= t('cve.scanWin.vulnN', { n: result.summary.actually_vulnerable }) %>)</td>
   </tr>
   <tr>
-    <th>설치 소프트웨어</th><td colspan="3"><strong><%= (result.software && result.software.length) || 0 %>건</strong> <span class="muted small">(레지스트리 Uninstall 인벤토리 — 서드파티 SW)</span></td>
+    <th><%= t('cve.scanWin.installedSw') %></th><td colspan="3"><strong><%= t('common.unit.count', { n: (result.software && result.software.length) || 0 }) %></strong> <span class="muted small"><%= t('cve.scanWin.swInventoryNote') %></span></td>
   </tr>
 </table>
 
@@ -49,19 +46,18 @@
 <% var swMatches = result.software_matches || []; %>
 <% if (swMatches.length) { %>
   <div class="section-box" style="margin-top:16px;border:2px solid #d35400;">
-    <h3 style="margin-top:0;color:#d35400;">🧩 설치 소프트웨어/라이브러리 잠재 CVE <%= swMatches.length %>건 (검토 필요)</h3>
+    <h3 style="margin-top:0;color:#d35400;"><%= t('cve.scanWin.swMatchTitle', { n: swMatches.length }) %></h3>
     <div style="background:#fff8e1;border-left:4px solid #f1c40f;padding:8px 12px;margin:0 0 10px;border-radius:4px;font-size:12.5px;">
-      ⚠ <strong>버전 범위 기준 "잠재" 취약입니다.</strong> 벤더 <strong>백포트 패치</strong>(예: <code>openssl-1.0.2k-16.el7</code>는 버전은 같아도 수정 포함)나
-      취약 기능 <strong>실제 사용여부(도달성)</strong>는 미검증 — "위험"으로 보여도 실제는 아닐 수 있으니 <strong>확정 전 검토</strong>가 필요합니다.
+      <%- t('cve.scanWin.swMatchWarn') %>
     </div>
     <table class="data-table">
-      <thead><tr><th>CVE</th><th>소프트웨어</th><th>버전</th><th>CVSS</th><th>판정</th><th>표기 근거</th></tr></thead>
+      <thead><tr><th>CVE</th><th><%= t('cve.scanWin.th.software') %></th><th><%= t('cve.scanWin.th.version') %></th><th>CVSS</th><th><%= t('cve.scanWin.th.verdict') %></th><th><%= t('cve.scanWin.th.basis') %></th></tr></thead>
       <tbody>
         <% swMatches.forEach(function (m) { var j = m.ai_judgment || {}; var vd = j.verdict || m.verdict || 'POTENTIAL';
-           var badge = vd === 'PATCHED_BACKPORT' ? '<span style="color:#27ae60;font-weight:700;">✓ 패치됨(백포트)</span>'
-                     : vd === 'CONFIRMED' ? '<span style="color:#c0392b;font-weight:700;">🔴 확정</span>'
-                     : vd === 'LIKELY_VULNERABLE' ? '<span style="color:#e67e22;font-weight:700;">🔴 유력</span>'
-                     : '<span style="color:#2980b9;font-weight:700;">🔍 검토필요</span>'; %>
+           var badge = vd === 'PATCHED_BACKPORT' ? '<span style="color:#27ae60;font-weight:700;">' + t('cve.scanWin.verdictPatched') + '</span>'
+                     : vd === 'CONFIRMED' ? '<span style="color:#c0392b;font-weight:700;">' + t('cve.scanWin.verdictConfirmed') + '</span>'
+                     : vd === 'LIKELY_VULNERABLE' ? '<span style="color:#e67e22;font-weight:700;">' + t('cve.scanWin.verdictLikely') + '</span>'
+                     : '<span style="color:#2980b9;font-weight:700;">' + t('cve.scanWin.verdictReview') + '</span>'; %>
           <tr>
             <td class="mono small"><%= m.cve_id %><%= m.cisa_kev ? ' 🔴KEV' : '' %></td>
             <td><%= m.software %></td>
@@ -69,9 +65,9 @@
             <td class="small"><%= m.cvss_v3 %></td>
             <td class="small"><%- badge %></td>
             <td class="small">
-              <div><%= m.basis || (m.software + ' ' + m.version + ' 영향범위 포함') %></div>
+              <div><%= m.basis || t('cve.scanWin.basisFallback', { sw: m.software, ver: m.version }) %></div>
               <% if (j.rationale_ko) { %><div class="muted" style="margin-top:3px;">↳ <%= j.rationale_ko %></div><% } %>
-              <% if (m.backport_check && m.backport_check.detail) { %><div style="margin-top:3px;color:#1e8449;">↳ 백포트확인: <%= m.backport_check.detail %></div><% } %>
+              <% if (m.backport_check && m.backport_check.detail) { %><div style="margin-top:3px;color:#1e8449;"><%= t('cve.scanWin.backportCheckPrefix') %> <%= m.backport_check.detail %></div><% } %>
             </td>
           </tr>
         <% }); %>
@@ -79,24 +75,24 @@
     </table>
   </div>
 <% } else if (result.software && result.software.length) { %>
-  <p class="muted small" style="margin-top:12px;">🧩 설치 소프트웨어 <%= result.software.length %>건 중 소프트웨어 CVE DB와 매칭된 항목 없음 (DB 보강 시 확대).</p>
+  <p class="muted small" style="margin-top:12px;"><%= t('cve.scanWin.swNoMatch', { n: result.software.length }) %></p>
 <% } %>
 
 <!-- CISA KEV 등재 제품 탐지 (활성 익스플로잇 — 버전 미검증 자문) -->
 <% var kevP = result.kev_products || []; %>
 <% if (kevP.length) { %>
   <div class="section-box" style="margin-top:16px;border:2px solid #e67e22;">
-    <h3 style="margin-top:0;color:#d35400;">🔥 CISA KEV 등재 제품 탐지 <%= kevP.length %>건 (활성 익스플로잇)</h3>
-    <p class="muted small" style="margin:4px 0 10px;">설치된 제품이 CISA KEV(실제 공격에 악용된 취약점) 목록에 있는 제품군입니다. <strong>버전 미검증 자문</strong> — 해당 제품의 버전/패치 상태를 점검하세요. (정밀 버전 판정은 NVD 동기화로 확대)</p>
+    <h3 style="margin-top:0;color:#d35400;"><%= t('cve.scanWin.kevProductTitle', { n: kevP.length }) %></h3>
+    <p class="muted small" style="margin:4px 0 10px;"><%- t('cve.scanWin.kevProductDesc') %></p>
     <table class="data-table">
-      <thead><tr><th>제품군(KEV)</th><th>설치 소프트웨어</th><th>버전</th><th>KEV CVE</th></tr></thead>
+      <thead><tr><th><%= t('cve.scanWin.th.kevProduct') %></th><th><%= t('cve.scanWin.installedSw') %></th><th><%= t('cve.scanWin.th.version') %></th><th>KEV CVE</th></tr></thead>
       <tbody>
         <% kevP.forEach(function (k) { %>
           <tr>
             <td><strong style="color:#d35400;"><%= k.product %></strong></td>
             <td><%= k.software %></td>
             <td class="mono small"><%= k.version || '-' %></td>
-            <td class="small"><%= k.kev_cve_count %>건 <span class="muted">(<%= (k.sample_cves||[]).slice(0,3).join(', ') %>…)</span></td>
+            <td class="small"><%= t('common.unit.count', { n: k.kev_cve_count }) %> <span class="muted">(<%= (k.sample_cves||[]).slice(0,3).join(', ') %>…)</span></td>
           </tr>
         <% }); %>
       </tbody>
@@ -107,10 +103,10 @@
 <!-- 설치 소프트웨어 인벤토리 (rpm -qa 의 Windows 대응) -->
 <% if (result.software && result.software.length) { %>
   <details class="section-box" style="margin-top:16px;">
-    <summary style="cursor:pointer;font-weight:700;">🧩 설치 소프트웨어 인벤토리 (<%= result.software.length %>건) — 클릭하여 펼치기</summary>
-    <p class="muted small" style="margin:8px 0;">서드파티 소프트웨어의 CVE 매칭은 소프트웨어 CVE DB 보강 시 활성화됩니다(현재는 자산 인벤토리 표시).</p>
+    <summary style="cursor:pointer;font-weight:700;"><%= t('cve.scanWin.swInventoryTitle', { n: result.software.length }) %></summary>
+    <p class="muted small" style="margin:8px 0;"><%= t('cve.scanWin.swInventoryDesc') %></p>
     <table class="data-table" style="margin-top:8px;">
-      <thead><tr><th>#</th><th>소프트웨어</th><th>버전</th><th>게시자</th></tr></thead>
+      <thead><tr><th>#</th><th><%= t('cve.scanWin.th.software') %></th><th><%= t('cve.scanWin.th.version') %></th><th><%= t('cve.scanWin.th.publisher') %></th></tr></thead>
       <tbody>
         <% result.software.forEach(function (sw, i) { %>
           <tr>
@@ -145,12 +141,12 @@
   <div class="kpi-card" style="border-top-color:#c0392b;">
     <div class="kpi-label">CISA KEV</div>
     <div class="kpi-num" style="color:#c0392b;"><%= result.summary.kev_count %></div>
-    <div class="kpi-sub">활성 익스플로잇</div>
+    <div class="kpi-sub"><%= t('cve.scanWin.kpi.kevSub') %></div>
   </div>
   <div class="kpi-card kpi-success">
-    <div class="kpi-label">패치됨</div>
+    <div class="kpi-label"><%= t('cve.scanWin.kpi.patched') %></div>
     <div class="kpi-num"><%= result.summary.patched_count %></div>
-    <div class="kpi-sub">KB 적용 확인</div>
+    <div class="kpi-sub"><%= t('cve.scanWin.kpi.patchedSub') %></div>
   </div>
 </div>
 
@@ -159,39 +155,39 @@
   <div class="kpi-card" style="border-top-color:#c0392b;">
     <div class="kpi-label">IMMEDIATE</div>
     <div class="kpi-num" style="color:#c0392b;"><%= result.summary.by_priority.IMMEDIATE || 0 %></div>
-    <div class="kpi-sub">즉시 패치</div>
+    <div class="kpi-sub"><%= t('cve.scan.kpi.immediateSub') %></div>
   </div>
   <div class="kpi-card" style="border-top-color:#e67e22;">
     <div class="kpi-label">URGENT</div>
     <div class="kpi-num" style="color:#e67e22;"><%= result.summary.by_priority.URGENT || 0 %></div>
-    <div class="kpi-sub">긴급 패치</div>
+    <div class="kpi-sub"><%= t('cve.scan.kpi.urgentSub') %></div>
   </div>
   <div class="kpi-card" style="border-top-color:#f39c12;">
     <div class="kpi-label">SCHEDULED</div>
     <div class="kpi-num" style="color:#f39c12;"><%= result.summary.by_priority.SCHEDULED || 0 %></div>
-    <div class="kpi-sub">정기 패치</div>
+    <div class="kpi-sub"><%= t('cve.scan.kpi.scheduledSub') %></div>
   </div>
   <div class="kpi-card" style="border-top-color:#7f8c8d;">
     <div class="kpi-label">MONITOR</div>
     <div class="kpi-num" style="color:#7f8c8d;"><%= result.summary.by_priority.MONITOR || 0 %></div>
-    <div class="kpi-sub">모니터링</div>
+    <div class="kpi-sub"><%= t('cve.scan.kpi.monitorSub') %></div>
   </div>
 </div>
 
 <!-- CVE 목록 -->
 <div class="section-box" style="margin-top:20px;">
-  <h3>매칭된 CVE 목록 (우선순위 정렬)</h3>
+  <h3><%= t('cve.scan.listTitle') %></h3>
   <table class="data-table cve-table">
     <thead>
       <tr>
         <th width="110">CVE ID</th>
-        <th>이름</th>
+        <th><%= t('cve.scan.th.name') %></th>
         <th width="60">CVSS</th>
         <th width="50">KEV</th>
         <th width="60">EPSS</th>
-        <th>대상 / 패치 KB</th>
-        <th width="100">우선순위</th>
-        <th width="80">실제 위험</th>
+        <th><%= t('cve.scanWin.th.target') %></th>
+        <th width="100"><%= t('cve.scan.th.priority') %></th>
+        <th width="80"><%= t('cve.scan.th.realRisk') %></th>
       </tr>
     </thead>
     <tbody>
@@ -213,9 +209,9 @@
           <td class="mono small">
             <%= m.pkg_full %>
             <% if (isPatched) { %>
-              <div class="muted small" style="color:#27ae60;">✓ 패치 적용됨 (<%= m.fix_kb %>)</div>
+              <div class="muted small" style="color:#27ae60;"><%= t('cve.scanWin.patchApplied', { kb: m.fix_kb }) %></div>
             <% } else { %>
-              <div class="muted small" style="color:#c0392b;">⚠ 미설치 KB: <%= m.fix_kb %></div>
+              <div class="muted small" style="color:#c0392b;"><%= t('cve.scanWin.kbMissing', { kb: m.fix_kb }) %></div>
             <% } %>
             <% if (m.service_note) { %>
               <div class="muted small"><%= m.service_note %></div>
@@ -234,9 +230,9 @@
           </td>
           <td class="text-center">
             <% if (j.is_vulnerable) { %>
-              <span class="status-cell st-vuln">취약</span>
+              <span class="status-cell st-vuln"><%= t('cve.scan.vuln') %></span>
             <% } else { %>
-              <span class="status-cell st-safe">안전</span>
+              <span class="status-cell st-safe"><%= t('cve.scan.safe') %></span>
             <% } %>
           </td>
         </tr>
@@ -244,25 +240,25 @@
           <td colspan="8" class="cve-detail">
             <div class="cve-detail-grid">
               <div class="cve-detail-block">
-                <div class="detail-label">📝 AI 판정 근거</div>
+                <div class="detail-label"><%= t('cve.scan.detail.rationale') %></div>
                 <div class="detail-text"><%= j.rationale_ko %></div>
               </div>
               <div class="cve-detail-block">
-                <div class="detail-label">💀 공격 시나리오</div>
+                <div class="detail-label"><%= t('cve.scan.detail.scenario') %></div>
                 <div class="detail-text"><%= j.exploit_scenario %></div>
               </div>
               <div class="cve-detail-block">
-                <div class="detail-label">🔧 권장 조치</div>
+                <div class="detail-label"><%= t('cve.scan.detail.actions') %></div>
                 <ul class="detail-list">
                   <% (j.recommended_actions || []).forEach(a => { %><li><%= a %></li><% }); %>
                 </ul>
               </div>
               <div class="cve-detail-block">
-                <div class="detail-label">📋 패치 정보</div>
+                <div class="detail-label"><%= t('cve.scan.detail.patchInfo') %></div>
                 <div class="detail-text">
-                  <strong>권고:</strong> <%= m.patches && m.patches.upstream || '-' %><br>
-                  <strong>수정 KB:</strong> <%= (m.fixed_by_kb || []).join(', ') || '-' %><br>
-                  <strong>설치된 핫픽스:</strong> <%= (m.installed_kbs || []).join(', ') || '(없음)' %>
+                  <strong><%= t('cve.scanWin.detail.advisory') %></strong> <%= m.patches && m.patches.upstream || '-' %><br>
+                  <strong><%= t('cve.scanWin.detail.fixKb') %></strong> <%= (m.fixed_by_kb || []).join(', ') || '-' %><br>
+                  <strong><%= t('cve.scanWin.detail.installedKbs') %></strong> <%= (m.installed_kbs || []).join(', ') || t('cve.scanWin.detail.none') %>
                 </div>
               </div>
             </div>
@@ -271,7 +267,7 @@
       <% }); %>
       <% if (!result.matches.length) { %>
         <tr><td colspan="8" class="empty" style="padding:32px;text-align:center;">
-          매칭된 CVE가 없습니다. (큐레이션된 Windows CVE DB 기준 — 해당 OS 빌드 대상 항목 없음)
+          <%= t('cve.scanWin.empty') %>
         </td></tr>
       <% } %>
     </tbody>
@@ -279,16 +275,15 @@
 </div>
 
 <div class="info-box" style="margin-top:20px;">
-  <h4>Windows CVE 자동 진단 동작 방식</h4>
+  <h4><%= t('cve.scanWin.howTitle') %></h4>
   <ul>
-    <li><strong>Stage 1 — 인벤토리 추출:</strong> OS 빌드 + 설치 핫픽스(<%= result.packages_count %>개 KB) + 서비스 상태</li>
-    <li><strong>Stage 2 — 패치 판정:</strong> 빌드 UBR ≥ 수정 UBR 이거나 수정 KB가 설치됨 → 패치, 아니면 미설치</li>
-    <li><strong>Stage 3 — 조건 평가:</strong> 일부 CVE는 특정 서비스(SMB·Spooler·Netlogon 등) 실행 여부로 공격 표면 가중</li>
-    <li><strong>Stage 4 — 우선순위:</strong> CISA KEV → 미패치 → CVSS 순</li>
+    <li><%- t('cve.scanWin.how1', { n: result.packages_count }) %></li>
+    <li><%- t('cve.scanWin.how2') %></li>
+    <li><%- t('cve.scanWin.how3') %></li>
+    <li><%- t('cve.scanWin.how4') %></li>
   </ul>
   <p class="small muted" style="margin-top:12px;">
-    ※ 본 기능은 큐레이션된 핵심 Windows Server CVE만 포함합니다. 운영 환경에서는 Microsoft 보안 업데이트 가이드(MSRC) /
-    NVD 피드를 동기화하여 KB-CVE 매핑을 최신으로 유지해야 합니다. 설치 프로그램(서드파티 SW) 단위 CVE는 인벤토리 수집 확장이 필요합니다.
+    <%= t('cve.scanWin.howNote') %>
   </p>
 </div>
 

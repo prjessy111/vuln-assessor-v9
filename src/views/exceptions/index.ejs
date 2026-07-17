@@ -1,82 +1,81 @@
-<%- include('../_header', { title: '예외 관리', activeMenu: 'exceptions' }) %>
+<%- include('../_header', { title: t('exceptions.index.title'), activeMenu: 'exceptions' }) %>
 
 <div class="page-header">
-  <h1>예외 관리</h1>
+  <h1><%= t('exceptions.index.title') %></h1>
   <p class="muted small">
-    취약 판정을 받았으나 운영상 사유로 일정 기간 예외 처리하는 항목.
-    승인 후에만 효력 발생. 만료 임박 시 사전에 연장하거나 조치 완료해야 함.
+    <%= t('exceptions.index.desc') %>
   </p>
   <div class="header-actions">
-    <a href="/exceptions/new" class="btn primary">+ 예외 신청</a>
+    <a href="/exceptions/new" class="btn primary"><%= t('exceptions.index.btnNew') %></a>
   </div>
 </div>
 
 <!-- KPI -->
 <div class="kpi-grid kpi-5col">
   <div class="kpi-card">
-    <div class="kpi-label">전체</div>
+    <div class="kpi-label"><%= t('exceptions.index.kpi.total') %></div>
     <div class="kpi-num"><%= kpi.total %></div>
-    <div class="kpi-sub">등록된 예외</div>
+    <div class="kpi-sub"><%= t('exceptions.index.kpi.totalSub') %></div>
   </div>
   <div class="kpi-card kpi-success">
-    <div class="kpi-label">활성</div>
+    <div class="kpi-label"><%= t('exceptions.index.kpi.active') %></div>
     <div class="kpi-num" style="color:#27ae60;"><%= kpi.active %></div>
-    <div class="kpi-sub">승인 + 유효기간 내</div>
+    <div class="kpi-sub"><%= t('exceptions.index.kpi.activeSub') %></div>
   </div>
   <div class="kpi-card kpi-running">
-    <div class="kpi-label">승인 대기</div>
+    <div class="kpi-label"><%= t('exceptions.index.kpi.pending') %></div>
     <div class="kpi-num" style="color:#e67e22;"><%= kpi.pending %></div>
-    <div class="kpi-sub">CISO 검토 필요</div>
+    <div class="kpi-sub"><%= t('exceptions.index.kpi.pendingSub') %></div>
   </div>
   <div class="kpi-card" style="border-top-color:#e67e22;">
-    <div class="kpi-label">만료 임박</div>
+    <div class="kpi-label"><%= t('exceptions.index.kpi.expiring') %></div>
     <div class="kpi-num" style="color:#e67e22;"><%= kpi.expiring %></div>
-    <div class="kpi-sub">30일 이내 만료</div>
+    <div class="kpi-sub"><%= t('exceptions.index.kpi.expiringSub') %></div>
   </div>
   <div class="kpi-card kpi-fail">
-    <div class="kpi-label">만료됨</div>
+    <div class="kpi-label"><%= t('exceptions.index.kpi.expired') %></div>
     <div class="kpi-num" style="color:#c0392b;"><%= kpi.expired %></div>
-    <div class="kpi-sub">갱신/조치 필요</div>
+    <div class="kpi-sub"><%= t('exceptions.index.kpi.expiredSub') %></div>
   </div>
 </div>
 
 <!-- 필터 -->
 <div class="section-box">
   <div class="filter-bar">
-    <input type="text" id="searchInput" placeholder="🔍 룰ID / 호스트 / 사유 / 신청자 / 승인자 검색" class="filter-input">
+    <input type="text" id="searchInput" placeholder="<%= t('exceptions.index.searchPh') %>" class="filter-input">
     <select id="statusFilter" class="filter-select">
-      <option value="">전체 상태</option>
-      <option value="승인">승인</option>
-      <option value="대기">대기</option>
-      <option value="반려">반려</option>
+      <option value=""><%= t('exceptions.index.filter.allStatus') %></option>
+      <option value="승인"><%= t('exceptions.index.filter.approved') %></option>
+      <option value="대기"><%= t('exceptions.index.filter.pending') %></option>
+      <option value="반려"><%= t('exceptions.index.filter.rejected') %></option>
     </select>
     <select id="expiryFilter" class="filter-select">
-      <option value="">전체 기간</option>
-      <option value="active">유효</option>
-      <option value="expiring">만료 임박 (30일)</option>
-      <option value="expired">만료됨</option>
+      <option value=""><%= t('exceptions.index.filter.allPeriod') %></option>
+      <option value="active"><%= t('exceptions.index.filter.valid') %></option>
+      <option value="expiring"><%= t('exceptions.index.filter.expiring') %></option>
+      <option value="expired"><%= t('exceptions.index.filter.expired') %></option>
     </select>
   </div>
 </div>
 
 <!-- 예외 목록 -->
 <div class="section-box">
-  <h3>등록된 예외 (<%= exceptions.length %>건)</h3>
+  <h3><%= t('exceptions.index.listTitle', { n: exceptions.length }) %></h3>
   <% if (!exceptions.length) { %>
-    <p class="muted">등록된 예외가 없습니다. <a href="/exceptions/new">새 예외 신청</a>.</p>
+    <p class="muted"><%= t('exceptions.index.empty') %> <a href="/exceptions/new"><%= t('exceptions.index.emptyLink') %></a>.</p>
   <% } else { %>
     <table class="data-table" id="exceptionsTable">
       <thead>
         <tr>
-          <th>ID</th>
-          <th>룰 / 호스트</th>
-          <th>사유</th>
-          <th>유효기간</th>
-          <th>잔여일</th>
-          <th>승인 상태</th>
-          <th>신청자</th>
-          <th>승인자</th>
-          <th>액션</th>
+          <th><%= t('exceptions.index.th.id') %></th>
+          <th><%= t('exceptions.index.th.ruleHost') %></th>
+          <th><%= t('exceptions.index.th.reason') %></th>
+          <th><%= t('exceptions.index.th.period') %></th>
+          <th><%= t('exceptions.index.th.daysLeft') %></th>
+          <th><%= t('exceptions.index.th.status') %></th>
+          <th><%= t('exceptions.index.th.requestedBy') %></th>
+          <th><%= t('exceptions.index.th.approvedBy') %></th>
+          <th><%= t('exceptions.index.th.actions') %></th>
         </tr>
       </thead>
       <tbody>
@@ -100,33 +99,34 @@
               <% } else if (e.effective_until) { %>
                 ~ <%= e.effective_until %>
               <% } else { %>
-                <span class="muted">미설정</span>
+                <span class="muted"><%= t('exceptions.index.notSet') %></span>
               <% } %>
             </td>
             <td>
               <% if (e.is_expired) { %>
-                <span style="color:#c0392b;font-weight:600;">만료</span>
+                <span style="color:#c0392b;font-weight:600;"><%= t('exceptions.index.expired') %></span>
               <% } else if (e.days_left === null) { %>
                 <span class="muted">-</span>
               <% } else if (e.days_left <= 30) { %>
-                <span style="color:#e67e22;font-weight:600;"><%= e.days_left %>일</span>
+                <span style="color:#e67e22;font-weight:600;"><%= t('exceptions.index.days', { n: e.days_left }) %></span>
               <% } else { %>
-                <span><%= e.days_left %>일</span>
+                <span><%= t('exceptions.index.days', { n: e.days_left }) %></span>
               <% } %>
             </td>
             <td>
               <% var st = e.approval_status || '대기'; %>
               <% var color = st === '승인' ? '#27ae60' : st === '반려' ? '#c0392b' : '#e67e22'; %>
-              <span style="color:<%= color %>;font-weight:600;"><%= st %></span>
+              <% var stLabel = st === '승인' ? t('exceptions.index.status.approved') : st === '반려' ? t('exceptions.index.status.rejected') : st === '대기' ? t('exceptions.index.status.pending') : st; %>
+              <span style="color:<%= color %>;font-weight:600;"><%= stLabel %></span>
             </td>
             <td class="small"><%= e.requested_by || '-' %></td>
             <td class="small"><%= e.approved_by || '-' %></td>
             <td>
               <% if ((e.approval_status || '대기') === '대기') { %>
-                <button class="btn-sm" onclick="approve(<%= e.exception_id %>, 'approve')">승인</button>
-                <button class="btn-sm" onclick="approve(<%= e.exception_id %>, 'reject')">반려</button>
+                <button class="btn-sm" onclick="approve(<%= e.exception_id %>, 'approve')"><%= t('exceptions.index.btnApprove') %></button>
+                <button class="btn-sm" onclick="approve(<%= e.exception_id %>, 'reject')"><%= t('exceptions.index.btnReject') %></button>
               <% } else if (e.is_expired || (e.days_left !== null && e.days_left <= 30)) { %>
-                <button class="btn-sm" onclick="extend(<%= e.exception_id %>)">기간 연장</button>
+                <button class="btn-sm" onclick="extend(<%= e.exception_id %>)"><%= t('exceptions.index.btnExtend') %></button>
               <% } %>
             </td>
           </tr>
@@ -137,10 +137,19 @@
 </div>
 
 <script>
+var I18N = <%- JSON.stringify({
+  approveNote: t('exceptions.index.js.approveNote'),
+  rejectReason: t('exceptions.index.js.rejectReason'),
+  rejectRequired: t('exceptions.index.js.rejectRequired'),
+  newExpiry: t('exceptions.index.js.newExpiry'),
+  fail: t('exceptions.index.js.fail'),
+  error: t('exceptions.index.js.error')
+}) %>;
+
 function approve(id, action) {
-  const note = prompt(action === 'approve' ? '승인 메모 (선택):' : '반려 사유:');
+  const note = prompt(action === 'approve' ? I18N.approveNote : I18N.rejectReason);
   if (action === 'reject' && !note) {
-    alert('반려 시 사유 입력이 필요합니다.');
+    alert(I18N.rejectRequired);
     return;
   }
   fetch('/exceptions/' + id + '/approve', {
@@ -151,12 +160,12 @@ function approve(id, action) {
     .then(r => r.json())
     .then(j => {
       if (j.status === 'success') location.reload();
-      else alert('실패: ' + (j.error || '오류'));
+      else alert(I18N.fail + (j.error || I18N.error));
     });
 }
 
 function extend(id) {
-  const until = prompt('새 만료일 (YYYY-MM-DD):');
+  const until = prompt(I18N.newExpiry);
   if (!until) return;
   fetch('/exceptions/' + id + '/extend', {
     method: 'POST',
@@ -166,7 +175,7 @@ function extend(id) {
     .then(r => r.json())
     .then(j => {
       if (j.status === 'success') location.reload();
-      else alert('실패: ' + (j.error || '오류'));
+      else alert(I18N.fail + (j.error || I18N.error));
     });
 }
 

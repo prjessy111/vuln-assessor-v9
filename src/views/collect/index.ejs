@@ -1,18 +1,18 @@
-<%- include('../_header', { title: 'Raw 수집' }) %>
+<%- include('../_header', { title: t('collect.idx.title') }) %>
 
-<h1>Raw 데이터 수집</h1>
-<p class="muted">Agent에 SSH 접속하여 SecuMS raw SQLite 파일을 진단 PC로 가져옵니다.</p>
+<h1><%= t('collect.idx.heading') %></h1>
+<p class="muted"><%= t('collect.idx.desc') %></p>
 
 <% if (!servers.length) { %>
-  <div class="empty">SSH 정보가 등록된 서버가 없습니다. <a href="/servers">서버 관리</a>에서 SSH 정보를 등록하세요.</div>
+  <div class="empty"><%= t('collect.idx.noServers1') %> <a href="/servers"><%= t('common.nav.servers') %></a><%= t('collect.idx.noServers2') %></div>
 <% } else { %>
 <form method="post" action="/collect/run" class="form-block">
   <table class="data-table">
     <thead>
       <tr>
         <th><input type="checkbox" id="check_all" onchange="toggleAll(this)"></th>
-        <th>표시명</th><th>호스트</th><th>OS</th><th>SSH 사용자</th>
-        <th>raw 경로</th><th>마지막 수집</th>
+        <th><%= t('collect.idx.thName') %></th><th><%= t('collect.idx.thHost') %></th><th>OS</th><th><%= t('collect.idx.thSshUser') %></th>
+        <th><%= t('collect.idx.thRawPath') %></th><th><%= t('collect.idx.thLastCollected') %></th>
       </tr>
     </thead>
     <tbody>
@@ -31,13 +31,13 @@
   </table>
 
   <div class="form-row">
-    <label>실행자</label>
-    <input name="executed_by" placeholder="이름 또는 ID (옵션)">
+    <label><%= t('collect.idx.executor') %></label>
+    <input name="executed_by" placeholder="<%= t('collect.idx.executorPh') %>">
   </div>
 
   <div class="form-actions">
-    <button type="submit" class="btn primary large">선택 서버에서 수집 시작</button>
-    <a href="/collect/history" class="btn">수집 이력 보기</a>
+    <button type="submit" class="btn primary large"><%= t('collect.idx.startCollect') %></button>
+    <a href="/collect/history" class="btn"><%= t('collect.idx.viewHistory') %></a>
   </div>
 </form>
 
@@ -48,24 +48,24 @@ function toggleAll(box) {
 </script>
 <% } %>
 
-<h2>최근 수집 (최근 20건)</h2>
+<h2><%= t('collect.idx.recentHeading') %></h2>
 <table class="data-table">
   <thead>
-    <tr><th>시작</th><th>서버</th><th>상태</th><th>파일</th><th>크기</th><th>실행자</th></tr>
+    <tr><th><%= t('collect.idx.thStart') %></th><th><%= t('collect.idx.thServer') %></th><th><%= t('collect.idx.thStatus') %></th><th><%= t('collect.idx.thFile') %></th><th><%= t('collect.idx.thSize') %></th><th><%= t('collect.idx.executor') %></th></tr>
   </thead>
   <tbody>
     <% recent.forEach(c => { %>
       <tr class="status-<%= c.status==='성공'?'safe':c.status==='실패'?'vuln':'' %>">
         <td class="small"><%= c.started_at %></td>
         <td><%= c.server_name %> <span class="muted small">(<%= c.hostname %>)</span></td>
-        <td><span class="badge b-<%= c.status==='성공'?'safe':c.status==='실패'?'vuln':'na' %>"><%= c.status %></span></td>
+        <td><span class="badge b-<%= c.status==='성공'?'safe':c.status==='실패'?'vuln':'na' %>"><%= td(c.status) %></span></td>
         <td class="small"><code><%= c.raw_file_path || '-' %></code></td>
         <td class="small"><%= c.file_size ? Math.round(c.file_size/1024)+' KB' : '-' %></td>
         <td class="small"><%= c.triggered_by || '-' %></td>
       </tr>
     <% }); %>
     <% if (!recent.length) { %>
-      <tr><td colspan="6" class="empty">수집 이력이 없습니다.</td></tr>
+      <tr><td colspan="6" class="empty"><%= t('collect.idx.empty') %></td></tr>
     <% } %>
   </tbody>
 </table>

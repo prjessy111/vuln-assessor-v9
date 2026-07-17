@@ -1,15 +1,15 @@
-<%- include('../_header', { title: server ? '서버 수정' : '서버 등록' }) %>
+<%- include('../_header', { title: server ? t('servers.edit.titleEdit') : t('servers.edit.titleNew') }) %>
 
-<h1><%= server ? `서버 수정 #${server.server_id}` : '서버 등록' %></h1>
+<h1><%= server ? t('servers.edit.headEdit', { id: server.server_id }) : t('servers.edit.titleNew') %></h1>
 
 <form method="post" action="<%= server ? `/servers/${server.server_id}/update` : '/servers' %>" class="form-block">
-  <h3>기본 정보</h3>
+  <h3><%= t('servers.edit.basicInfo') %></h3>
   <div class="form-row">
-    <label>표시명 <span class="req">*</span></label>
+    <label><%= t('servers.edit.name') %> <span class="req">*</span></label>
     <input name="name" value="<%= server ? server.name : '' %>" required>
   </div>
   <div class="form-row">
-    <label>호스트명 또는 IP <span class="req">*</span></label>
+    <label><%= t('servers.edit.hostOrIp') %> <span class="req">*</span></label>
     <input name="hostname" value="<%= server ? server.hostname : '' %>" required>
   </div>
   <div class="form-row">
@@ -20,48 +20,48 @@
     </select>
   </div>
   <div class="form-row">
-    <label>설명</label>
+    <label><%= t('servers.edit.description') %></label>
     <input name="description" value="<%= server ? (server.description||'') : '' %>">
   </div>
 
-  <h3>SSH 접속 정보 (raw 자동 수집용)</h3>
+  <h3><%= t('servers.edit.sshSection') %></h3>
   <div class="form-row">
-    <label>SSH 포트</label>
+    <label><%= t('servers.edit.sshPort') %></label>
     <input name="ssh_port" type="number" value="<%= server ? (server.ssh_port||22) : 22 %>" min="1" max="65535">
   </div>
   <div class="form-row">
-    <label>사용자명</label>
+    <label><%= t('servers.edit.sshUser') %></label>
     <input name="ssh_user" value="<%= server ? (server.ssh_user||'') : 'vulncollect' %>"
            placeholder="vulncollect">
   </div>
   <div class="form-row">
-    <label>인증 방식</label>
+    <label><%= t('servers.edit.authType') %></label>
     <label class="radio-inline">
       <input type="radio" name="ssh_auth_type" value="key"
              <%= (!server || server.ssh_auth_type==='key') ? 'checked' : '' %>
-             onchange="toggleAuthFields()"> SSH 키 (권장)
+             onchange="toggleAuthFields()"> <%= t('servers.edit.authKey') %>
     </label>
     <label class="radio-inline">
       <input type="radio" name="ssh_auth_type" value="password"
              <%= server && server.ssh_auth_type==='password' ? 'checked' : '' %>
-             onchange="toggleAuthFields()"> 비밀번호
+             onchange="toggleAuthFields()"> <%= t('servers.edit.password') %>
     </label>
   </div>
   <div class="form-row" id="row_key">
-    <label>SSH 키 파일 경로</label>
+    <label><%= t('servers.edit.keyPath') %></label>
     <input name="ssh_key_path" value="<%= server ? (server.ssh_key_path||'') : '' %>"
            placeholder="/etc/vuln-assessor/keys/secums_id_ed25519">
-    <div class="muted small">진단 PC 측 키 파일 경로. 권한 600 권장.</div>
+    <div class="muted small"><%= t('servers.edit.keyPathHint') %></div>
   </div>
   <div class="form-row" id="row_pw">
-    <label>비밀번호</label>
-    <input name="ssh_password" type="password" placeholder="<%= server && server.ssh_password_enc ? '********(저장됨, 변경 시 입력)' : '비밀번호 입력' %>">
-    <div class="muted small">AES-256-GCM 으로 암호화되어 저장됩니다.</div>
+    <label><%= t('servers.edit.password') %></label>
+    <input name="ssh_password" type="password" placeholder="<%= server && server.ssh_password_enc ? t('servers.edit.pwSaved') : t('servers.edit.pwEnter') %>">
+    <div class="muted small"><%= t('servers.edit.pwHint') %></div>
   </div>
 
-  <h3>Raw 데이터 경로</h3>
+  <h3><%= t('servers.edit.rawSection') %></h3>
   <div class="form-row">
-    <label>원격 raw 파일 경로</label>
+    <label><%= t('servers.edit.rawPath') %></label>
     <input name="remote_raw_path"
            value="<%= server ? (server.remote_raw_path||'/var/lib/secums/data.db') : '/var/lib/secums/data.db' %>"
            placeholder="/var/lib/secums/data.db">
@@ -70,26 +70,34 @@
     <label>
       <input type="checkbox" name="use_sudo" value="1"
              <%= (!server || server.use_sudo) ? 'checked' : '' %>>
-      sudo 사용 (raw 파일이 root 소유인 경우 체크)
+      <%= t('servers.edit.useSudo') %>
     </label>
   </div>
 
   <div class="form-actions">
-    <button type="submit" class="btn primary"><%= server ? '저장' : '등록' %></button>
+    <button type="submit" class="btn primary"><%= server ? t('common.btn.save') : t('servers.edit.register') %></button>
     <% if (server) { %>
-      <button type="button" class="btn" onclick="testConn(<%= server.server_id %>)">연결 테스트</button>
+      <button type="button" class="btn" onclick="testConn(<%= server.server_id %>)"><%= t('servers.edit.testConn') %></button>
     <% } %>
-    <a href="/servers" class="btn">취소</a>
+    <a href="/servers" class="btn"><%= t('common.btn.cancel') %></a>
   </div>
 </form>
 
 <% if (server) { %>
 <div id="test_result" style="display:none" class="test-result">
-  <h3>연결 테스트 결과</h3>
+  <h3><%= t('servers.edit.testResult') %></h3>
   <div id="test_steps"></div>
 </div>
 
 <script>
+const EI18N = <%- JSON.stringify({
+  testing: t('servers.edit.js.testing'),
+  overallPrefix: t('servers.edit.js.overallPrefix'),
+  step: t('servers.edit.js.step'),
+  result: t('servers.edit.js.result'),
+  message: t('servers.edit.js.message'),
+  testFail: t('servers.edit.js.testFail')
+}) %>;
 function toggleAuthFields() {
   const type = document.querySelector('input[name="ssh_auth_type"]:checked').value;
   document.getElementById('row_key').style.display = type === 'key' ? '' : 'none';
@@ -101,7 +109,7 @@ async function testConn(id) {
   const box = document.getElementById('test_result');
   const steps = document.getElementById('test_steps');
   box.style.display = 'block';
-  steps.innerHTML = '<div class="muted">테스트 중...</div>';
+  steps.innerHTML = '<div class="muted">' + EI18N.testing + '</div>';
 
   try {
     const res = await fetch(`/servers/${id}/test-connection`, {
@@ -109,8 +117,8 @@ async function testConn(id) {
       headers: { 'Content-Type': 'application/json' },
     });
     const data = await res.json();
-    let html = `<div class="test-overall ${data.overall==='성공'?'ok':'fail'}">전체 결과: ${data.overall}</div>`;
-    html += '<table class="data-table"><thead><tr><th>단계</th><th>결과</th><th>메시지</th></tr></thead><tbody>';
+    let html = `<div class="test-overall ${data.overall==='성공'?'ok':'fail'}">${EI18N.overallPrefix}${data.overall}</div>`;
+    html += `<table class="data-table"><thead><tr><th>${EI18N.step}</th><th>${EI18N.result}</th><th>${EI18N.message}</th></tr></thead><tbody>`;
     for (const s of data.steps) {
       const cls = s.status === 'ok' ? 'ok' : s.status === 'skip' ? 'skip' : 'fail';
       const mark = s.status === 'ok' ? '✅' : s.status === 'skip' ? '⚪' : '❌';
@@ -119,7 +127,7 @@ async function testConn(id) {
     html += '</tbody></table>';
     steps.innerHTML = html;
   } catch (e) {
-    steps.innerHTML = `<div class="error-msg">테스트 실패: ${e.message}</div>`;
+    steps.innerHTML = `<div class="error-msg">${EI18N.testFail}${e.message}</div>`;
   }
 }
 function escapeHtml(s) {

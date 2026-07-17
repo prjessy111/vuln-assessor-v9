@@ -1,0 +1,46 @@
+{
+  "idx": {
+    "title": "Raw 采集",
+    "heading": "Raw 数据采集",
+    "desc": "通过SSH连接Agent，将SecuMS raw SQLite文件获取到诊断PC。",
+    "noServers1": "没有已注册SSH信息的服务器。请在",
+    "noServers2": "中注册SSH信息。",
+    "thName": "显示名",
+    "thHost": "主机",
+    "thSshUser": "SSH 用户",
+    "thRawPath": "raw 路径",
+    "thLastCollected": "最近采集",
+    "executor": "执行人",
+    "executorPh": "姓名或ID (可选)",
+    "startCollect": "在选中服务器上开始采集",
+    "viewHistory": "查看采集历史",
+    "recentHeading": "最近采集 (最近20条)",
+    "thStart": "开始",
+    "thServer": "服务器",
+    "thStatus": "状态",
+    "thFile": "文件",
+    "thSize": "大小",
+    "empty": "没有采集历史。"
+  },
+  "hist": {
+    "title": "采集历史",
+    "heading": "Raw 采集历史",
+    "serverHistory": "{name} ({host}) 的采集历史",
+    "viewAll": "查看全部历史",
+    "thStart": "开始",
+    "thEnd": "结束",
+    "thPathReason": "文件路径 / 原因",
+    "thHash": "哈希",
+    "backToCollect": "返回采集页面"
+  },
+  "result": {
+    "title": "采集结果",
+    "heading": "Raw 采集结果",
+    "total": "全部",
+    "success": "成功",
+    "fail": "失败",
+    "thResult": "结果",
+    "thFileReason": "文件/原因",
+    "thAction": "操作"
+  }
+}

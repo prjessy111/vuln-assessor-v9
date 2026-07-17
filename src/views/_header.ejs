@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="<%= typeof lang !== 'undefined' ? lang : 'ko' %>">
 <head>
   <meta charset="UTF-8">
-  <title><%= typeof title !== 'undefined' ? title : '취약점 진단 시스템' %></title>
+  <title><%= typeof title !== 'undefined' ? title : t('common.appTitle') %></title>
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -26,58 +26,59 @@
     var isAdmin = (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin');
   %>
   <nav class="main-nav">
-    <a href="/" class="<%= activeMenu === 'dashboard' ? 'active' : '' %>">대시보드</a>
+    <a href="/" class="<%= activeMenu === 'dashboard' ? 'active' : '' %>"><%= t('common.nav.dashboard') %></a>
 
     <div class="nav-group <%= _ag === 'diag' ? 'active' : '' %>">
-      <span class="nav-top">진단 ▾</span>
+      <span class="nav-top"><%= t('common.nav.diagGroup') %> ▾</span>
       <div class="nav-drop">
-        <a href="/diagnosis" class="<%= activeMenu === 'diagnosis' ? 'active' : '' %>">진단 관리</a>
-        <a href="/collection" class="<%= activeMenu === 'collection' ? 'active' : '' %>">수집 관리</a>
-        <a href="/schedules" class="<%= activeMenu === 'schedules' ? 'active' : '' %>">예약 진단</a>
-        <a href="/agent" class="<%= activeMenu === 'agent' ? 'active' : '' %>">자율 에이전트</a>
+        <a href="/diagnosis" class="<%= activeMenu === 'diagnosis' ? 'active' : '' %>"><%= t('common.nav.diagnosis') %></a>
+        <a href="/collection" class="<%= activeMenu === 'collection' ? 'active' : '' %>"><%= t('common.nav.collection') %></a>
+        <a href="/schedules" class="<%= activeMenu === 'schedules' ? 'active' : '' %>"><%= t('common.nav.schedules') %></a>
+        <a href="/agent" class="<%= activeMenu === 'agent' ? 'active' : '' %>"><%= t('common.nav.agent') %></a>
       </div>
     </div>
 
     <div class="nav-group <%= _ag === 'rpt' ? 'active' : '' %>">
-      <span class="nav-top">리포트·현황 ▾</span>
+      <span class="nav-top"><%= t('common.nav.rptGroup') %> ▾</span>
       <div class="nav-drop">
-        <a href="/reports" class="<%= activeMenu === 'reports' ? 'active' : '' %>">리포트</a>
-        <a href="/inspection-status" class="<%= activeMenu === 'inspection-status' ? 'active' : '' %>">진단 현황</a>
-        <a href="/security-grade" class="<%= activeMenu === 'security-grade' ? 'active' : '' %>">서버별 진단 이력</a>
-        <a href="/cve-sync" class="<%= activeMenu === 'cve-sync' ? 'active' : '' %>">CVE 동기화</a>
+        <a href="/reports" class="<%= activeMenu === 'reports' ? 'active' : '' %>"><%= t('common.nav.reports') %></a>
+        <a href="/inspection-status" class="<%= activeMenu === 'inspection-status' ? 'active' : '' %>"><%= t('common.nav.inspectionStatus') %></a>
+        <a href="/security-grade" class="<%= activeMenu === 'security-grade' ? 'active' : '' %>"><%= t('common.nav.securityGrade') %></a>
+        <a href="/cve-sync" class="<%= activeMenu === 'cve-sync' ? 'active' : '' %>"><%= t('common.nav.cveSync') %></a>
       </div>
     </div>
 
     <div class="nav-group <%= _ag === 'vuln' ? 'active' : '' %>">
-      <span class="nav-top">취약점 관리 ▾</span>
+      <span class="nav-top"><%= t('common.nav.vulnGroup') %> ▾</span>
       <div class="nav-drop">
-        <a href="/vulnerabilities" class="<%= activeMenu === 'vuln' ? 'active' : '' %>">취약점 관리</a>
-        <a href="/remediation" class="<%= activeMenu === 'remediation' ? 'active' : '' %>">조치 관리</a>
-        <a href="/exceptions" class="<%= activeMenu === 'exceptions' ? 'active' : '' %>">예외 관리</a>
-        <a href="/exclusions" class="<%= activeMenu === 'exclusions' ? 'active' : '' %>">제외 관리</a>
+        <a href="/vulnerabilities" class="<%= activeMenu === 'vuln' ? 'active' : '' %>"><%= t('common.nav.vuln') %></a>
+        <a href="/remediation" class="<%= activeMenu === 'remediation' ? 'active' : '' %>"><%= t('common.nav.remediation') %></a>
+        <a href="/exceptions" class="<%= activeMenu === 'exceptions' ? 'active' : '' %>"><%= t('common.nav.exceptions') %></a>
+        <a href="/exclusions" class="<%= activeMenu === 'exclusions' ? 'active' : '' %>"><%= t('common.nav.exclusions') %></a>
       </div>
     </div>
 
-    <a href="/servers" class="<%= activeMenu === 'servers' ? 'active' : '' %>">서버 관리</a>
+    <a href="/servers" class="<%= activeMenu === 'servers' ? 'active' : '' %>"><%= t('common.nav.servers') %></a>
 
     <div class="nav-group <%= _ag === 'ops' ? 'active' : '' %>">
-      <span class="nav-top">운영 ▾</span>
+      <span class="nav-top"><%= t('common.nav.opsGroup') %> ▾</span>
       <div class="nav-drop">
-        <a href="/notifications" class="<%= activeMenu === 'notifications' ? 'active' : '' %>">알림</a>
-        <a href="/audit" class="<%= activeMenu === 'audit' ? 'active' : '' %>">감사 로그</a>
-        <% if (isAdmin) { %><a href="/users" class="<%= activeMenu === 'users' ? 'active' : '' %>">사용자 관리</a><% } %>
+        <a href="/notifications" class="<%= activeMenu === 'notifications' ? 'active' : '' %>"><%= t('common.nav.notifications') %></a>
+        <a href="/audit" class="<%= activeMenu === 'audit' ? 'active' : '' %>"><%= t('common.nav.audit') %></a>
+        <% if (isAdmin) { %><a href="/users" class="<%= activeMenu === 'users' ? 'active' : '' %>"><%= t('common.nav.users') %></a><% } %>
       </div>
     </div>
   </nav>
   <div class="user-area">
+    <span class="lang-switch"><% (typeof langs !== 'undefined' ? langs : ['ko']).forEach(function (l) { %><a href="?lang=<%= l %>" class="lang-opt <%= lang === l ? 'active' : '' %>"><%= langLabels[l] %></a><% }); %></span>
     <% if (typeof currentUser !== 'undefined' && currentUser) { %>
-      <a href="/users/me/password" class="user-name" title="비밀번호 변경" style="text-decoration:none;color:inherit;">
+      <a href="/users/me/password" class="user-name" title="<%= t('common.nav.changePassword') %>" style="text-decoration:none;color:inherit;">
         <%= currentUser.name %>
         <% if (currentUser.role === 'admin') { %><span class="role-mini">👑</span>
         <% } else if (currentUser.role === 'operator') { %><span class="role-mini">🔧</span>
         <% } else { %><span class="role-mini">👁</span><% } %>
       </a>
-      <a href="/logout" class="btn-sm">로그아웃</a>
+      <a href="/logout" class="btn-sm"><%= t('common.nav.logout') %></a>
     <% } %>
   </div>
 </header>

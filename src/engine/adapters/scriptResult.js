@@ -50,7 +50,9 @@
 
 const fs = require('fs');
 
-const MAX_OUTPUT_BYTES_PER_ITEM = 12000;
+// 12000 → 30000: schtasks 전체 목록(27KB) 등 긴 출력의 중간 생략으로 mock 룰이 값을 못 보는 문제 방지.
+// LLM 프롬프트는 buildPrompt에서 모드별(9000자)로 별도 절단하므로 LLM 비용에는 영향 없음.
+const MAX_OUTPUT_BYTES_PER_ITEM = 30000;
 
 function normalizeSrvId(value) {
   const m = String(value || '').trim().toUpperCase().match(/^SRV-?(\d{1,3})$/);

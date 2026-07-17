@@ -1,0 +1,53 @@
+{
+  "appTitle": "漏洞诊断系统",
+  "nav": {
+    "dashboard": "仪表盘",
+    "diagGroup": "诊断",
+    "diagnosis": "诊断管理",
+    "collection": "采集管理",
+    "schedules": "计划诊断",
+    "agent": "自主智能体",
+    "rptGroup": "报告·状态",
+    "reports": "报告",
+    "inspectionStatus": "诊断状态",
+    "securityGrade": "服务器诊断历史",
+    "cveSync": "CVE同步",
+    "vulnGroup": "漏洞管理",
+    "vuln": "漏洞管理",
+    "remediation": "整改管理",
+    "exceptions": "例外管理",
+    "exclusions": "排除管理",
+    "servers": "服务器管理",
+    "opsGroup": "运维",
+    "notifications": "通知",
+    "audit": "审计日志",
+    "users": "用户管理",
+    "logout": "退出登录",
+    "changePassword": "修改密码"
+  },
+  "btn": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "search": "搜索",
+    "back": "返回列表",
+    "download": "下载",
+    "run": "执行",
+    "reassess": "重新诊断",
+    "runAssess": "执行诊断",
+    "newCollect": "+ 新建采集",
+    "aiResult": "🤖 AI结果"
+  },
+  "sev": { "high": "高", "mid": "中", "low": "低" },
+  "unit": { "count": "{n}项" },
+  "login": {
+    "title": "登录 — ADV (AI Diagnosis Verify)",
+    "id": "用户名",
+    "password": "密码",
+    "submit": "登录",
+    "firstRunTitle": "首次运行提示",
+    "firstRunAdmin": "默认管理员:",
+    "firstRunChange": "首次登录后请立即修改密码。"
+  }
+}

@@ -1,23 +1,22 @@
-<%- include('../_header', { title: 'Raw/Script 업로드', activeMenu: 'diagnosis' }) %>
+<%- include('../_header', { title: t('diagnosis.upload.title'), activeMenu: 'diagnosis' }) %>
 
 <div class="page-header">
-  <h1>Raw/Script 업로드 진단</h1>
+  <h1><%= t('diagnosis.upload.heading') %></h1>
   <p class="muted small">
-    SecuMS Raw SQLite DB 또는 Script XML을 업로드합니다. Script XML은 판단 결과가 아니라 수집 증거(raw evidence)로만 사용하고,
-    AI 또는 LLM이 해당 출력 내용을 기반으로 판정합니다.
+    <%= t('diagnosis.upload.desc') %>
   </p>
   <div class="header-actions">
-    <a href="/diagnosis" class="btn">진단 관리</a>
+    <a href="/diagnosis" class="btn"><%= t('diagnosis.upload.btnBack') %></a>
   </div>
 </div>
 
 <form id="uploadForm" class="form-container" enctype="multipart/form-data">
   <div class="form-section">
-    <h3>1) 대상 서버 선택</h3>
+    <h3><%= t('diagnosis.upload.sec1') %></h3>
     <div class="form-row inline">
-      <label>서버 *</label>
+      <label><%= t('diagnosis.upload.serverLabel') %></label>
       <select name="server_id" required>
-        <option value="">-- 선택 --</option>
+        <option value=""><%= t('diagnosis.upload.selectPh') %></option>
         <% (servers || []).forEach(s => { %>
           <option value="<%= s.server_id %>">
             <%= s.name %> (<%= s.hostname %>)<% if (s.service_name) { %> · <%= s.service_name %><% } %>
@@ -28,53 +27,54 @@
   </div>
 
   <div class="form-section">
-    <h3>2) 수집 파일</h3>
+    <h3><%= t('diagnosis.upload.sec2') %></h3>
     <div class="form-row inline">
-      <label>SecuMS Raw DB</label>
+      <label><%= t('diagnosis.upload.secumsDb') %></label>
       <input type="file" name="dbfile" accept=".db,.sqlite,.sqlite3">
     </div>
     <div class="form-row inline">
-      <label>Script XML</label>
+      <label><%= t('diagnosis.upload.scriptXml') %></label>
       <input type="file" name="scriptfile" accept=".xml">
     </div>
     <p class="muted small">
-      둘 중 하나 이상 필요합니다. 둘 다 올리면 SecuMS raw와 Script raw evidence를 함께 진단합니다.
+      <%= t('diagnosis.upload.fileNote') %>
     </p>
   </div>
 
   <div class="form-section">
-    <h3>3) 진단 방식</h3>
+    <h3><%= t('diagnosis.upload.sec3') %></h3>
     <div class="form-row inline">
-      <label>데이터 소스</label>
+      <label><%= t('diagnosis.upload.sourceLabel') %></label>
       <select name="source">
-        <option value="both">자동/둘 다</option>
-        <option value="script">Script XML만</option>
-        <option value="secums">SecuMS Raw DB만</option>
+        <option value="both"><%= t('diagnosis.upload.srcBoth') %></option>
+        <option value="script"><%= t('diagnosis.upload.srcScript') %></option>
+        <option value="secums"><%= t('diagnosis.upload.srcSecums') %></option>
       </select>
     </div>
     <div class="form-row inline">
-      <label>판정 엔진</label>
+      <label><%= t('diagnosis.upload.engineLabel') %></label>
       <select name="engine">
-        <option value="ai">AI 1차 판정</option>
-        <option value="llm">LLM 상세 판정</option>
+        <option value="ai_llm" selected><%= t('diagnosis.upload.engAiLlm') %></option>
+        <option value="ai"><%= t('diagnosis.upload.engAi') %></option>
+        <option value="llm"><%= t('diagnosis.upload.engLlm') %></option>
       </select>
     </div>
     <div class="form-row inline">
       <label>
         <input type="checkbox" name="run_immediately" value="on" checked>
-        업로드 직후 진단 자동 실행
+        <%= t('diagnosis.upload.runNow') %>
       </label>
     </div>
   </div>
 
   <div class="form-actions">
-    <button type="submit" class="btn primary" id="submitBtn">업로드 + 진단</button>
-    <a href="/diagnosis" class="btn">취소</a>
+    <button type="submit" class="btn primary" id="submitBtn"><%= t('diagnosis.upload.btnSubmit') %></button>
+    <a href="/diagnosis" class="btn"><%= t('common.btn.cancel') %></a>
   </div>
 </form>
 
 <div id="result" class="section-box" style="display:none; margin-top:1.5rem;">
-  <h3>실행 결과</h3>
+  <h3><%= t('diagnosis.upload.resultTitle') %></h3>
   <pre id="resultBody" style="background:#f8f9fa; padding:1rem; border-radius:4px; overflow:auto; max-height:400px;"></pre>
   <div id="resultActions" style="margin-top:1rem;"></div>
 </div>
@@ -89,14 +89,14 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
 
   const fd = new FormData(e.target);
   if (!fd.get('dbfile')?.name && !fd.get('scriptfile')?.name) {
-    alert('Raw DB 또는 Script XML 파일을 하나 이상 선택하세요.');
+    alert(<%- JSON.stringify(t('diagnosis.upload.alertNoFile')) %>);
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = '업로드 중...';
+  btn.textContent = <%- JSON.stringify(t('diagnosis.upload.uploading')) %>;
   resultBox.style.display = 'block';
-  resultBody.textContent = '진단 실행 중입니다. AI는 짧게, LLM은 설정과 네트워크 상태에 따라 더 오래 걸릴 수 있습니다.';
+  resultBody.textContent = <%- JSON.stringify(t('diagnosis.upload.runningMsg')) %>;
   resultActions.innerHTML = '';
 
   try {
@@ -106,17 +106,17 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
 
     if (j.status === 'success' && j.assessment_id) {
       resultActions.innerHTML =
-        '<a class="btn primary" href="/diagnosis">진단 목록으로</a> ' +
-        '<a class="btn" href="/diagnosis/' + j.assessment_id + '/ai" style="background:#6c5ce7;color:#fff;">결과 보기</a> ' +
-        '<a class="btn" href="/diagnosis/' + j.assessment_id + '/validate">정합성 검증</a>';
+        '<a class="btn primary" href="/diagnosis">' + <%- JSON.stringify(t('diagnosis.upload.toList')) %> + '</a> ' +
+        '<a class="btn" href="/diagnosis/' + j.assessment_id + '/ai" style="background:#6c5ce7;color:#fff;">' + <%- JSON.stringify(t('diagnosis.upload.viewResult')) %> + '</a> ' +
+        '<a class="btn" href="/diagnosis/' + j.assessment_id + '/validate">' + <%- JSON.stringify(t('diagnosis.upload.validate')) %> + '</a>';
     } else if (j.status === 'success') {
-      resultActions.innerHTML = '<a class="btn" href="/diagnosis">진단 목록으로</a>';
+      resultActions.innerHTML = '<a class="btn" href="/diagnosis">' + <%- JSON.stringify(t('diagnosis.upload.toList')) %> + '</a>';
     }
   } catch (err) {
-    resultBody.textContent = '오류: ' + err.message;
+    resultBody.textContent = <%- JSON.stringify(t('diagnosis.upload.errPrefix')) %> + err.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = '업로드 + 진단';
+    btn.textContent = <%- JSON.stringify(t('diagnosis.upload.btnSubmit')) %>;
   }
 };
 </script>

@@ -1,4 +1,4 @@
-<%- include('../_header', { title: '수집 관리', activeMenu: 'collection' }) %>
+<%- include('../_header', { title: t('collection.title'), activeMenu: 'collection' }) %>
 <% const deployJobs = scriptDeployJobs || []; %>
 <style>
   .progress-panel { margin-top:10px;padding:10px 12px;background:#f8fafc;border:1px solid #dfe6e9;border-radius:6px; }
@@ -13,47 +13,54 @@
 </style>
 
 <div class="page-header">
-  <h1>🔄 자동 수집 관리</h1>
+  <h1><%= t('collection.idx.heading') %></h1>
   <div class="header-actions">
-    <a href="/collection/history" class="btn">📋 수집 이력</a>
-    <label style="font-size:0.9rem;">🤖 LLM:
+    <a href="/collection/history" class="btn"><%= t('collection.idx.historyBtn') %></a>
+    <label style="font-size:0.9rem;"><%= t('collection.idx.engineLabel') %>
+      <select id="engineSelect" style="padding:5px 8px;border:1px solid #ccc;border-radius:6px;">
+        <option value="ai_llm" selected><%= t('collection.idx.engineBoth') %></option>
+        <option value="ai"><%= t('collection.idx.engineMockOnly') %></option>
+        <option value="llm"><%= t('collection.idx.engineLlmOnly') %></option>
+      </select>
+    </label>
+    <label style="font-size:0.9rem;"><%= t('collection.idx.llmLabel') %>
       <select id="llmSelect" style="padding:5px 8px;border:1px solid #ccc;border-radius:6px;">
-        <option value="internal">사내 LLM (무료·80%)</option>
+        <option value="internal"><%= t('collection.idx.llmInternal') %></option>
         <option value="haiku">Claude Haiku (92%·$)</option>
         <option value="sonnet">Claude Sonnet ($$)</option>
       </select>
     </label>
-    <button class="btn primary" onclick="runAll('secums')" style="background:#27ae60;border-color:#27ae60;">SecuMS Raw 전체 진단</button>
-    <button class="btn primary" onclick="runAll('script')" style="background:#6c5ce7;border-color:#6c5ce7;">Script 전체 진단</button>
-    <button id="retryFailedBtn" class="btn" onclick="retryFailed()" style="display:none;background:#e67e22;border-color:#e67e22;color:#fff;">🔁 실패 재점검</button>
-    <button class="btn" onclick="cancelBatch()" style="background:#c0392b;border-color:#c0392b;color:#fff;">⏹ 진단 중지</button>
-    <button class="btn" onclick="location.reload()">🔁 새로고침</button>
+    <button class="btn primary" onclick="runAll('secums')" style="background:#27ae60;border-color:#27ae60;"><%= t('collection.idx.runAllSecums') %></button>
+    <button class="btn primary" onclick="runAll('script')" style="background:#6c5ce7;border-color:#6c5ce7;"><%= t('collection.idx.runAllScript') %></button>
+    <button id="retryFailedBtn" class="btn" onclick="retryFailed()" style="display:none;background:#e67e22;border-color:#e67e22;color:#fff;"><%= t('collection.idx.retryFailedBtn') %></button>
+    <button class="btn" onclick="cancelBatch()" style="background:#c0392b;border-color:#c0392b;color:#fff;"><%= t('collection.idx.stopBatch') %></button>
+    <button class="btn" onclick="location.reload()"><%= t('collection.idx.refresh') %></button>
   </div>
 </div>
 
 <p class="muted small" style="margin:0.5rem 0 1rem;">
-  검증 정합성을 위해 SecuMS raw DB 진단과 Script XML 진단을 별도 assessment로 저장합니다.
+  <%= t('collection.idx.intro') %>
 </p>
 <div id="collectionProgress" style="display:none;"></div>
 
 <div style="display:flex;gap:8px;margin:0 0 12px;">
-  <button type="button" class="btn primary collection-tab-btn" data-tab="secums" style="background:#27ae60;border-color:#27ae60;">SecuMS Raw 진단</button>
-  <button type="button" class="btn collection-tab-btn" data-tab="script-diagnosis">Script 진단</button>
-  <button type="button" class="btn collection-tab-btn" data-tab="script">Script 업로드</button>
-  <button type="button" class="btn collection-tab-btn" data-tab="deploy">Script 배포</button>
+  <button type="button" class="btn primary collection-tab-btn" data-tab="secums" style="background:#27ae60;border-color:#27ae60;"><%= t('collection.idx.tabSecums') %></button>
+  <button type="button" class="btn collection-tab-btn" data-tab="script-diagnosis"><%= t('collection.idx.tabScriptDiag') %></button>
+  <button type="button" class="btn collection-tab-btn" data-tab="script"><%= t('collection.idx.tabScriptUpload') %></button>
+  <button type="button" class="btn collection-tab-btn" data-tab="deploy"><%= t('collection.idx.tabDeploy') %></button>
 </div>
 
 <div id="tab-script" class="collection-tab" style="display:none;">
 <div class="section-box">
-  <h3>Script XML 업로드</h3>
+  <h3><%= t('collection.idx.upload.heading') %></h3>
   <p class="muted small">
-    SecuMS Script XML을 수동 업로드합니다. 저장 위치는 <code>data/uploads/YYYY-MM-DD/hostname_script_YYYYMMDD.xml</code> 입니다.
+    <%= t('collection.idx.upload.desc1') %> <code>data/uploads/YYYY-MM-DD/hostname_script_YYYYMMDD.xml</code> <%= t('collection.idx.upload.desc2') %>
   </p>
   <form id="scriptUploadForm" enctype="multipart/form-data" style="display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;align-items:end;">
     <label>
-      <span class="small muted">서버 선택</span>
+      <span class="small muted"><%= t('collection.idx.upload.serverSelect') %></span>
       <select name="server_id" id="scriptServerSelect">
-        <option value="">직접 입력</option>
+        <option value=""><%= t('collection.idx.upload.manualInput') %></option>
         <% csvServers.forEach(s => { %>
           <option value="<%= s.server_id || s.ip %>" data-hostname="<%= s.hostname %>">
             <%= s.hostname %> (<%= s.ip %>)
@@ -62,15 +69,15 @@
       </select>
     </label>
     <label>
-      <span class="small muted">호스트명</span>
-      <input type="text" name="hostname" id="scriptHostname" placeholder="예: jessy62" required>
+      <span class="small muted"><%= t('collection.idx.upload.hostname') %></span>
+      <input type="text" name="hostname" id="scriptHostname" placeholder="<%= t('collection.idx.upload.hostnamePh') %>" required>
     </label>
     <label>
-      <span class="small muted">진단 엔진</span>
+      <span class="small muted"><%= t('collection.idx.engineField') %></span>
       <select name="engine">
-        <option value="ai_llm">AI 후 LLM</option>
-        <option value="ai">AI(mock)</option>
-        <option value="llm">LLM</option>
+        <option value="ai_llm" selected><%= t('collection.idx.engOptAiLlm') %></option>
+        <option value="llm"><%= t('collection.idx.engOptLlm') %></option>
+        <option value="ai"><%= t('collection.idx.engOptAi') %></option>
       </select>
     </label>
     <label>
@@ -79,10 +86,10 @@
     </label>
     <label style="grid-column:1 / span 2;">
       <input type="checkbox" name="run_immediately" checked>
-      업로드 후 Script 소스로 바로 진단
+      <%= t('collection.idx.upload.runImmediately') %>
     </label>
     <div style="grid-column:3 / span 2;text-align:right;">
-      <button type="submit" class="btn primary" style="background:#6c5ce7;border-color:#6c5ce7;">Script 업로드</button>
+      <button type="submit" class="btn primary" style="background:#6c5ce7;border-color:#6c5ce7;"><%= t('collection.idx.upload.submit') %></button>
     </div>
   </form>
   <div id="scriptUploadResult" class="muted small" style="margin-top:10px;"></div>
@@ -91,25 +98,25 @@
 
 <div id="tab-deploy" class="collection-tab" style="display:none;">
 <div class="section-box">
-  <h3>Script 배포</h3>
+  <h3><%= t('collection.idx.deploy.heading') %></h3>
   <div style="display:flex;gap:18px;margin-bottom:12px;padding:8px 10px;background:#f5f6fa;border-radius:6px;">
     <label style="display:flex;align-items:center;gap:6px;font-weight:600;">
-      <input type="radio" name="deploy_kind" value="standard" checked> 표준 점검 자동 배포 (OS별 자동 · 여러 대)
+      <input type="radio" name="deploy_kind" value="standard" checked> <%= t('collection.idx.deploy.kindStandard') %>
     </label>
     <label style="display:flex;align-items:center;gap:6px;">
-      <input type="radio" name="deploy_kind" value="custom"> 커스텀 스크립트 업로드 (단일 서버)
+      <input type="radio" name="deploy_kind" value="custom"> <%= t('collection.idx.deploy.kindCustom') %>
     </label>
   </div>
   <form id="scriptDeployForm" enctype="multipart/form-data" style="display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;align-items:end;">
     <div style="grid-column:1 / span 4;">
-      <span class="small muted">서버 선택 (표준=여러 대 체크 가능 / 커스텀=한 대만)</span>
+      <span class="small muted"><%= t('collection.idx.deploy.serverSelect') %></span>
       <div id="deployServerList" style="display:flex;flex-wrap:wrap;gap:6px 16px;max-height:130px;overflow:auto;border:1px solid #dfe6e9;border-radius:6px;padding:8px;margin-top:4px;">
         <% if (!csvServers.length) { %>
-          <span class="muted small">servers.csv 가 비어 있습니다. 커스텀 모드에서 호스트명을 직접 입력하세요.</span>
+          <span class="muted small"><%= t('collection.idx.deploy.csvEmpty') %></span>
         <% } %>
         <% if (csvServers.length) { %>
           <label class="std-only" style="display:flex;align-items:center;gap:4px;font-weight:600;">
-            <input type="checkbox" id="deploySelectAll"> 전체
+            <input type="checkbox" id="deploySelectAll"> <%= t('collection.idx.deploy.selectAll') %>
           </label>
         <% } %>
         <% csvServers.forEach(s => { %>
@@ -123,107 +130,187 @@
 
     <!-- 공통 -->
     <label>
-      <span class="small muted">진단 엔진</span>
+      <span class="small muted"><%= t('collection.idx.engineField') %></span>
       <select name="engine">
-        <option value="ai_llm">AI 후 LLM</option>
-        <option value="ai">AI(mock)</option>
-        <option value="llm">LLM</option>
+        <option value="ai_llm" selected><%= t('collection.idx.engOptAiLlm') %></option>
+        <option value="llm"><%= t('collection.idx.engOptLlm') %></option>
+        <option value="ai"><%= t('collection.idx.engOptAi') %></option>
       </select>
     </label>
     <label>
-      <span class="small muted">실행 방식</span>
+      <span class="small muted"><%= t('collection.idx.deploy.execMode') %></span>
       <select name="deploy_mode">
-        <option value="direct">직접 실행 (Linux SSH / Windows WinRM)</option>
-        <option value="agent">Agent 대기열</option>
+        <option value="direct"><%= t('collection.idx.deploy.execDirect') %></option>
+        <option value="agent"><%= t('collection.idx.deploy.execAgent') %></option>
       </select>
     </label>
     <label>
-      <span class="small muted">작업 단계</span>
+      <span class="small muted"><%= t('collection.idx.deploy.step') %></span>
       <select name="script_action" id="deployActionSelect">
-        <option value="deploy_run_diagnose">3. 배포 + 실행 + 진단</option>
-        <option value="deploy_run">2. 배포 + 실행</option>
-        <option value="deploy_only">1. 배포만</option>
+        <option value="deploy_run_diagnose"><%= t('collection.idx.deploy.step3') %></option>
+        <option value="deploy_run"><%= t('collection.idx.deploy.step2') %></option>
+        <option value="deploy_only"><%= t('collection.idx.deploy.step1') %></option>
       </select>
     </label>
 
     <!-- 표준 모드 전용 -->
     <label class="std-only">
-      <span class="small muted">점검 강도</span>
+      <span class="small muted"><%= t('collection.idx.deploy.scanMode') %></span>
       <select name="scan_mode">
-        <option value="full">전체 점검 (권장 · 핫픽스/systeminfo 포함)</option>
-        <option value="fast">빠른 점검 (일부 생략 → 보류 증가)</option>
+        <option value="full"><%= t('collection.idx.deploy.scanFull') %></option>
+        <option value="fast"><%= t('collection.idx.deploy.scanFast') %></option>
       </select>
     </label>
+    <label class="std-only" style="grid-column:1 / span 2;">
+      <span class="small muted"><%= t('collection.idx.deploy.scanDirs') %></span>
+      <input type="text" name="scan_dirs" placeholder="<%= t('collection.idx.deploy.scanDirsPh') %>">
+    </label>
     <p class="std-only muted small" style="grid-column:1 / span 4;margin:0;">
-      서버 OS에 맞춰 <code>fsi_win_ai.ps1</code>(Windows) / <code>fsi_unix_ai.sh</code>(Linux)를 자동 선택하고, 인증은 <code>servers.csv</code>의 서버별 계정을 사용합니다. 파일 업로드·일회성 인증은 필요 없습니다.
+      <%- t('collection.idx.deploy.stdNote') %>
     </p>
+
+    <!-- DB(MSSQL) 접속정보 — 저장 시 fsi_config.ini 로 기록, 수집 스크립트가 읽음 -->
+    <div class="std-only" style="grid-column:1 / span 4; border:1px solid #dbe2ea; background:#f7f9fb; border-radius:6px; padding:10px 12px; margin-top:2px;">
+      <div class="small" style="font-weight:600; margin-bottom:6px;"><%= t('collection.idx.deploy.dbTitle') %>
+        <span class="muted" style="font-weight:400;"><%- t('collection.idx.deploy.dbTitleNote') %></span>
+      </div>
+      <div class="filter-row" style="flex-wrap:wrap; gap:6px;">
+        <input type="text" id="dbHost" placeholder="<%= t('collection.idx.deploy.dbHostPh') %>" style="min-width:180px;">
+        <input type="text" id="dbPort" placeholder="<%= t('collection.idx.deploy.portPh') %>" value="1433" style="width:80px;">
+        <input type="text" id="dbInstance" placeholder="<%= t('collection.idx.deploy.dbInstancePh') %>" style="width:130px;">
+        <input type="text" id="dbUser" placeholder="<%= t('collection.idx.deploy.dbUserPh') %>" style="width:170px;">
+        <input type="password" id="dbPass" placeholder="<%= t('collection.idx.deploy.dbPassPh') %>" style="width:130px;">
+        <button type="button" class="btn-sm" onclick="testDb()"><%= t('collection.idx.deploy.connTest') %></button>
+        <button type="button" class="btn-sm primary" onclick="saveDb()"><%= t('common.btn.save') %></button>
+      </div>
+      <div id="dbMsg" class="small" style="margin-top:6px;"></div>
+      <div class="small" style="font-weight:600; margin:10px 0 6px;"><%= t('collection.idx.deploy.wasTitle') %> <span class="muted" style="font-weight:400;"><%= t('collection.idx.deploy.wasTitleNote1') %></span>
+        <span class="muted" style="font-weight:400;"><%= t('collection.idx.deploy.wasTitleNote2') %></span>
+      </div>
+      <div class="filter-row" style="flex-wrap:wrap; gap:6px;">
+        <input type="text" id="wasHost" placeholder="<%= t('collection.idx.deploy.wasHostPh') %>" style="min-width:180px;">
+        <input type="text" id="wasPort" placeholder="<%= t('collection.idx.deploy.portPh') %>" value="8080" style="width:80px;">
+        <select id="wasScheme" style="width:90px;"><option value="http">http</option><option value="https">https</option></select>
+        <button type="button" class="btn-sm" onclick="testWas()"><%= t('collection.idx.deploy.connTest') %></button>
+      </div>
+      <div id="wasMsg" class="small" style="margin-top:6px;"></div>
+    </div>
+    <script>
+      var DBI18N = <%- JSON.stringify({
+        testing: t('collection.js.dbTesting'),
+        savedPh: t('collection.js.dbSavedPh'),
+        connOk: t('collection.js.connOk'),
+        connFail: t('collection.js.connFail'),
+        err: t('collection.js.errPrefix'),
+        saving: t('collection.js.dbSaving'),
+        savedPrefix: t('collection.js.dbSavedPrefix'),
+        savedSuffix: t('collection.js.dbSavedSuffix'),
+        saveFail: t('collection.js.dbSaveFail')
+      }) %>;
+      (function(){
+        fetch('/db-config').then(function(r){return r.json();}).then(function(c){
+          if(!c) return;
+          if(c.host) document.getElementById('dbHost').value = c.host;
+          if(c.port) document.getElementById('dbPort').value = c.port;
+          if(c.instance) document.getElementById('dbInstance').value = c.instance;
+          if(c.user) document.getElementById('dbUser').value = c.user;
+          if(c.has_password) document.getElementById('dbPass').placeholder = DBI18N.savedPh;
+        }).catch(function(){});
+      })();
+      function _dbBody(){ return { host:document.getElementById('dbHost').value.trim(), port:document.getElementById('dbPort').value.trim(), instance:document.getElementById('dbInstance').value.trim(), user:document.getElementById('dbUser').value.trim(), password:document.getElementById('dbPass').value }; }
+      function testDb(){
+        var m=document.getElementById('dbMsg'); m.style.color='#666'; m.textContent=DBI18N.testing;
+        fetch('/connection-test/db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_dbBody())})
+          .then(function(r){return r.json();}).then(function(j){
+            if(j.ok){ m.style.color='#1e824c'; m.textContent=DBI18N.connOk+' ('+(j.server||'')+') · '+(j.version||''); }
+            else { m.style.color='#c0392b'; m.textContent=DBI18N.connFail+' ('+(j.server||'')+'): '+(j.error||''); }
+          }).catch(function(e){ m.style.color='#c0392b'; m.textContent=DBI18N.err+e; });
+      }
+      function saveDb(){
+        var m=document.getElementById('dbMsg'); m.style.color='#666'; m.textContent=DBI18N.saving;
+        fetch('/db-config/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_dbBody())})
+          .then(function(r){return r.json();}).then(function(j){
+            if(j.status==='success'){ m.style.color='#1e824c'; m.textContent=DBI18N.savedPrefix+j.path+DBI18N.savedSuffix; }
+            else { m.style.color='#c0392b'; m.textContent=DBI18N.saveFail+(j.error||''); }
+          }).catch(function(e){ m.style.color='#c0392b'; m.textContent=DBI18N.err+e; });
+      }
+      function testWas(){
+        var m=document.getElementById('wasMsg'); m.style.color='#666'; m.textContent=DBI18N.testing;
+        var body={ host:document.getElementById('wasHost').value.trim(), port:document.getElementById('wasPort').value.trim(), scheme:document.getElementById('wasScheme').value };
+        fetch('/connection-test/was',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+          .then(function(r){return r.json();}).then(function(j){
+            if(j.ok){ m.style.color='#1e824c'; m.textContent=DBI18N.connOk+' ('+(j.endpoint||'')+') · HTTP '+(j.status||'')+' · Server: '+(j.server||''); }
+            else { m.style.color='#c0392b'; m.textContent=DBI18N.connFail+' ('+(j.endpoint||'')+'): '+(j.error||''); }
+          }).catch(function(e){ m.style.color='#c0392b'; m.textContent=DBI18N.err+e; });
+      }
+    </script>
 
     <!-- 커스텀(단일) 모드 전용 -->
     <label class="custom-only" style="grid-column:1 / span 2;">
-      <span class="small muted">호스트명 (직접 입력 — 체크 안 했을 때)</span>
-      <input type="text" name="hostname" id="deployHostname" placeholder="예: jessy62">
+      <span class="small muted"><%= t('collection.idx.deploy.customHostname') %></span>
+      <input type="text" name="hostname" id="deployHostname" placeholder="<%= t('collection.idx.upload.hostnamePh') %>">
     </label>
     <label class="custom-only">
-      <span class="small muted">원격 사용자(일회성)</span>
-      <input type="text" name="remote_username" id="deployRemoteUsername" placeholder="servers.csv 값 사용">
+      <span class="small muted"><%= t('collection.idx.deploy.remoteUser') %></span>
+      <input type="text" name="remote_username" id="deployRemoteUsername" placeholder="<%= t('collection.idx.deploy.remoteUserPh') %>">
     </label>
     <label class="custom-only">
-      <span class="small muted">원격 비밀번호(일회성)</span>
-      <input type="password" name="remote_password" autocomplete="off" placeholder="비워두면 등록값 사용">
+      <span class="small muted"><%= t('collection.idx.deploy.remotePass') %></span>
+      <input type="password" name="remote_password" autocomplete="off" placeholder="<%= t('collection.idx.deploy.remotePassPh') %>">
     </label>
     <label class="custom-only">
-      <span class="small muted">SSH/WinRM 포트</span>
-      <input type="number" name="remote_port" id="deployRemotePort" min="1" max="65535" placeholder="비우면 UNIX 22 / Windows 5985">
+      <span class="small muted"><%= t('collection.idx.deploy.remotePort') %></span>
+      <input type="number" name="remote_port" id="deployRemotePort" min="1" max="65535" placeholder="<%= t('collection.idx.deploy.remotePortPh') %>">
     </label>
     <label class="custom-only">
-      <span class="small muted">SSH 키 경로(UNIX 선택)</span>
-      <input type="text" name="remote_ssh_key_path" placeholder="예: C:\keys\id_rsa">
+      <span class="small muted"><%= t('collection.idx.deploy.sshKey') %></span>
+      <input type="text" name="remote_ssh_key_path" placeholder="<%= t('collection.idx.deploy.sshKeyPh') %>">
     </label>
     <label class="custom-only">
-      <span class="small muted">실행 인자</span>
-      <input type="text" name="script_args" placeholder="-Fast 또는 -Full">
+      <span class="small muted"><%= t('collection.idx.deploy.scriptArgs') %></span>
+      <input type="text" name="script_args" placeholder="<%= t('collection.idx.deploy.scriptArgsPh') %>">
     </label>
     <label class="custom-only">
-      <span class="small muted">ZIP 실행 파일</span>
-      <input type="text" name="package_script" placeholder="예: fsi_win_ai.ps1">
+      <span class="small muted"><%= t('collection.idx.deploy.zipEntry') %></span>
+      <input type="text" name="package_script" placeholder="<%= t('collection.idx.deploy.zipEntryPh') %>">
     </label>
     <label class="custom-only">
-      <span class="small muted">결과 XML 패턴</span>
+      <span class="small muted"><%= t('collection.idx.deploy.resultGlob') %></span>
       <input type="text" name="result_glob" value="*.xml">
     </label>
     <label class="custom-only">
-      <span class="small muted">배포 Script</span>
+      <span class="small muted"><%= t('collection.idx.deploy.deployScript') %></span>
       <input type="file" name="deploy_script" accept=".sh,.bash,.ps1,.bat,.cmd,.py,.pl,.xml,.zip">
     </label>
 
     <!-- 공통: 작업 폴더(비우면 OS별 기본값) -->
     <label style="grid-column:1 / span 2;">
-      <span class="small muted">원격 작업 폴더 (비우면 OS별 기본값)</span>
-      <input type="text" name="remote_work_dir" placeholder="예: C:\Windows\Temp 또는 /tmp">
+      <span class="small muted"><%= t('collection.idx.deploy.workDir') %></span>
+      <input type="text" name="remote_work_dir" placeholder="<%= t('collection.idx.deploy.workDirPh') %>">
     </label>
 
     <div style="grid-column:1 / span 4;text-align:right;">
-      <button type="submit" class="btn primary" style="background:#0984e3;border-color:#0984e3;">선택 단계 실행</button>
+      <button type="submit" class="btn primary" style="background:#0984e3;border-color:#0984e3;"><%= t('collection.idx.deploy.submit') %></button>
     </div>
   </form>
-  <p class="muted small" style="margin-top:8px;"><code>1. 배포만</code>은 파일 전송 후 실행하지 않습니다. 표준 모드는 OS별 표준 점검 스크립트를 자동 사용하므로 Windows/Linux 서버를 섞어 선택해도 각자 맞는 스크립트로 배포됩니다.</p>
+  <p class="muted small" style="margin-top:8px;"><%- t('collection.idx.deploy.footNote') %></p>
   <div id="scriptDeployResult" class="muted small" style="margin-top:10px;"></div>
 </div>
 
-<h2 style="margin-top:1.5rem;">최근 Script 배포 작업 (<%= deployJobs.length %>개)</h2>
+<h2 style="margin-top:1.5rem;"><%= t('collection.idx.deploy.recentJobs', { n: deployJobs.length }) %></h2>
 <% if (deployJobs.length === 0) { %>
-  <p class="muted">등록된 Script 배포 작업이 없습니다.</p>
+  <p class="muted"><%= t('collection.idx.deploy.noJobs') %></p>
 <% } else { %>
   <table class="data-table">
     <thead>
       <tr>
-        <th>상태</th><th>진행률</th><th>호스트</th><th>Script</th><th>결과</th><th>진단</th><th>등록일</th>
+        <th><%= t('collection.idx.deploy.thStatus') %></th><th><%= t('collection.idx.deploy.thProgress') %></th><th><%= t('collection.idx.deploy.thHost') %></th><th>Script</th><th><%= t('collection.idx.deploy.thResult') %></th><th><%= t('collection.idx.deploy.thDiag') %></th><th><%= t('collection.idx.deploy.thCreated') %></th>
       </tr>
     </thead>
     <tbody>
       <% deployJobs.forEach(j => { %>
         <tr>
-          <td><span class="badge"><%= j.status %></span></td>
+          <td><span class="badge"><%= td(j.status) %></span></td>
           <td class="small">
             <% const pct = Math.max(0, Math.min(100, Number(j.progress_percent || 0))); %>
             <span class="progress-mini"><span style="width:<%= pct %>%;"></span></span><%= pct %>%
@@ -251,22 +338,20 @@
 
 <div id="tab-secums" class="collection-tab">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;">
-  <h2 style="margin:0;">📋 등록된 서버 (<%= csvServers.length %>개)</h2>
-  <button type="button" class="btn primary" onclick="runSelected('secums')" style="background:#27ae60;border-color:#27ae60;">✓ 선택 진단 (SecuMS Raw)</button>
+  <h2 style="margin:0;"><%= t('collection.idx.servers.heading', { n: csvServers.length }) %></h2>
+  <button type="button" class="btn primary" onclick="runSelected('secums')" style="background:#27ae60;border-color:#27ae60;"><%= t('collection.idx.servers.runSelectedSecums') %></button>
 </div>
 <% if (csvServers.length === 0) { %>
   <p class="muted" style="padding:1rem;background:#fffbe6;border-left:3px solid #f1c40f;">
-    ⚠ <code>servers.csv</code> 파일이 없거나 비어 있습니다.<br>
-    프로젝트 루트(<code>vuln-assessor-v9/</code>)에 <code>servers.csv</code> 파일을 만들어 주세요.<br>
-    형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
+    <%- t('collection.idx.servers.csvMissing') %>
   </p>
 <% } else { %>
-  <input type="search" class="server-search" data-target="tab-secums" placeholder="🔍 호스트 / IP / OS / 사용자 / 자산번호 검색..." style="margin:8px 0;padding:6px 10px;border:1px solid #ccc;border-radius:6px;width:320px;">
+  <input type="search" class="server-search" data-target="tab-secums" placeholder="<%= t('collection.idx.servers.searchPh') %>" style="margin:8px 0;padding:6px 10px;border:1px solid #ccc;border-radius:6px;width:320px;">
   <table class="data-table">
     <thead>
       <tr>
         <th style="width:32px;"><input type="checkbox" class="diag-all" data-tab="tab-secums"></th>
-        <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
+        <th><%= t('collection.idx.servers.thHost') %></th><th>IP</th><th>OS</th><th><%= t('collection.idx.servers.thUser') %></th><th><%= t('collection.idx.servers.thAsset') %></th>
       </tr>
     </thead>
     <tbody>
@@ -287,22 +372,20 @@
 
 <div id="tab-script-diagnosis" class="collection-tab" style="display:none;">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;">
-  <h2 style="margin:0;">📋 등록된 서버 (<%= csvServers.length %>개)</h2>
-  <button type="button" class="btn primary" onclick="runSelected('script')" style="background:#6c5ce7;border-color:#6c5ce7;">✓ 선택 진단 (Script)</button>
+  <h2 style="margin:0;"><%= t('collection.idx.servers.heading', { n: csvServers.length }) %></h2>
+  <button type="button" class="btn primary" onclick="runSelected('script')" style="background:#6c5ce7;border-color:#6c5ce7;"><%= t('collection.idx.servers.runSelectedScript') %></button>
 </div>
 <% if (csvServers.length === 0) { %>
   <p class="muted" style="padding:1rem;background:#fffbe6;border-left:3px solid #f1c40f;">
-    ⚠ <code>servers.csv</code> 파일이 없거나 비어 있습니다.<br>
-    프로젝트 루트(<code>vuln-assessor-v9/</code>)에 <code>servers.csv</code> 파일을 만들어 주세요.<br>
-    형식: <code>hostname,ip,os,username,password[,asset_no][,server_id]</code>
+    <%- t('collection.idx.servers.csvMissing') %>
   </p>
 <% } else { %>
-  <input type="search" class="server-search" data-target="tab-script-diagnosis" placeholder="🔍 호스트 / IP / OS / 사용자 / 자산번호 검색..." style="margin:8px 0;padding:6px 10px;border:1px solid #ccc;border-radius:6px;width:320px;">
+  <input type="search" class="server-search" data-target="tab-script-diagnosis" placeholder="<%= t('collection.idx.servers.searchPh') %>" style="margin:8px 0;padding:6px 10px;border:1px solid #ccc;border-radius:6px;width:320px;">
   <table class="data-table">
     <thead>
       <tr>
         <th style="width:32px;"><input type="checkbox" class="diag-all" data-tab="tab-script-diagnosis"></th>
-        <th>호스트</th><th>IP</th><th>OS</th><th>사용자</th><th>자산번호</th>
+        <th><%= t('collection.idx.servers.thHost') %></th><th>IP</th><th>OS</th><th><%= t('collection.idx.servers.thUser') %></th><th><%= t('collection.idx.servers.thAsset') %></th>
       </tr>
     </thead>
     <tbody>
@@ -322,6 +405,17 @@
 </div>
 
 <script>
+<%
+  const I18N_KEYS = ['preparing','retryBtn','noRetryTargets','retryConfirm','proceed','retryProgress','retryDoneMsg','retryDoneAlert','retryFailMsg','retryFailAlert','netErr','hourUnit','minUnit','secUnit','lineCount','lineOk','lineFetchedOnly','lineFail','sending','llmWorking','elapsedPrefix','doneDefault','totalElapsed','failDefault','pollFail','uploading','uploadFail','uploadProgress','uploadDoneMsg','donePrefix','diagIdSuffix','uploadDiagDoneAlert','savedPrefix','uploadDoneAlert','errPrefix','uploadFailAlert','selectOneServer','stdConfirm','customNeedsFile','customSingleOnly','selectOrType','progressBtn','deployProgress','deployRegFail','diagRef','registered','deployDoneAlert','cancelConfirm','cancelRequested','cancelFail','fetchRunConfirm','fetchRunProgress','diagDone','fetchRunDoneAlert','procFail','fetchFailPrefix','diagFailPrefix','unknownErr','procFailAlert','runAllConfirm','running','runAllProgress','runAllDone','runAllDoneAlert','retryHint','runAllFailAlert','selConfirm','selProgress','selDone','selDoneAlert','selFailAlert'];
+  const I18N_OBJ = {};
+  I18N_KEYS.forEach(k => { I18N_OBJ[k] = t('collection.js.' + k); });
+%>
+var I18N = <%- JSON.stringify(I18N_OBJ) %>;
+function tf(s, p) {
+  s = String(s);
+  if (p) for (var k in p) s = s.split('{' + k + '}').join(p[k]);
+  return s;
+}
 function clampProgress(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
@@ -339,7 +433,7 @@ function createProgress(target, title) {
         '<span class="progress-percent">0%</span>' +
       '</div>' +
       '<div class="progress-track"><div class="progress-fill"></div></div>' +
-      '<div class="progress-message small">준비 중</div>' +
+      '<div class="progress-message small">' + I18N.preparing + '</div>' +
     '</div>';
   return el.querySelector('.progress-panel');
 }
@@ -359,41 +453,45 @@ function selectedLlm() {
   var el = document.getElementById('llmSelect');
   return el ? el.value : 'internal';
 }
+function selectedEngine() {
+  var el = document.getElementById('engineSelect');
+  return el ? el.value : 'ai_llm';   // mock+LLM 기본
+}
 var _lastFailed = null; // { source, ids:[ip...] }
 function trackFailed(source, results) {
   var failed = (results || []).filter(function(r){ return r.fetch_status === 'failed' || r.diagnose_status === 'failed'; });
   var btn = document.getElementById('retryFailedBtn');
   if (failed.length) {
     _lastFailed = { source: source, ids: failed.map(function(r){ return String(r.ip || r.hostname); }) };
-    if (btn) { btn.style.display = ''; btn.textContent = '🔁 실패 ' + failed.length + '대 재점검'; }
+    if (btn) { btn.style.display = ''; btn.textContent = tf(I18N.retryBtn, { n: failed.length }); }
   } else {
     _lastFailed = null;
     if (btn) btn.style.display = 'none';
   }
 }
 async function retryFailed() {
-  if (!_lastFailed || !_lastFailed.ids.length) { alert('재점검할 실패 서버가 없습니다.'); return; }
-  if (!confirm(_lastFailed.ids.length + '대 실패 서버를 [' + diagnosisSourceLabel(_lastFailed.source) + ']로 재점검합니다.\n' + _lastFailed.ids.join(', ') + '\n진행할까요?')) return;
-  var progress = startSoftProgress('collectionProgress', '실패 ' + _lastFailed.ids.length + '대 재점검', 5, 95);
+  if (!_lastFailed || !_lastFailed.ids.length) { alert(I18N.noRetryTargets); return; }
+  if (!confirm(tf(I18N.retryConfirm, { n: _lastFailed.ids.length, label: diagnosisSourceLabel(_lastFailed.source) }) + '\n' + _lastFailed.ids.join(', ') + '\n' + I18N.proceed)) return;
+  var progress = startSoftProgress('collectionProgress', tf(I18N.retryProgress, { n: _lastFailed.ids.length }), 5, 95);
   var startedAt = new Date();
   try {
     var res = await fetch('/scheduler/run-all', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: _lastFailed.source, server_ids: _lastFailed.ids, llm: selectedLlm() }),
+      body: JSON.stringify({ source: _lastFailed.source, server_ids: _lastFailed.ids, llm: selectedLlm(), engine: selectedEngine() }),
     });
     var data = await res.json();
     if (data.status === 'completed' || data.status === 'cancelled') {
       var endedAt = new Date();
-      progress.done('재점검 완료');
+      progress.done(I18N.retryDoneMsg);
       var s = data.summary;
-      alert('🔁 재점검 완료\n성공 ' + s.success + ' · 수집만 ' + s.fetched_only + ' · 실패 ' + s.failed + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results));
+      alert(tf(I18N.retryDoneAlert, { success: s.success, fetchedOnly: s.fetched_only, failed: s.failed }) + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results));
       trackFailed(_lastFailed.source, data.results);
       location.reload();
     } else {
-      progress.fail(data.error || '재점검 실패');
-      alert('❌ 재점검 실패\n\n' + (data.error || '?'));
+      progress.fail(data.error || I18N.retryFailMsg);
+      alert(I18N.retryFailAlert + (data.error || '?'));
     }
-  } catch (e) { progress.fail(e.message); alert('네트워크 오류: ' + e.message); }
+  } catch (e) { progress.fail(e.message); alert(I18N.netErr + e.message); }
 }
 function fmtElapsed(t0) {
   const s = Math.max(0, Math.floor((Date.now() - t0) / 1000));
@@ -408,7 +506,7 @@ function fmtClock(d) {
 function fmtDuration(ms) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  return (h ? h + '시간 ' : '') + (h || m ? m + '분 ' : '') + sec + '초';
+  return (h ? h + I18N.hourUnit : '') + (h || m ? m + I18N.minUnit : '') + sec + I18N.secUnit;
 }
 function timingLines(startedAt, endedAt) {
   return '\n⏱ ' + fmtClock(startedAt) + ' → ' + fmtClock(endedAt) + ' (' + fmtDuration(endedAt - startedAt) + ')';
@@ -428,10 +526,10 @@ function serverLines(results) {
     var s = r.summary || {};
     var total = (s.total != null ? s.total : s.total_count);
     var cnt = (ok && total != null)
-      ? ' · 총' + total + '항목(취약' + (s.vuln != null ? s.vuln : (s.vuln_count||0)) + '/양호' + (s.safe != null ? s.safe : (s.safe_count||0)) + '/N/A' + (s.na != null ? s.na : (s.na_count||0)) + ')'
+      ? tf(I18N.lineCount, { total: total, vuln: (s.vuln != null ? s.vuln : (s.vuln_count||0)), safe: (s.safe != null ? s.safe : (s.safe_count||0)), na: (s.na != null ? s.na : (s.na_count||0)) })
       : '';
-    var label = ok ? ('성공' + (r.assessment_id ? ' #' + r.assessment_id : '') + cnt)
-                   : (fetchedOnly ? '수집만' : '실패');
+    var label = ok ? (I18N.lineOk + (r.assessment_id ? ' #' + r.assessment_id : '') + cnt)
+                   : (fetchedOnly ? I18N.lineFetchedOnly : I18N.lineFail);
     var reason = (!ok && !fetchedOnly && r.error) ? ' — ' + r.error : '';
     return icon + ' ' + (r.hostname || r.ip || '?') + ' · ' + label + reason;
   }).join('\n');
@@ -441,14 +539,14 @@ function startSoftProgress(target, title, start, maxBeforeDone) {
   let pct = clampProgress(start || 8);
   const max = clampProgress(maxBeforeDone || 92);
   const t0 = Date.now();
-  let lastMsg = '요청 전송 중';
-  function render() { setProgress(panel, pct, lastMsg + ' · 경과 ' + fmtElapsed(t0)); }
+  let lastMsg = I18N.sending;
+  function render() { setProgress(panel, pct, lastMsg + I18N.elapsedPrefix + fmtElapsed(t0)); }
   render();
   const timer = setInterval(function() {
     if (pct < max) {
       pct = Math.min(max, pct + Math.max(1, Math.round((max - pct) * 0.08)));
     } else {
-      lastMsg = '진단 중 (LLM 정밀 판정 — 수 분 소요)';
+      lastMsg = I18N.llmWorking;
     }
     render();
   }, 1000);
@@ -461,11 +559,11 @@ function startSoftProgress(target, title, start, maxBeforeDone) {
     },
     done: function(message) {
       clearInterval(timer);
-      setProgress(panel, 100, (message || '완료') + ' · 총 소요 ' + fmtElapsed(t0));
+      setProgress(panel, 100, (message || I18N.doneDefault) + I18N.totalElapsed + fmtElapsed(t0));
     },
     fail: function(message) {
       clearInterval(timer);
-      setProgress(panel, 100, (message || '실패') + ' · 경과 ' + fmtElapsed(t0));
+      setProgress(panel, 100, (message || I18N.failDefault) + I18N.elapsedPrefix + fmtElapsed(t0));
       const fill = panel && panel.querySelector('.progress-fill');
       if (fill) fill.style.background = '#d63031';
     },
@@ -483,7 +581,7 @@ async function pollDeployProgress(jobId, progress) {
   for (let i = 0; i < 120; i += 1) {
     const res = await fetch('/collection/script-deploy/' + encodeURIComponent(jobId) + '/status');
     const data = await res.json();
-    if (!res.ok || data.status !== 'success') throw new Error(data.error || '진행 상태 조회 실패');
+    if (!res.ok || data.status !== 'success') throw new Error(data.error || I18N.pollFail);
     progress.set(data.progress_percent, data.progress_message || data.job_status);
     if (isTerminalDeployStatus(data.job_status)) return data;
     await new Promise(function(resolve) { setTimeout(resolve, 2000); });
@@ -579,9 +677,9 @@ if (scriptUploadForm) {
     const btn = this.querySelector('button[type="submit"]');
     const orig = btn.textContent;
     btn.disabled = true;
-    btn.textContent = '업로드 중...';
+    btn.textContent = I18N.uploading;
     resultBox.textContent = '';
-    const progress = startSoftProgress(resultBox, 'Script 업로드 및 진단', 8, 92);
+    const progress = startSoftProgress(resultBox, I18N.uploadProgress, 8, 92);
     try {
       const res = await fetch('/collection/script-upload', {
         method: 'POST',
@@ -589,22 +687,22 @@ if (scriptUploadForm) {
       });
       const data = await res.json();
       if (!res.ok || data.status !== 'success') {
-        throw new Error(data.error || '업로드 실패');
+        throw new Error(data.error || I18N.uploadFail);
       }
-      progress.done('업로드 및 진단 완료');
-      let msg = '완료: ' + data.saved_path;
+      progress.done(I18N.uploadDoneMsg);
+      let msg = I18N.donePrefix + data.saved_path;
       if (data.assessment_id) {
-        msg += ' / 진단 ID #' + data.assessment_id;
-        alert('Script XML 업로드 및 진단 완료\n\n' + (data.message || '') + '\n저장: ' + data.saved_path);
+        msg += I18N.diagIdSuffix + data.assessment_id;
+        alert(I18N.uploadDiagDoneAlert + (data.message || '') + I18N.savedPrefix + data.saved_path);
         location.href = '/diagnosis/' + data.assessment_id + '/ai';
       } else {
-        alert('Script XML 업로드 완료\n\n저장: ' + data.saved_path);
+        alert(I18N.uploadDoneAlert + data.saved_path);
       }
       resultBox.textContent = msg;
     } catch (err) {
       progress.fail(err.message);
-      resultBox.textContent = '오류: ' + err.message;
-      alert('Script 업로드 실패: ' + err.message);
+      resultBox.textContent = I18N.errPrefix + err.message;
+      alert(I18N.uploadFailAlert + err.message);
     } finally {
       btn.disabled = false;
       btn.textContent = orig;
@@ -627,18 +725,18 @@ if (scriptDeployForm) {
 
     if (standard) {
       // 표준: 체크한 서버들 → OS별 표준 스크립트 자동, csv 인증
-      if (!checks.length) { alert('서버를 한 대 이상 선택하세요.'); return; }
+      if (!checks.length) { alert(I18N.selectOneServer); return; }
       targets = checks.map(function(c) { return { id: c.value, hostname: c.getAttribute('data-hostname') || '' }; });
-      if (targets.length > 1 && !confirm(targets.length + '대 서버에 OS별 표준 점검 스크립트를 순차 배포/실행합니다.\n진행할까요?')) return;
+      if (targets.length > 1 && !confirm(tf(I18N.stdConfirm, { n: targets.length }) + '\n' + I18N.proceed)) return;
     } else {
       // 커스텀: 단일 서버 + 업로드 파일 필수
-      if (!this.querySelector('input[name="deploy_script"]').files.length) { alert('커스텀 모드는 배포 Script 파일이 필요합니다.'); return; }
-      if (checks.length > 1) { alert('커스텀 모드는 한 대만 선택할 수 있습니다.'); return; }
+      if (!this.querySelector('input[name="deploy_script"]').files.length) { alert(I18N.customNeedsFile); return; }
+      if (checks.length > 1) { alert(I18N.customSingleOnly); return; }
       if (checks.length === 1) {
         targets = [{ id: checks[0].value, hostname: checks[0].getAttribute('data-hostname') || '' }];
       } else {
         const manualHost = (document.getElementById('deployHostname').value || '').trim();
-        if (!manualHost) { alert('서버를 한 대 선택하거나 호스트명을 직접 입력하세요.'); return; }
+        if (!manualHost) { alert(I18N.selectOrType); return; }
         targets = [{ id: '', hostname: manualHost }];
       }
     }
@@ -650,8 +748,8 @@ if (scriptDeployForm) {
     for (let i = 0; i < targets.length; i += 1) {
       const t = targets[i];
       const tag = t.hostname || t.id;
-      btn.textContent = '진행 ' + (i + 1) + '/' + targets.length + '...';
-      const progress = startSoftProgress(resultBox, '[' + tag + '] 배포/실행/진단 (' + (i + 1) + '/' + targets.length + ')', 8, 92);
+      btn.textContent = tf(I18N.progressBtn, { i: i + 1, n: targets.length });
+      const progress = startSoftProgress(resultBox, tf(I18N.deployProgress, { tag: tag, i: i + 1, n: targets.length }), 8, 92);
       try {
         const fd = new FormData(scriptDeployForm);
         fd.delete('deploy_server_ids');
@@ -670,18 +768,19 @@ if (scriptDeployForm) {
           fd.set('use_standard_script', '1');
         } else {
           fd.delete('scan_mode');
+          fd.delete('scan_dirs');
         }
         const res = await fetch('/collection/script-deploy', { method: 'POST', body: fd });
         const data = await res.json();
-        if (!res.ok || data.status !== 'success') throw new Error(data.error || '배포 등록 실패');
+        if (!res.ok || data.status !== 'success') throw new Error(data.error || I18N.deployRegFail);
         if (data.job_id && !isTerminalDeployStatus(data.deploy_status || data.job_status)) {
           progress.stop();
           const latest = await pollDeployProgress(data.job_id, progress);
           if (latest && latest.assessment_id) data.assessment_id = latest.assessment_id;
         }
-        progress.done('완료');
+        progress.done(I18N.doneDefault);
         lastAssessmentId = data.assessment_id || lastAssessmentId;
-        summary.push('✅ ' + tag + (data.assessment_id ? ' → 진단 #' + data.assessment_id : ' (' + (data.deploy_status || '등록') + ')'));
+        summary.push('✅ ' + tag + (data.assessment_id ? I18N.diagRef + data.assessment_id : ' (' + (data.deploy_status || I18N.registered) + ')'));
       } catch (err) {
         progress.fail(err.message);
         summary.push('❌ ' + tag + ' : ' + err.message);
@@ -690,7 +789,7 @@ if (scriptDeployForm) {
     resultBox.innerHTML = summary.join('<br>');
     btn.disabled = false;
     btn.textContent = orig;
-    alert('Script 배포 완료 (' + targets.length + '대)\n\n' + summary.join('\n'));
+    alert(tf(I18N.deployDoneAlert, { n: targets.length }) + summary.join('\n'));
     if (targets.length === 1 && lastAssessmentId) {
       location.href = '/diagnosis/' + lastAssessmentId + '/ai';
     } else {
@@ -704,23 +803,23 @@ function diagnosisSourceLabel(source) {
 }
 
 async function cancelBatch() {
-  if (!confirm('진행 중인 진단 배치를 중지할까요?\n(진행 중인 항목까지만 마치고 멈춥니다)')) return;
+  if (!confirm(I18N.cancelConfirm)) return;
   try {
     const res = await fetch('/scheduler/cancel', { method: 'POST' });
     const data = await res.json();
-    alert(data.message || '중지 요청됨 — 곧 멈춥니다.');
+    alert(data.message || I18N.cancelRequested);
   } catch (e) {
-    alert('중지 요청 실패: ' + e.message);
+    alert(I18N.cancelFail + e.message);
   }
 }
 
 async function fetchAndRun(serverId, hostname, source) {
   source = source || 'secums';
   const label = diagnosisSourceLabel(source);
-  if (!confirm('[' + hostname + '] ' + label + ' 수집 후 AI/LLM 진단을 실행합니다.\n진행할까요?')) return;
+  if (!confirm(tf(I18N.fetchRunConfirm, { hostname: hostname, label: label }) + '\n' + I18N.proceed)) return;
   const btns = document.querySelectorAll('button[onclick*="fetchAndRun"]');
   btns.forEach(function(b) { b.disabled = true; });
-  const progress = startSoftProgress('collectionProgress', '[' + hostname + '] ' + label + ' 진단', 8, 92);
+  const progress = startSoftProgress('collectionProgress', tf(I18N.fetchRunProgress, { hostname: hostname, label: label }), 8, 92);
   const startedAt = new Date();
   try {
     const res = await fetch('/diagnosis/fetch-and-run', {
@@ -731,20 +830,20 @@ async function fetchAndRun(serverId, hostname, source) {
     const data = await res.json();
     if (data.status === 'success') {
       const endedAt = new Date();
-      progress.done(label + ' 진단 완료');
+      progress.done(tf(I18N.diagDone, { label: label }));
       const s = data.summary || {};
-      alert('✅ [' + data.hostname + '] ' + label + ' 완료\n취약 ' + s.vuln + ' · 양호 ' + s.safe + ' · 정보 ' + (s.info || 0) + '\n일치율 ' + s.agreement_rate + '% · 검증실패 ' + (s.validation_failure_rate || 0) + '%' + timingLines(startedAt, endedAt));
+      alert(tf(I18N.fetchRunDoneAlert, { hostname: data.hostname, label: label, vuln: s.vuln, safe: s.safe, info: (s.info || 0), rate: s.agreement_rate, vf: (s.validation_failure_rate || 0) }) + timingLines(startedAt, endedAt));
       location.href = '/diagnosis/' + data.assessment_id + '/ai';
     } else {
-      progress.fail('처리 실패');
-      const reason = data.fetch_status === 'failed' ? '수집 실패: ' + data.fetch_error :
-                     data.diagnose_status === 'failed' ? '진단 실패: ' + data.diagnose_error :
-                     data.error || '알 수 없는 오류';
-      alert('❌ [' + (data.hostname || hostname) + '] 처리 실패\n\n' + reason);
+      progress.fail(I18N.procFail);
+      const reason = data.fetch_status === 'failed' ? I18N.fetchFailPrefix + data.fetch_error :
+                     data.diagnose_status === 'failed' ? I18N.diagFailPrefix + data.diagnose_error :
+                     data.error || I18N.unknownErr;
+      alert(tf(I18N.procFailAlert, { hostname: (data.hostname || hostname) }) + reason);
     }
   } catch (e) {
     progress.fail(e.message);
-    alert('네트워크 오류: ' + e.message);
+    alert(I18N.netErr + e.message);
   } finally {
     btns.forEach(function(b) { b.disabled = false; });
   }
@@ -753,35 +852,35 @@ async function fetchAndRun(serverId, hostname, source) {
 async function runAll(source) {
   source = source || 'secums';
   const label = diagnosisSourceLabel(source);
-  if (!confirm('servers.csv 의 모든 서버를 순차로 [' + label + ' 수집 + 진단] 합니다.\n시간이 걸릴 수 있습니다. 진행할까요?')) return;
+  if (!confirm(tf(I18N.runAllConfirm, { label: label }))) return;
   const btn = event.target;
   const orig = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '⏳ 실행 중... (페이지를 떠나지 마세요)';
-  const progress = startSoftProgress('collectionProgress', '전체 서버 ' + label + ' 진단', 5, 95);
+  btn.textContent = I18N.running;
+  const progress = startSoftProgress('collectionProgress', tf(I18N.runAllProgress, { label: label }), 5, 95);
   const startedAt = new Date();
   try {
     const res = await fetch('/scheduler/run-all', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: source, llm: selectedLlm() }),
+      body: JSON.stringify({ source: source, llm: selectedLlm(), engine: selectedEngine() }),
     });
     const data = await res.json();
     if (data.status === 'completed') {
       const endedAt = new Date();
-      progress.done('전체 서버 처리 완료');
+      progress.done(I18N.runAllDone);
       const s = data.summary;
-      let msg = '✅ 일괄 처리 완료\n전체 ' + s.total + ' · 성공 ' + s.success + ' · 수집만 ' + s.fetched_only + ' · 실패 ' + s.failed + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results);
+      let msg = tf(I18N.runAllDoneAlert, { total: s.total, success: s.success, fetchedOnly: s.fetched_only, failed: s.failed }) + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results);
       trackFailed(source, data.results);
-      alert(msg + (s.failed ? '\n\n실패 ' + s.failed + '대는 [🔁 실패 재점검] 버튼으로 다시 돌릴 수 있습니다.' : ''));
+      alert(msg + (s.failed ? tf(I18N.retryHint, { n: s.failed }) : ''));
       if (!s.failed) location.href = '/collection/history';
     } else {
-      progress.fail(data.error || '처리 실패');
-      alert('❌ 일괄 처리 실패\n\n' + (data.error || '?'));
+      progress.fail(data.error || I18N.procFail);
+      alert(I18N.runAllFailAlert + (data.error || '?'));
     }
   } catch (e) {
     progress.fail(e.message);
-    alert('네트워크 오류: ' + e.message);
+    alert(I18N.netErr + e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = orig;
@@ -804,30 +903,30 @@ async function runSelected(source) {
   const tabId = source === 'secums' ? 'tab-secums' : 'tab-script-diagnosis';
   const label = diagnosisSourceLabel(source);
   const ids = Array.prototype.slice.call(document.querySelectorAll('#' + tabId + ' .diag-check:checked')).map(function(c) { return c.value; });
-  if (!ids.length) { alert('서버를 한 대 이상 선택하세요.'); return; }
-  if (!confirm(ids.length + '대 서버를 [' + label + ' 수집 + 진단] 합니다.\n진행할까요?')) return;
-  const progress = startSoftProgress('collectionProgress', '선택 ' + ids.length + '대 ' + label + ' 진단', 5, 95);
+  if (!ids.length) { alert(I18N.selectOneServer); return; }
+  if (!confirm(tf(I18N.selConfirm, { n: ids.length, label: label }))) return;
+  const progress = startSoftProgress('collectionProgress', tf(I18N.selProgress, { n: ids.length, label: label }), 5, 95);
   const startedAt = new Date();
   try {
     const res = await fetch('/scheduler/run-all', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: source, server_ids: ids, llm: selectedLlm() }),
+      body: JSON.stringify({ source: source, server_ids: ids, llm: selectedLlm(), engine: selectedEngine() }),
     });
     const data = await res.json();
     if (data.status === 'completed') {
       const endedAt = new Date();
-      progress.done('선택 서버 처리 완료');
+      progress.done(I18N.selDone);
       const s = data.summary;
-      alert('✅ 선택 진단 완료 (' + ids.length + '대)\n전체 ' + s.total + ' · 성공 ' + s.success + ' · 수집만 ' + s.fetched_only + ' · 실패 ' + s.failed + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results));
+      alert(tf(I18N.selDoneAlert, { n: ids.length, total: s.total, success: s.success, fetchedOnly: s.fetched_only, failed: s.failed }) + timingLines(startedAt, endedAt) + '\n' + serverLines(data.results));
       location.href = '/collection/history';
     } else {
-      progress.fail(data.error || '처리 실패');
-      alert('❌ 선택 진단 실패\n\n' + (data.error || '?'));
+      progress.fail(data.error || I18N.procFail);
+      alert(I18N.selFailAlert + (data.error || '?'));
     }
   } catch (e) {
     progress.fail(e.message);
-    alert('네트워크 오류: ' + e.message);
+    alert(I18N.netErr + e.message);
   }
 }
 </script>

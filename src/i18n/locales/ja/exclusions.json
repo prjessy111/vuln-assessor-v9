@@ -1,0 +1,93 @@
+{
+  "index": {
+    "title": "除外管理",
+    "descHtml": "診断自体から永久に除外する項目を管理します。<strong>例外管理</strong>が一時的な免除(承認 + 期間)であるのに対し、<strong>除外</strong>は構造的に該当しないもの(例: 該当OSにないデーモン、ポリシー上不要な項目)を評価対象から外す処理です。",
+    "btnNew": "+ 除外登録",
+    "kpi": {
+      "total": "全除外",
+      "totalSub": "登録件数",
+      "active": "有効な除外",
+      "activeSub": "現在適用中",
+      "server": "サーバー単位",
+      "serverSub": "特定サーバー除外",
+      "rule": "ルール単位",
+      "ruleSub": "特定ルール全域除外"
+    },
+    "searchPh": "🔍 ルールID / サーバー / 理由 / 登録者 検索",
+    "filter": {
+      "allTypes": "すべての種類",
+      "server": "サーバー単位",
+      "rule": "ルール単位",
+      "combo": "サーバー+ルール組合せ",
+      "allStatus": "すべての状態",
+      "enabled": "有効",
+      "disabled": "無効"
+    },
+    "listTitle": "登録された除外 ({n}件)",
+    "empty": "登録された除外項目はありません。",
+    "emptyLink": "除外登録",
+    "th": {
+      "enabled": "有効",
+      "id": "ID",
+      "type": "種類",
+      "rule": "対象ルール",
+      "server": "対象サーバー",
+      "reason": "理由",
+      "registeredBy": "登録者",
+      "registeredAt": "登録日",
+      "actions": "アクション"
+    },
+    "type": {
+      "server": "サーバー",
+      "rule": "ルール",
+      "combo": "サーバー+ルール"
+    },
+    "allServers": "全体",
+    "btnDisable": "無効化",
+    "btnEnable": "有効化",
+    "js": {
+      "confirmToggle": "この除外項目の有効状態を切り替えますか?",
+      "fail": "失敗: ",
+      "error": "エラー"
+    }
+  },
+  "new": {
+    "title": "除外登録",
+    "descHtml": "診断対象から永久に除外する項目を登録します。構造的に点検が不可能/無意味な場合のみ使用してください (例: 該当OS未インストールのデーモン、ポリシー上未使用の機能)。一時的な免除が必要な場合は<a href=\"/exceptions/new\">例外申請</a>を使用してください。",
+    "back": "← 除外管理",
+    "target": {
+      "heading": "対象項目",
+      "itemLabel": "点検項目",
+      "itemSelect": "— 点検項目選択 —",
+      "hostLabel": "ホスト名",
+      "hostPh": "例: jessy207 (CSV一括時は空欄可)",
+      "acctLabel": "アカウント名",
+      "acctPh": "システムアカウントなど (例: bin, daemon)。ホスト全体なら空欄",
+      "csvLabel": "CSV一括登録",
+      "csvPh": "ホスト名,アカウント名  (1行に1つ)\njessy207,bin\njessy207,daemon\njessy167,   ← アカウント空欄でホスト全体",
+      "csvHelp": "システムアカウントなど複数のホスト/アカウントを同じ点検項目から一度に除外。(CSV入力時は上の単一ホスト/アカウントを無視)"
+    },
+    "reason": {
+      "heading": "除外理由",
+      "typeLabel": "種類",
+      "select": "— 選択 —",
+      "structural": "構造的非該当 (該当項目なし)",
+      "osUnsupported": "OS/ディストリビューション未対応",
+      "policyUnused": "ポリシー上使用しない機能",
+      "duplicate": "他のルールで重複点検",
+      "falsePositive": "繰り返しの誤検知",
+      "etc": "その他",
+      "detailLabel": "詳細理由",
+      "detailPh": "この項目を診断対象から永久除外すべき具体的な根拠 (監査追跡対応)"
+    },
+    "submit": "除外登録",
+    "js": {
+      "alertNeedItem": "点検項目を選択してください。",
+      "alertCsv": "CSV形式を確認してください (ホスト名,アカウント名)。",
+      "savedAlert": "除外項目を登録しました。",
+      "countSuffix": " ({n}件)",
+      "fail": "失敗: ",
+      "error": "エラー"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pageTitle": "보안등급",
+  "heading": "서버별 진단 이력",
+  "meta": "기준일: {now} · 정책: 전자금융기반시설_2026",
+  "list": {
+    "title": "서버별 점검 결과",
+    "subtitle": "— 준수율 = 양호 항목 ÷ 전체 항목 (실제 진단 집계)",
+    "searchPh": "호스트/IP 검색…",
+    "allOs": "전체 OS",
+    "reset": "초기화",
+    "hostname": "호스트명",
+    "policy": "정책",
+    "vulnCount": "취약점 개수",
+    "compliance": "준수율 (양호/전체)",
+    "lastChecked": "최근 점검일",
+    "operator": "운영자",
+    "domain": "도메인",
+    "channel": "통신방식",
+    "empty": "대상 서버가 없습니다"
+  },
+  "detail": {
+    "pageTitle": "서버별 점검 이력 — {host}",
+    "backList": "← 목록",
+    "hostname": "호스트명",
+    "operator": "운영자",
+    "channel": "통신방식",
+    "histTitle": "점검 이력",
+    "histSubtitle": "— 진단 시각 최신순 · 준수율 = 양호 ÷ 전체",
+    "assessedAt": "진단 시각",
+    "type": "유형",
+    "source": "소스",
+    "elapsed": "소요시간",
+    "total": "전체",
+    "vuln": "취약",
+    "safe": "양호",
+    "na": "판정불가",
+    "compliance": "준수율 (양호/전체)",
+    "result": "결과",
+    "resultBtn": "결과",
+    "empty": "진단 이력이 없습니다"
+  }
+}

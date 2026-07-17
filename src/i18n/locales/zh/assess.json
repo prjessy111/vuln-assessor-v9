@@ -1,0 +1,18 @@
+{
+  "intro": "通过以下两种方法之一指定raw文件。",
+  "targetServer": "目标服务器",
+  "methodA": "方法A. 从已采集的raw文件中选择 (推荐)",
+  "th": {
+    "select": "选择",
+    "fileName": "文件名",
+    "size": "大小",
+    "collectedAt": "采集时间"
+  },
+  "noRawFiles": "没有已采集的raw文件。请先在<a href=\"/collect\">Raw采集</a>菜单中进行采集。",
+  "methodB": "方法B. 直接上传",
+  "uploadHint": "SQLite文件，最大50MB。仅在未从上方列表中选择时使用。",
+  "options": "选项",
+  "rulesetVer": "规则集版本",
+  "executedBy": "执行者",
+  "phExecutedBy": "姓名或ID (可选)"
+}

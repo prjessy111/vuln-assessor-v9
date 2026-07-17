@@ -1,0 +1,27 @@
+{
+  "title": "진단 현황",
+  "asOf": "기준일: {now}",
+  "os": {
+    "title": "OS별 점검 현황",
+    "category": "구분",
+    "total": "전체",
+    "checked": "점검완료",
+    "unchecked": "미점검",
+    "sum": "합계",
+    "allDone": "✓ 전체 서버 점검 완료",
+    "noServers": "대상 서버가 없습니다 (servers.csv 확인)"
+  },
+  "host": {
+    "title": "호스트 목록",
+    "hostname": "호스트명",
+    "vulnCount": "취약점 개수",
+    "compliance": "준수율 (양호/전체)",
+    "operator": "운영자",
+    "domain": "도메인",
+    "channel": "통신방식",
+    "status": "점검상태",
+    "done": "완료",
+    "unchecked": "미점검",
+    "empty": "대상 서버가 없습니다"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "title": "사용자 관리",
+  "role": {
+    "admin": "관리자",
+    "operator": "운영자",
+    "viewer": "조회자",
+    "adminFull": "관리자(admin)",
+    "operatorFull": "운영자(operator)",
+    "viewerFull": "조회자(viewer)"
+  },
+  "index": {
+    "desc": "시스템 사용자를 관리합니다. <strong>관리자(admin)</strong>만 사용자를 추가/수정/삭제할 수 있습니다.",
+    "addUser": "+ 사용자 추가",
+    "kpi": {
+      "total": "전체 사용자",
+      "active": "활성",
+      "admin": "관리자",
+      "inactive": "비활성"
+    },
+    "listTitle": "사용자 목록",
+    "th": {
+      "username": "아이디",
+      "name": "이름",
+      "email": "이메일",
+      "role": "권한",
+      "enabled": "활성",
+      "lastLogin": "최근 로그인",
+      "createdAt": "생성일",
+      "actions": "액션"
+    },
+    "mustChangePw": "⚠ 비밀번호 변경 필요",
+    "active": "활성",
+    "inactive": "비활성",
+    "none": "없음",
+    "editBtn": "편집",
+    "roleGuide": {
+      "title": "권한 안내",
+      "admin": "모든 기능 + 사용자 관리",
+      "operator": "진단 실행, 예외/제외 등록, 리포트 조회",
+      "viewer": "리포트 조회만 가능 (수정 불가)"
+    },
+    "js": {
+      "deleteConfirm": "사용자 \"{username}\" 을(를) 삭제하시겠습니까?",
+      "deleted": "삭제되었습니다.",
+      "failPrefix": "실패: ",
+      "errWord": "오류"
+    }
+  },
+  "form": {
+    "titleEdit": "사용자 편집",
+    "titleNew": "사용자 추가",
+    "headEdit": "사용자 편집 #{id}",
+    "basicInfo": "기본 정보",
+    "username": "아이디",
+    "usernamePh": "영문/숫자/_ 3~30자",
+    "usernameFixed": "아이디는 변경 불가",
+    "name": "이름",
+    "namePh": "실명",
+    "email": "이메일",
+    "pwSection": "비밀번호",
+    "pwKeepHint": "비워두면 기존 비밀번호 유지. 변경하려면 새 비밀번호 입력.",
+    "newPassword": "새 비밀번호",
+    "password": "비밀번호",
+    "min8": "최소 8자",
+    "pwConfirm": "비밀번호 확인",
+    "retype": "다시 입력",
+    "roleSection": "권한",
+    "roleAdmin": "관리자 (admin)",
+    "roleOperator": "운영자 (operator)",
+    "roleViewer": "조회자 (viewer)",
+    "roleAdminDesc": "모든 기능 + 사용자 관리",
+    "roleOperatorDesc": "진단/예외/제외 등 일반 운영 기능",
+    "roleViewerDesc": "리포트 조회만 가능",
+    "statusSection": "상태",
+    "enabled": "활성",
+    "disabledHint": "비활성 시 로그인 불가",
+    "addUser": "사용자 추가",
+    "js": {
+      "pwMismatch": "비밀번호가 일치하지 않습니다.",
+      "updated": "수정되었습니다.",
+      "added": "사용자가 추가되었습니다.",
+      "failPrefix": "실패: ",
+      "errWord": "오류"
+    }
+  },
+  "password": {
+    "title": "비밀번호 변경",
+    "mustChangeTitle": "⚠ 비밀번호 변경 필요",
+    "mustChangeDesc": "보안상 첫 로그인 시 비밀번호 변경이 필요합니다.",
+    "current": "현재 비밀번호",
+    "new": "새 비밀번호",
+    "newConfirm": "새 비밀번호 확인",
+    "newPh": "최소 8자, 영문/숫자/특수문자 조합 권장",
+    "change": "변경",
+    "js": {
+      "mismatch": "새 비밀번호가 일치하지 않습니다.",
+      "sameAsCurrent": "새 비밀번호는 현재와 다르게 설정하세요.",
+      "changed": "비밀번호가 변경되었습니다.",
+      "failPrefix": "실패: ",
+      "errWord": "오류"
+    }
+  }
+}

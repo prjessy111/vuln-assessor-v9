@@ -25,6 +25,7 @@ SecuMS의 자체 판정값이나 취약 메시지는 제공되지 않습니다. 
 
 ## 진단 항목
 - CHK_ID: {{chk_id}}
+- 항목 타입: {{item_type}}
 {{source_notice}}
 
 ## 점검 액션 및 결과
@@ -181,7 +182,10 @@ function buildCriteriaSection(item) {
 
 function buildPrompt(item, opts = {}) {
   const mode = opts.engine === 'ai' ? 'ai' : 'llm';
-  const outputLimit = opts.outputMaxChars || (mode === 'ai' ? 2600 : 9000);
+  // ai(mock) 모드는 LLM이 아니라 결정론적 패턴 엔진이라 토큰 비용이 없다.
+  // 2600자 절단 시 v2 수집기 래퍼(~900자)가 head를 차지해 실제 설정값이 잘려나가
+  // 룰이 매칭하지 못하고 판정불가가 양산되므로 raw 전체(어댑터 캡 12KB+래퍼)를 그대로 준다.
+  const outputLimit = opts.outputMaxChars || (mode === 'ai' ? 40000 : 9000);
   const sourceNotice = item._source === 'script'
     ? '\n## 데이터 소스 주의\n이 항목은 Script XML에서 추출한 명령 실행 결과입니다. Script XML 자체에는 보안 판정값이 없으므로, 아래 raw 출력만 근거로 취약/양호/정보제공/판정불가를 판단하세요.\n'
     : '\n## 데이터 소스 주의\n이 항목은 SecuMS raw DB에서 추출한 명령/SQL 실행 결과입니다. SecuMS 자체 판정과 취약 상세 메시지는 의도적으로 제외되었습니다. 아래 raw 출력만 근거로 독립 판정하세요.\n';
@@ -202,6 +206,7 @@ ${output || '(출력 없음)'}
 
   const prompt = PROMPT_TEMPLATE
     .replace('{{chk_id}}', item.chk_id)
+    .replace('{{item_type}}', String(item.type || item._type || 'V'))
     .replace('{{source_notice}}', sourceNotice + criteriaSection)
     .replace('{{actions}}', actionsText || '(점검 액션 없음 — SecuMS가 수집 안 함)');
   return `${prompt}\n\n${buildEnginePolicy(mode)}`;

@@ -171,6 +171,30 @@ const uploadCveFeed = multer({
   },
 });
 
+// 조치증적(remediation evidence) 파일 업로드 — data/remediation-evidence/<resultId>/
+const EVIDENCE_DIR = path.join(__dirname, 'data', 'remediation-evidence');
+const evidenceStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const rid = String(req.params.resultId || 'unknown').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const dir = path.join(EVIDENCE_DIR, rid);
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const safe = (file.originalname || 'evidence').replace(/[^a-zA-Z0-9._가-힣-]/g, '_');
+    cb(null, `${ts}_${safe}`);
+  },
+});
+const uploadEvidence = multer({
+  storage: evidenceStorage,
+  limits: { fileSize: 30 * 1024 * 1024 },  // 30MB
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(png|jpg|jpeg|gif|bmp|pdf|txt|log|docx?|xlsx?|zip|csv)$/i.test(file.originalname || '');
+    cb(ok ? null : new Error('증적은 이미지/PDF/문서/로그 파일만 허용됩니다'), ok);
+  },
+});
+
 // ─── Mock 데이터 저장소 (storage 모듈로 위임) ───────────
 const kvStorage = require('./src/storage');
 
@@ -284,6 +308,10 @@ app.use('/static', express.static(path.join(ROOT, 'src/public')));
 app.use('/css', express.static(path.join(ROOT, 'src/public/css')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// ─── 다국어(i18n) 미들웨어 — res.locals.t/td/lang 주입 ─────────
+const i18n = require('./src/i18n');
+app.use(i18n.middleware);
 
 // ─── 인증 미들웨어 ──────────────────────────────────────────
 // 기본 admin 계정 생성 (최초 실행 시)
@@ -676,10 +704,11 @@ function normalizeDiagnosisSource(value) {
 }
 
 function normalizeDiagnosisEngine(value) {
-  // 기본 = ai_llm (mock 1차 + LLM 2차). 빠른 점검이 필요하면 명시적으로 'ai'(mock) 선택.
-  if (value === 'ai') return 'ai';          // 빠른 옵션 (mock 단독)
-  if (value === 'llm') return 'llm';        // LLM 전수 (가장 느림/정밀)
-  return 'ai_llm';                          // 기본값 (미지정·ai_llm·both 모두 여기로)
+  // 기본 = ai_llm : mock 1차(→ mock 판정 항상 생성) + LLM 2차. "LLM 기본 + mock 판정 확인" 둘 다 충족.
+  // 주의: pure 'llm' 은 mock 을 아예 실행하지 않으므로 mock 판정이 안 나온다.
+  if (value === 'ai') return 'ai';          // mock 단독 (즉시 · 망분리)
+  if (value === 'llm') return 'llm';        // LLM 전수 (mock 미실행)
+  return 'ai_llm';                          // 기본값 (미지정·ai_llm·both)
 }
 
 async function runDiagnosisByEngine(engine, server, opts = {}) {
@@ -1308,11 +1337,31 @@ app.post('/collection/script-deploy', scriptDeployUpload.single('deploy_script')
     const remoteWorkDir = String(req.body.remote_work_dir || '').trim();
     // 점검 강도(full/fast)를 OS별 인자로 매핑. 무인자 = 전체(full).
     const scanMode = String(req.body.scan_mode || '').trim().toLowerCase();
-    const scanModeArgs = scanMode === 'fast' ? (isWin ? '-Fast' : '--fast')
+    // 스캔 디렉토리 제한 — 넓은 find(홈/JAR/아카이브)를 지정 경로로 좁혀 시간 단축. 쉼표로 여러 개.
+    // 쉘 메타문자 제거(주입 방지). Windows 수집 스크립트(.ps1)는 미지원이라 Unix 대상에만 적용.
+    const scanDirs = String(req.body.scan_dirs || '').replace(/[;|&$`<>()"'\n\r]/g, '').trim();
+    let scanModeArgs = scanMode === 'fast' ? (isWin ? '-Fast' : '--fast')
       : scanMode === 'full' ? ''
       : null;
+    if (!isWin && scanDirs) {
+      scanModeArgs = ((scanModeArgs === null ? '' : scanModeArgs) + ' --scan-dirs ' + scanDirs).trim();
+    }
+    // 저장된 DB(MSSQL) 접속정보(fsi_config.ini/db_config)를 Windows 표준 스크립트에 전달 → OS/WAS/DB 한 번에.
+    // 비우면 스크립트가 로컬 MSSQL 을 통합인증으로 자동 접속.
+    let dbArgs = '';
+    if (isWin && !requestedScriptArgs) {
+      const dbc = loadMock('db_config') || {};
+      if (dbc.host) {
+        let sv = dbc.host;
+        if (dbc.instance) sv += '\\' + dbc.instance;
+        if (dbc.port) sv += ',' + dbc.port;
+        const q = (v) => "'" + String(v == null ? '' : v).replace(/'/g, "''") + "'";
+        dbArgs = ' -MssqlServer ' + q(sv);
+        if (dbc.user) dbArgs += ' -MssqlUser ' + q(dbc.user) + ' -MssqlPassword ' + q(dbc.password || '');
+      }
+    }
     // 무인자 = 전체(full) 점검 (수집 스크립트 기본값이 full)
-    const scriptArgs = requestedScriptArgs || (scanModeArgs !== null ? scanModeArgs : '');
+    const scriptArgs = requestedScriptArgs || (((scanModeArgs !== null ? scanModeArgs : '') + dbArgs).trim());
     const packageScript = String(req.body.package_script || '').trim();
     const now = new Date();
     const job = {
@@ -1606,14 +1655,16 @@ app.post('/scheduler/run-all', async (req, res) => {
     }
 
     const llm = String(req.body?.llm || req.query?.llm || '').toLowerCase(); // '' | 'internal' | 'haiku' | 'sonnet'
-    console.log(`[웹] ${requestedIds.length ? '선택' : '일괄'} [${source} 수집+진단] 시작 — ${targets.length}개 서버, LLM=${llm || '사내'} (by ${req.session?.username || '?'})`);
+    // 사용자가 고른 엔진(mock='ai' / LLM='llm' / 둘다='ai_llm')을 그대로 사용. 미지정 시 ai_llm.
+    const engine = normalizeDiagnosisEngine(req.body?.engine || req.query?.engine);
+    console.log(`[웹] ${requestedIds.length ? '선택' : '일괄'} [${source} 수집+진단] 시작 — ${targets.length}개 서버, 엔진=${engine}, LLM=${llm || '사내'} (by ${req.session?.username || '?'})`);
 
     const cancel = require('./src/engine/cancel');
     cancel.reset();
     const results = [];
     for (const target of targets) {
       if (cancel.isCancelled()) { console.log('[웹] 배치 중지됨 (사용자 취소) — 남은 서버 스킵'); break; }
-      const r = await runScheduledDiagnosis(target, { source, llm });
+      const r = await runScheduledDiagnosis(target, { source, llm, engine });
       results.push({
         hostname: r.hostname, ip: r.ip, os: r.os,
         requested_source: r.requested_source,
@@ -1839,6 +1890,16 @@ app.get('/servers', (req, res) => {
   });
 });
 
+// 접속 실패 메시지를 실제 원인으로 분류 (기존엔 전부 'timeout'으로 뭉뚱그려 원인 파악 불가)
+function classifySshError(msg) {
+  const m = String(msg || '').toLowerCase();
+  if (/authentication|all configured authentication|permission denied|auth method|password.*rejected|keyboard-interactive/.test(m)) return 'auth_failed';
+  if (/econnrefused|connection refused|거부/.test(m)) return 'refused';
+  if (/ehostunreach|enetunreach|no route to host|unreachable/.test(m)) return 'unreachable';
+  if (/etimedout|timed out|timeout|handshake/.test(m)) return 'timeout';
+  return 'error';
+}
+
 // 헬스체크 로직 — SSH(Linux)/WinRM(Windows)로 CPU·메모리·디스크 실수집 (server 객체를 갱신)
 async function healthcheckServer(server) {
   let cred = {};
@@ -1911,9 +1972,10 @@ app.post('/servers/:id/healthcheck', async (req, res) => {
     saveMock('servers', servers);
     res.json(result);
   } catch (e) {
-    server.ssh_status = 'timeout'; server.overall_health = 'critical'; server.checked_at = new Date().toISOString();
+    const st = classifySshError(e.message);
+    server.ssh_status = st; server.ssh_error = String(e.message || '').slice(0, 200); server.overall_health = 'critical'; server.checked_at = new Date().toISOString();
     saveMock('servers', servers);
-    res.status(200).json({ ssh_status: 'timeout', error: e.message });
+    res.status(200).json({ ssh_status: st, error: e.message });
   }
 });
 
@@ -1924,12 +1986,108 @@ app.post('/servers/healthcheck/all', async (req, res) => {
   for (const server of servers) {
     try { const r = await healthcheckServer(server); results.push({ id: server.server_id, ok: true, ...r }); }
     catch (e) {
-      server.ssh_status = 'timeout'; server.overall_health = 'critical'; server.checked_at = new Date().toISOString();
-      results.push({ id: server.server_id, ok: false, error: e.message });
+      const st = classifySshError(e.message);
+      server.ssh_status = st; server.ssh_error = String(e.message || '').slice(0, 200); server.overall_health = 'critical'; server.checked_at = new Date().toISOString();
+      results.push({ id: server.server_id, ok: false, ssh_status: st, error: e.message });
     }
   }
   saveMock('servers', servers);
   res.json({ status: 'success', count: results.length, results });
+});
+
+// ─── DB(MSSQL) 접속정보: web 입력 → config.ini 저장 + 접속 테스트 ───────────
+const DB_CONFIG_INI = path.join(__dirname, 'scripts', 'ai-ready', 'fsi_config.ini');
+
+// 저장된 DB 접속정보(UI prefill)
+app.get('/db-config', auth.requireAuth, (req, res) => {
+  const c = loadMock('db_config') || {};
+  res.json({ host: c.host || '', port: c.port || '1433', instance: c.instance || '', user: c.user || '', has_password: !!c.password, updated_at: c.updated_at || '' });
+});
+
+// web 입력 → fsi_config.ini 저장 (수집 스크립트가 읽음)
+app.post('/db-config/save', auth.requireRole('admin', 'operator'), (req, res) => {
+  try {
+    const { host, port, instance, user, password } = req.body || {};
+    if (!host) return res.status(400).json({ status: 'error', error: 'DB IP(host)는 필수입니다' });
+    // 비번 미입력 시 기존 값 유지
+    const prev = loadMock('db_config') || {};
+    const pw = (password !== undefined && password !== '') ? password : (prev.password || '');
+    const ini = [
+      '; ADV DB 접속설정 - web UI 저장, 수집 스크립트(fsi_win_ai.ps1)가 읽음',
+      '; 주의: 평문 저장이므로 파일 접근권한(ACL)로 보호할 것',
+      '[mssql]',
+      `server=${host}`,
+      `port=${port || '1433'}`,
+      `instance=${instance || ''}`,
+      `user=${user || ''}`,
+      `password=${pw}`,
+      '',
+    ].join('\r\n');
+    fs.writeFileSync(DB_CONFIG_INI, ini, 'utf8');
+    saveMock('db_config', { host, port: port || '1433', instance: instance || '', user: user || '', password: pw, updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '), updated_by: req.session && req.session.username });
+    res.json({ status: 'success', path: DB_CONFIG_INI });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: e.message });
+  }
+});
+
+// DB 접속 테스트 — 입력값(없으면 저장값)으로 SqlClient 접속 + SELECT @@VERSION
+app.post('/connection-test/db', auth.requireRole('admin', 'operator'), (req, res) => {
+  const b = req.body || {};
+  const saved = loadMock('db_config') || {};
+  const host = (b.host || saved.host || '').trim();
+  const port = (b.port || saved.port || '').trim();
+  const instance = (b.instance || saved.instance || '').trim();
+  const user = (b.user !== undefined ? b.user : saved.user) || '';
+  const password = (b.password !== undefined && b.password !== '') ? b.password : (saved.password || '');
+  if (!host) return res.status(400).json({ ok: false, error: 'DB IP(host)를 입력하세요' });
+  let sv = host;
+  if (instance) sv += '\\' + instance;
+  if (port) sv += ',' + port;
+  const ps = [
+    '$ErrorActionPreference="Stop"',
+    'try {',
+    ' Add-Type -AssemblyName System.Data',
+    ' $a = if($env:DBT_USER){ "User ID=$($env:DBT_USER);Password=$($env:DBT_PASS);" } else { "Integrated Security=SSPI;" }',
+    ' $c = New-Object System.Data.SqlClient.SqlConnection ("Server=$($env:DBT_SERVER);Database=master;"+$a+"Connect Timeout=8;Encrypt=False;TrustServerCertificate=True;")',
+    ' $c.Open(); $cmd=$c.CreateCommand(); $cmd.CommandText="SELECT @@VERSION"; $v=$cmd.ExecuteScalar(); $c.Close()',
+    ' Write-Output ("OK|"+($v -replace "\\r?\\n"," "))',
+    '} catch { Write-Output ("FAIL|"+$_.Exception.Message) }',
+  ].join('; ');
+  const { execFile } = require('child_process');
+  const exe = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+  execFile(exe, ['-NoProfile', '-NonInteractive', '-Command', ps], {
+    timeout: 15000, windowsHide: true,
+    env: { ...process.env, DBT_SERVER: sv, DBT_USER: user, DBT_PASS: password },
+  }, (err, stdout, stderr) => {
+    const out = String(stdout || '').trim();
+    if (out.indexOf('OK|') === 0) return res.json({ ok: true, server: sv, version: out.slice(3).slice(0, 200) });
+    const msg = out.indexOf('FAIL|') === 0 ? out.slice(5) : (err ? err.message : (stderr || 'unknown'));
+    res.json({ ok: false, server: sv, error: String(msg).slice(0, 300) });
+  });
+});
+
+// WAS(Tomcat) 접속 테스트 — HTTP(S)로 포트 접근성 + Server 배너(버전) 확인.
+// (WAS 점검 자체는 설정파일 기반이라 OS 접속만 필요하지만, 가동/도달 확인용)
+app.post('/connection-test/was', auth.requireRole('admin', 'operator'), (req, res) => {
+  const b = req.body || {};
+  const host = String(b.host || '').trim();
+  const scheme = (String(b.scheme || '').trim().toLowerCase() === 'https') ? 'https' : 'http';
+  const port = parseInt(String(b.port || '').trim(), 10) || (scheme === 'https' ? 8443 : 8080);
+  if (!host) return res.status(400).json({ ok: false, error: 'WAS IP(host)를 입력하세요' });
+  let done = false;
+  const finish = (o) => { if (done) return; done = true; res.json(o); };
+  try {
+    const lib = require(scheme);
+    const r2 = lib.request({ host, port, path: '/', method: 'GET', timeout: 8000, rejectUnauthorized: false }, (resp) => {
+      const server = resp.headers['server'] || '(Server 헤더 없음 — 배너 은닉 가능)';
+      resp.destroy();
+      finish({ ok: true, endpoint: `${scheme}://${host}:${port}`, status: resp.statusCode, server: String(server).slice(0, 120) });
+    });
+    r2.on('timeout', () => { r2.destroy(); finish({ ok: false, endpoint: `${scheme}://${host}:${port}`, error: 'timeout (포트 미개방/방화벽 확인)' }); });
+    r2.on('error', (e) => finish({ ok: false, endpoint: `${scheme}://${host}:${port}`, error: e.message }));
+    r2.end();
+  } catch (e) { finish({ ok: false, error: e.message }); }
 });
 // 스케줄 관리
 // ─── 예약 진단 (구 "스케줄 점검") ─────────────────────────
@@ -3003,9 +3161,11 @@ app.get('/diagnosis/:id/ai', (req, res) => {
           description: `AI가 수집 원자료에서 추출한 전체 ${diag.total_count || 0}개 항목을 표시합니다.`,
         };
 
-    // 카테고리별/심각도별 그룹
+    // 카테고리별/심각도별/플랫폼별(OS·DB·WAS) 그룹
     const byCategory = {};
     const bySeverity = { 상: 0, 중: 0, 하: 0 };
+    const mkPf = () => ({ total: 0, vuln: 0, safe: 0, na: 0, info: 0 });
+    const byPlatform = { OS: mkPf(), DB: mkPf(), WAS: mkPf() };
     for (const r of (diag.results || [])) {
       const cat = r.ai_category || '미분류';
       if (!byCategory[cat]) byCategory[cat] = { total: 0, vuln: 0, safe: 0, na: 0, info: 0 };
@@ -3014,6 +3174,8 @@ app.get('/diagnosis/:id/ai', (req, res) => {
               : r.ai_verdict === '양호' ? 'safe'
               : (r.ai_verdict === '정보제공' || r.ai_verdict === '정보') ? 'info' : 'na';
       byCategory[cat][k]++;
+      const pf = classifyPlatform(r.chk_id || r.rule_id, cat);
+      if (byPlatform[pf]) { byPlatform[pf].total++; byPlatform[pf][k]++; }
       if (r.ai_verdict === '취약') {
         bySeverity[r.ai_severity] = (bySeverity[r.ai_severity] || 0) + 1;
       }
@@ -3027,6 +3189,7 @@ app.get('/diagnosis/:id/ai', (req, res) => {
       resultScope,
       byCategory,
       bySeverity,
+      byPlatform,
     });
   } catch (e) {
     console.error('[AI 결과 화면 오류]', e);
@@ -3839,6 +4002,21 @@ app.post('/api/agent/check-result', express.json({ limit: '5mb' }), async (req, 
   }
 });
 
+// 플랫폼 분류(OS/DB/WAS) — 라우트 핸들러(startServer 밖)와 startServer 내부 양쪽에서 호출되므로 모듈 스코프에 정의
+function classifyPlatform(ruleId, category) {
+  const id = String(ruleId || '').toUpperCase();
+  const m = id.match(/^SRV-?(\d+)/);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    if (n >= 200 && n <= 229) return 'WAS';
+    if (n >= 230 && n <= 319) return 'DB';
+  }
+  const cat = String(category || '');
+  if (/tomcat|was\b|jeus|weblogic|jboss|웹\/was/i.test(cat)) return 'WAS';
+  if (/dbms|mssql|oracle|mysql|maria|postgre/i.test(cat)) return 'DB';
+  return 'OS';
+}
+
 async function startServer() {
   // Storage 초기화 (MySQL 모드인 경우 연결 + 테이블 확인)
   const storageStatus = await kvStorage.initialize();
@@ -4034,6 +4212,8 @@ app.get('/', (req, res) => {
   res.render('dashboard', { activeMenu: 'dashboard', now: new Date().toISOString().slice(0, 16).replace('T', ' '), ...buildDashboardData() });
 });
 
+// 점검항목 → 플랫폼(OS/DB/WAS) 분류. SRV 번호대역이 1차 신호(가장 신뢰),
+// 부족하면 카테고리 키워드로 보정. (WAS=200~229, DBMS=230~269 대역 할당)
 function buildVulnList() {
   const diagnoses = loadMock('diagnoses') || [];
   const servers = loadMock('servers') || [];
@@ -4088,6 +4268,7 @@ function buildVulnList() {
         asset_no: diag.asset_no || server.asset_no,
         service_name: diag.service_name || server.service_name,
         rule_id: ruleId,
+        platform: classifyPlatform(ruleId, r.category || r.ai_category || ''),
         title: r.title || r.ai_title || ruleId,
         category: r.category || r.ai_category || '',
         severity: r.severity || r.ai_severity || r.weight || '상',
@@ -4104,7 +4285,11 @@ function buildVulnList() {
         has_exception: hasException,
         fix_status: rem?.fix_status || (hasException ? '예외' : '미조치'),
         assignee: rem?.assignee || null,
+        fix_method: rem?.fix_method || null,
+        note: rem?.note || null,
         fixed_at: rem?.fixed_at || null,
+        evidence_files: rem?.evidence_files || [],
+        remediation_history: rem?.history || [],
         subs: r.subs || [],
       });
     }
@@ -4129,10 +4314,21 @@ app.get('/trends', (req, res) => {
 });
 
 app.get('/vulnerabilities', (req, res) => {
-  const vulns = buildVulnList();
-  
-  // KPI 계산
-  const sevenDaysAgo = Date.now() - 7 * 86400000;
+  const allVulns = buildVulnList();
+
+  // 플랫폼(OS/DB/WAS) 필터 — 대소문자 무시, 빈값/all 이면 전체
+  const platform = String(req.query.platform || '').toUpperCase();
+  const platformCounts = {
+    all: allVulns.length,
+    OS: allVulns.filter(v => v.platform === 'OS').length,
+    DB: allVulns.filter(v => v.platform === 'DB').length,
+    WAS: allVulns.filter(v => v.platform === 'WAS').length,
+  };
+  const vulns = (platform === 'OS' || platform === 'DB' || platform === 'WAS')
+    ? allVulns.filter(v => v.platform === platform)
+    : allVulns;
+
+  // KPI 계산 (필터 적용 후 기준)
   const stats = {
     total: vulns.length,
     new: vulns.filter(v => v.is_new).length,
@@ -4146,12 +4342,14 @@ app.get('/vulnerabilities', (req, res) => {
       하: vulns.filter(v => v.severity === '하').length,
     },
   };
-  
+
   res.render('vulnerabilities/index', {
     activeMenu: 'vuln',
     vulns,
     stats,
     servers: loadMock('servers') || [],
+    platform: platform || 'ALL',
+    platformCounts,
   });
 });
 
@@ -4203,6 +4401,61 @@ app.get('/remediation', (req, res) => {
   });
 });
 
+// 조치 감사증적 — 발견→조치→이행점검(재점검)→증적을 한 항목으로 묶은 감사 대응 화면.
+// ISMS-P 2.11.2(이력관리·이행점검 완료 확인) + 감사 실무(증적 chain-of-custody) 기준.
+app.get('/remediation/audit', (req, res) => {
+  const remediations = loadMock('remediations') || [];
+  const servers = loadMock('servers') || [];
+  const serverMap = new Map(servers.map(s => [s.server_id, s]));
+  const diagnoses = loadMock('diagnoses') || [];
+  const ruleMeta = new Map();      // rule_id → {title,severity,category}
+  const discMap = new Map();       // server::rule → 최초 발견일시
+  for (const d of diagnoses) {
+    for (const r of (d.results || [])) {
+      const rid = r.rule_id || r.chk_id;
+      if (!rid) continue;
+      if (!ruleMeta.has(rid)) ruleMeta.set(rid, { title: r.title || r.ai_title || rid, severity: r.severity || r.ai_severity || '', category: r.category || r.ai_category || '' });
+      const k = `${d.server_id}::${rid}`;
+      const t = d.executed_at || d.completed_at || d.started_at;
+      if (t && !discMap.has(k)) discMap.set(k, t);
+    }
+  }
+  // 최신 진단 기준 아직 '취약'인 (server::rule) — 여기 없으면 조치 후 재점검상 해결로 간주(이행점검 확인)
+  const curVuln = new Set(buildVulnList().map(v => `${v.server_id}::${v.rule_id}`));
+
+  const rows = remediations.map(r => {
+    const key = `${r.server_id}::${r.rule_id}`;
+    const meta = ruleMeta.get(r.rule_id) || {};
+    const srv = serverMap.get(r.server_id) || {};
+    const resolved = !curVuln.has(key);
+    return {
+      result_id: r.result_id, rule_id: r.rule_id,
+      hostname: srv.hostname || r.hostname || String(r.server_id || ''),
+      title: meta.title || r.rule_id, severity: meta.severity || '',
+      category: meta.category || '', platform: classifyPlatform(r.rule_id, meta.category || ''),
+      fix_status: r.fix_status || '미조치', assignee: r.assignee || '',
+      fix_method: r.fix_method || '', fixed_at: r.fixed_at || '',
+      updated_at: r.updated_at || '', updated_by: r.updated_by || '',
+      discovered_at: discMap.get(key) || '',
+      history: r.history || [], evidence_files: r.evidence_files || [],
+      reverify_ok: resolved,
+      reverify: (r.fix_status === '조치완료' && resolved) ? '이행점검 확인(재점검상 취약 아님)'
+        : (r.fix_status === '조치완료' && !resolved) ? '⚠ 조치완료 표기했으나 재점검상 여전히 취약'
+        : (resolved ? '재점검상 취약 아님' : '미해결(여전히 취약)'),
+    };
+  }).sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+
+  const stats = {
+    total: rows.length,
+    with_evidence: rows.filter(x => x.evidence_files.length).length,
+    completed: rows.filter(x => x.fix_status === '조치완료').length,
+    verified: rows.filter(x => x.fix_status === '조치완료' && x.reverify_ok).length,
+    mismatch: rows.filter(x => x.fix_status === '조치완료' && !x.reverify_ok).length,
+  };
+  const auditLogs = (loadMock('audit_logs') || []).filter(a => a.action === '조치 변경').slice(0, 300);
+  res.render('remediation/audit', { activeMenu: 'remediation', rows, stats, auditLogs });
+});
+
 app.post('/remediation/:resultId/update', auth.requireRole('admin', 'operator'), (req, res) => {
   try {
     const { fix_status, fix_method, assignee, misnotice_reason, note } = req.body;
@@ -4231,8 +4484,24 @@ app.post('/remediation/:resultId/update', auth.requireRole('admin', 'operator'),
       x.assessment_id === found.diag.assessment_id
     );
     
+    const prev = existingIdx >= 0 ? remediations[existingIdx] : null;
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    // 조치 이력(audit trail) — 상태 변경 시 증적으로 누적
+    const history = (prev?.history || []).slice();
+    const prevStatus = prev?.fix_status || '미조치';
+    if (prevStatus !== (fix_status || '미조치') || fix_method) {
+      history.push({
+        at: now,
+        by: req.session.username,
+        from: prevStatus,
+        to: fix_status || '미조치',
+        fix_method: fix_method || null,
+        note: note || null,
+      });
+    }
+
     const remediation = {
-      remediation_id: existingIdx >= 0 ? remediations[existingIdx].remediation_id : Date.now(),
+      remediation_id: prev ? prev.remediation_id : Date.now(),
       assessment_id: found.diag.assessment_id,
       server_id: found.diag.server_id,
       rule_id: found.rule.rule_id,
@@ -4242,11 +4511,13 @@ app.post('/remediation/:resultId/update', auth.requireRole('admin', 'operator'),
       fix_method: fix_method || null,
       misnotice_reason: misnotice_reason || null,
       note: note || null,
-      fixed_at: fix_status === '조치완료' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null,
+      fixed_at: fix_status === '조치완료' ? now : (prev?.fixed_at || null),
+      evidence_files: prev?.evidence_files || [],   // 증적 파일 보존
+      history,
       updated_by: req.session.username,
-      updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      updated_at: now,
     };
-    
+
     if (existingIdx >= 0) {
       remediations[existingIdx] = remediation;
     } else {
@@ -4258,6 +4529,76 @@ app.post('/remediation/:resultId/update', auth.requireRole('admin', 'operator'),
   } catch (e) {
     res.status(500).json({ status: 'error', error: e.message });
   }
+});
+
+// 조치증적 파일 업로드 — 조치 완료의 증빙(스크린샷/보고서 등)을 결과별로 첨부
+app.post('/remediation/:resultId/evidence', auth.requireRole('admin', 'operator'), uploadEvidence.array('evidence', 10), (req, res) => {
+  try {
+    if (!req.files || !req.files.length) {
+      return res.status(400).json({ status: 'error', error: '업로드된 증적 파일이 없습니다' });
+    }
+    // 결과 → 진단/룰 매핑 (update 와 동일 로직)
+    const diagnoses = loadMock('diagnoses') || [];
+    let found = null;
+    for (const diag of diagnoses) {
+      for (const r of (diag.results || [])) {
+        const rid = r.result_id || `${diag.assessment_id}-${r.rule_id || r.chk_id}`;
+        if (String(rid) === String(req.params.resultId)) { found = { diag, rule: r }; break; }
+      }
+      if (found) break;
+    }
+    if (!found) return res.status(404).json({ status: 'error', error: '대상을 찾을 수 없습니다' });
+
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const ruleId = found.rule.rule_id || found.rule.chk_id;
+    const remediations = loadMock('remediations') || [];
+    let idx = remediations.findIndex(x =>
+      x.server_id === found.diag.server_id && x.rule_id === ruleId && x.assessment_id === found.diag.assessment_id);
+
+    const newFiles = req.files.map(f => ({
+      filename: path.basename(f.path),
+      original_name: f.originalname,
+      size: f.size,
+      uploaded_by: req.session.username,
+      uploaded_at: now,
+    }));
+
+    if (idx < 0) {
+      remediations.unshift({
+        remediation_id: Date.now(),
+        assessment_id: found.diag.assessment_id,
+        server_id: found.diag.server_id,
+        rule_id: ruleId,
+        result_id: req.params.resultId,
+        fix_status: '진행중',
+        evidence_files: newFiles,
+        history: [{ at: now, by: req.session.username, from: '미조치', to: '진행중', note: '증적 첨부' }],
+        updated_by: req.session.username,
+        updated_at: now,
+      });
+    } else {
+      const rem = remediations[idx];
+      rem.evidence_files = (rem.evidence_files || []).concat(newFiles);
+      rem.history = (rem.history || []).concat([{ at: now, by: req.session.username, note: `증적 ${newFiles.length}건 첨부` }]);
+      rem.updated_at = now;
+      remediations[idx] = rem;
+    }
+    saveMock('remediations', remediations);
+    res.json({ status: 'success', files: newFiles });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: e.message });
+  }
+});
+
+// 조치증적 파일 다운로드
+app.get('/remediation/:resultId/evidence/:filename', auth.requireAuth, (req, res) => {
+  const rid = String(req.params.resultId).replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fname = path.basename(String(req.params.filename));  // 경로 조작 방지
+  const fp = path.join(EVIDENCE_DIR, rid, fname);
+  if (!fp.startsWith(EVIDENCE_DIR) || !fs.existsSync(fp)) {
+    return res.status(404).send('증적 파일을 찾을 수 없습니다');
+  }
+  res.download(fp, fname);
 });
 
 

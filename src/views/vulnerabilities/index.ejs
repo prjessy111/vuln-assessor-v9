@@ -1,40 +1,53 @@
-<%- include('../_header', { title: '취약점 관리', activeMenu: 'vuln' }) %>
+<%- include('../_header', { title: t('vuln.list.title'), activeMenu: 'vuln' }) %>
 
 <div class="page-header">
-  <h1>취약점 관리</h1>
+  <h1><%= t('vuln.list.title') %></h1>
   <p class="muted small">
-    모든 진단 결과에서 발견된 취약점을 통합 조회합니다. 
-    동일 (서버, 룰) 조합은 최신 진단 기준으로 표시.
-    조치 처리는 <a href="/remediation">조치 관리</a>에서.
+    <%= t('vuln.list.introLine1') %>
+    <%= t('vuln.list.introLine2') %>
+    <%- t('vuln.list.introRemediation', { link: '<a href="/remediation">' + t('common.nav.remediation') + '</a>' }) %>
   </p>
 </div>
 
 <!-- KPI (실데이터) -->
 <div class="kpi-grid kpi-5col">
   <div class="kpi-card kpi-vuln">
-    <div class="kpi-label">전체 취약점</div>
+    <div class="kpi-label"><%= t('vuln.list.kpi.total') %></div>
     <div class="kpi-num"><%= stats.total %></div>
-    <div class="kpi-sub">소항목 포함 <%= stats.total + stats.sub_total %>건</div>
+    <div class="kpi-sub"><%= t('vuln.list.kpi.totalSub', { n: stats.total + stats.sub_total }) %></div>
   </div>
   <div class="kpi-card" style="border-top-color:#c0392b;">
-    <div class="kpi-label">위험도 상</div>
+    <div class="kpi-label"><%= t('vuln.list.kpi.sevHigh') %></div>
     <div class="kpi-num" style="color:#c0392b;"><%= stats.by_severity.상 %></div>
-    <div class="kpi-sub">즉시 조치 권고</div>
+    <div class="kpi-sub"><%= t('vuln.list.kpi.sevHighSub') %></div>
   </div>
   <div class="kpi-card kpi-new">
-    <div class="kpi-label">신규 (7일 이내)</div>
+    <div class="kpi-label"><%= t('vuln.list.kpi.new7d') %></div>
     <div class="kpi-num"><%= stats.new %></div>
-    <div class="kpi-sub">즉시 검토</div>
+    <div class="kpi-sub"><%= t('vuln.list.kpi.newSub') %></div>
   </div>
   <div class="kpi-card kpi-success">
-    <div class="kpi-label">조치율</div>
+    <div class="kpi-label"><%= t('vuln.list.kpi.fixRate') %></div>
     <div class="kpi-num"><%= stats.fix_rate %>%</div>
-    <div class="kpi-sub"><%= stats.fixed %>/<%= stats.total %> 완료</div>
+    <div class="kpi-sub"><%= t('vuln.list.kpi.fixRateSub', { fixed: stats.fixed, total: stats.total }) %></div>
   </div>
   <div class="kpi-card" style="border-top-color:#8e44ad;">
-    <div class="kpi-label">CVE 매핑됨</div>
+    <div class="kpi-label"><%= t('vuln.list.kpi.cveMapped') %></div>
     <div class="kpi-num" style="color:#8e44ad;"><%= stats.cve_mapped %></div>
-    <div class="kpi-sub">알려진 취약점 연계</div>
+    <div class="kpi-sub"><%= t('vuln.list.kpi.cveMappedSub') %></div>
+  </div>
+</div>
+
+<!-- 플랫폼(OS/DB/WAS) 구분 탭 -->
+<% var _pf = (typeof platform !== 'undefined') ? platform : 'ALL';
+   var _pc = (typeof platformCounts !== 'undefined') ? platformCounts : { all: vulns.length, OS: 0, DB: 0, WAS: 0 }; %>
+<div class="section-box" style="padding:10px 14px;">
+  <div class="platform-tabs" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <span class="muted small" style="margin-right:4px;"><%= t('vuln.list.platformLabel') %></span>
+    <a href="/vulnerabilities" class="btn-sm <%= (_pf === 'ALL') ? 'primary' : '' %>"><%= t('vuln.list.platformAll', { n: _pc.all }) %></a>
+    <a href="/vulnerabilities?platform=OS" class="btn-sm <%= (_pf === 'OS') ? 'primary' : '' %>">OS (<%= _pc.OS %>)</a>
+    <a href="/vulnerabilities?platform=DB" class="btn-sm <%= (_pf === 'DB') ? 'primary' : '' %>">DB · MSSQL (<%= _pc.DB %>)</a>
+    <a href="/vulnerabilities?platform=WAS" class="btn-sm <%= (_pf === 'WAS') ? 'primary' : '' %>">WAS · Tomcat (<%= _pc.WAS %>)</a>
   </div>
 </div>
 
@@ -42,69 +55,70 @@
 <div class="section-box">
   <div class="filter-row">
     <select id="filterServer">
-      <option value="">전체 서버</option>
+      <option value=""><%= t('vuln.list.filter.allServers') %></option>
       <% servers.forEach(s => { %>
         <option value="<%= s.hostname %>"><%= s.hostname %></option>
       <% }); %>
     </select>
     <select id="filterSeverity">
-      <option value="">전체 위험도</option>
-      <option value="상">상</option>
-      <option value="중">중</option>
-      <option value="하">하</option>
+      <option value=""><%= t('vuln.list.filter.allSeverity') %></option>
+      <option value="상"><%= td('상') %></option>
+      <option value="중"><%= td('중') %></option>
+      <option value="하"><%= td('하') %></option>
     </select>
     <select id="filterStatus">
-      <option value="">전체 상태</option>
-      <option value="미조치">미조치</option>
-      <option value="진행중">진행중</option>
-      <option value="조치완료">조치완료</option>
-      <option value="예외">예외</option>
+      <option value=""><%= t('vuln.list.filter.allStatus') %></option>
+      <option value="미조치"><%= td('미조치') %></option>
+      <option value="진행중"><%= td('진행중') %></option>
+      <option value="조치완료"><%= td('조치완료') %></option>
+      <option value="예외"><%= td('예외') %></option>
     </select>
     <select id="filterNew">
-      <option value="">신규/기존</option>
-      <option value="new">신규 (7일 이내)</option>
-      <option value="old">기존</option>
+      <option value=""><%= t('vuln.list.filter.newOld') %></option>
+      <option value="new"><%= t('vuln.list.filter.new7d') %></option>
+      <option value="old"><%= td('기존') %></option>
     </select>
     <select id="filterCategory">
-      <option value="">전체 카테고리</option>
+      <option value=""><%= t('vuln.list.filter.allCategory') %></option>
       <% Array.from(new Set(vulns.map(v => v.category).filter(Boolean))).sort().forEach(c => { %>
         <option value="<%= c %>"><%= c %></option>
       <% }) %>
     </select>
     <input type="date" id="filterFrom">
     <input type="date" id="filterTo">
-    <input type="search" id="filterText" placeholder="검색 (룰ID/제목/호스트/담당자)...">
-    <button class="btn-sm" onclick="applyFilter()">필터 적용</button>
-    <button class="btn-sm" onclick="resetFilter()">초기화</button>
+    <input type="search" id="filterText" placeholder="<%= t('vuln.list.filter.searchPlaceholder') %>">
+    <button class="btn-sm" onclick="applyFilter()"><%= t('vuln.list.filter.apply') %></button>
+    <button class="btn-sm" onclick="resetFilter()"><%= t('vuln.list.filter.reset') %></button>
   </div>
 </div>
 
 <!-- 취약점 목록 -->
 <div class="section-box">
-  <h3>발견된 취약점 (<%= vulns.length %>건)</h3>
+  <h3><%= t('vuln.list.tableHeading', { n: vulns.length }) %></h3>
   <table class="data-table vuln-table">
     <thead>
       <tr>
-        <th>관리번호</th>
-        <th>서버</th>
-        <th>룰</th>
-        <th>취약점</th>
-        <th>카테고리</th>
-        <th>위험도</th>
-        <th>소항목</th>
-        <th>발견일</th>
-        <th>경과</th>
-        <th>조치상태</th>
-        <th>담당자</th>
-        <th>액션</th>
+        <th><%= t('vuln.list.th.mgmtNo') %></th>
+        <th><%= t('vuln.list.th.server') %></th>
+        <th><%= t('vuln.list.th.rule') %></th>
+        <th><%= t('vuln.list.th.vuln') %></th>
+        <th><%= t('vuln.list.th.category') %></th>
+        <th><%= t('vuln.list.th.severity') %></th>
+        <th><%= t('vuln.list.th.sub') %></th>
+        <th><%= t('vuln.list.th.discovered') %></th>
+        <th><%= t('vuln.list.th.elapsed') %></th>
+        <th><%= t('vuln.list.th.fixStatus') %></th>
+        <th><%= t('vuln.list.th.assignee') %></th>
+        <th><%= t('vuln.list.th.action') %></th>
       </tr>
     </thead>
     <tbody>
       <% vulns.forEach(v => { %>
-        <tr data-server="<%= v.hostname %>" 
-            data-severity="<%= v.severity %>" 
+        <tr data-server="<%= v.hostname %>"
+            data-severity="<%= v.severity %>"
             data-status="<%= v.fix_status %>"
             data-new="<%= v.is_new ? 'new' : 'old' %>"
+            data-platform="<%= v.platform || 'OS' %>"
             data-category="<%= v.category || '' %>"
             data-date="<%= (v.discovered_at || '').slice(0, 10) %>"
             data-search="<%= (v.rule_id + ' ' + v.title + ' ' + v.hostname + ' ' + (v.assignee || '') + ' ' + (v.category || '')).toLowerCase() %>">
@@ -115,10 +129,14 @@
               <div class="muted small"><%= v.service_name %></div>
             <% } %>
           </td>
-          <td class="mono small"><span class="rule-id-badge"><%= v.rule_id %></span></td>
+          <td class="mono small">
+            <span class="rule-id-badge"><%= v.rule_id %></span>
+            <% var _pfc = v.platform === 'DB' ? '#2980b9' : (v.platform === 'WAS' ? '#16a085' : '#7f8c8d'); %>
+            <span style="display:inline-block;margin-top:2px;padding:1px 5px;border-radius:3px;font-size:10px;color:#fff;background:<%= _pfc %>;"><%= v.platform || 'OS' %></span>
+          </td>
           <td class="small"><%= v.title %></td>
           <td class="small muted"><%= v.category %></td>
-          <td><span class="severity-badge sev-<%= v.severity %>"><%= v.severity %></span></td>
+          <td><span class="severity-badge sev-<%= v.severity %>"><%= td(v.severity) %></span></td>
           <td class="text-center small">
             <% if (v.is_per_row) { %>
               <span class="badge-sub"><%= v.sub_vuln %>/<%= v.sub_count %></span>
@@ -129,36 +147,36 @@
           <td class="mono small"><%= (v.discovered_at || '').slice(0, 10) %></td>
           <td class="small">
             <% if (v.is_new) { %>
-              <span class="badge-new">신규</span>
+              <span class="badge-new"><%= td('신규') %></span>
             <% } else { %>
-              <span class="muted"><%= v.days_old %>일</span>
+              <span class="muted"><%= t('vuln.list.daysOld', { n: v.days_old }) %></span>
             <% } %>
           </td>
           <td>
             <% if (v.fix_status === '조치완료') { %>
-              <span class="status-pill status-success">✓ 완료</span>
+              <span class="status-pill status-success">✓ <%= td('완료') %></span>
             <% } else if (v.fix_status === '진행중') { %>
-              <span class="status-pill status-running">진행중</span>
+              <span class="status-pill status-running"><%= td('진행중') %></span>
             <% } else if (v.fix_status === '예외') { %>
-              <span class="status-pill status-exception">예외</span>
+              <span class="status-pill status-exception"><%= td('예외') %></span>
             <% } else { %>
-              <span class="status-pill status-fail">미조치</span>
+              <span class="status-pill status-fail"><%= td('미조치') %></span>
             <% } %>
           </td>
           <td class="small"><%= v.assignee || '-' %></td>
           <td>
-            <a href="/vulnerabilities/<%= v.result_id %>" class="btn-sm">상세</a>
-            <a href="/remediation#<%= v.result_id %>" class="btn-sm primary">조치</a>
+            <a href="/vulnerabilities/<%= v.result_id %>" class="btn-sm"><%= t('vuln.list.btnDetail') %></a>
+            <a href="/remediation#<%= v.result_id %>" class="btn-sm primary"><%= t('vuln.list.btnRemediate') %></a>
             <% if (v.fix_status !== '예외') { %>
               <a class="btn-sm" href="/exceptions/new?result_id=<%= encodeURIComponent(v.result_id) %>&rule_id=<%= encodeURIComponent(v.rule_id) %>&hostname=<%= encodeURIComponent(v.hostname || '') %>&server_id=<%= encodeURIComponent(v.server_id || '') %>&title=<%= encodeURIComponent(v.title || '') %>"
-                 style="background:#8e44ad;color:#fff;">예외(사후)</a>
+                 style="background:#8e44ad;color:#fff;"><%= t('vuln.list.btnException') %></a>
             <% } %>
           </td>
         </tr>
       <% }); %>
       <% if (!vulns.length) { %>
         <tr><td colspan="12" class="empty" style="padding:32px;text-align:center;">
-          발견된 취약점이 없습니다. 진단을 실행하면 여기 표시됩니다.
+          <%= t('vuln.list.empty') %>
         </td></tr>
       <% } %>
     </tbody>
@@ -166,6 +184,14 @@
 </div>
 
 <script>
+var VULN_I18N = <%- JSON.stringify({
+  exceptionPrompt: t('vuln.list.js.exceptionPrompt'),
+  exceptionUntil: t('vuln.list.js.exceptionUntil'),
+  exceptionSaved: t('vuln.list.js.exceptionSaved'),
+  fail: t('vuln.list.js.fail'),
+  error: t('vuln.list.js.error')
+}) %>;
+
 function applyFilter() {
   const server = document.getElementById('filterServer').value;
   const sev = document.getElementById('filterSeverity').value;
@@ -175,7 +201,7 @@ function applyFilter() {
   const from = document.getElementById('filterFrom').value;
   const to = document.getElementById('filterTo').value;
   const text = document.getElementById('filterText').value.toLowerCase();
-  
+
   document.querySelectorAll('.vuln-table tbody tr').forEach(tr => {
     let show = true;
     if (server && tr.dataset.server !== server) show = false;
@@ -203,12 +229,12 @@ function resetFilter() {
 });
 
 function requestException(resultId, ruleId, hostname) {
-  const reason = prompt(`예외 신청\n\n룰: ${ruleId} / 호스트: ${hostname}\n\n사유를 입력하세요:`);
+  const reason = prompt(VULN_I18N.exceptionPrompt.replace('{rule}', ruleId).replace('{host}', hostname));
   if (!reason) return;
-  
-  const until = prompt('유효 기간 (YYYY-MM-DD, 예: 2026-12-31):');
+
+  const until = prompt(VULN_I18N.exceptionUntil);
   if (!until) return;
-  
+
   fetch('/exceptions/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -223,10 +249,10 @@ function requestException(resultId, ruleId, hostname) {
     }),
   }).then(r => r.json()).then(j => {
     if (j.status === 'success') {
-      alert('예외 신청이 등록되었습니다. (대기 상태)');
+      alert(VULN_I18N.exceptionSaved);
       location.reload();
     } else {
-      alert('실패: ' + (j.error || '오류'));
+      alert(VULN_I18N.fail.replace('{msg}', j.error || VULN_I18N.error));
     }
   });
 }

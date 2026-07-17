@@ -130,21 +130,39 @@ function _findInDatedFolders(filename) {
 
 // hostname 에 맞는 최신 script XML 탐색.
 // pinnedDir 가 주어지면 그 디렉토리 한 곳만 얕게 스캔하고 전체(날짜 폴더+루트) 스캔을 생략한다.
-function _findLatestScriptXml(hostname, pinnedDir = null) {
+// XML 헤더(asset 블록)만 얕게 읽어 DBMS(MSSQL) 수집물인지 판별.
+// 배포 경로가 로컬 파일명을 *_script_*.xml 로 통일하므로 파일명이 아닌 내용으로 구분한다.
+// asset 헤더만 얕게 읽어 DBMS(MSSQL/Oracle/MySQL) 수집물인지 판별.
+function _xmlIsDbms(fp) {
+  try {
+    const fd = fs.openSync(fp, 'r');
+    const buf = Buffer.alloc(1600);
+    const n = fs.readSync(fd, buf, 0, 1600, 0);
+    fs.closeSync(fd);
+    const head = buf.slice(0, n).toString('utf8').toLowerCase();
+    return /dbms_type>\s*(?:mssql|oracle|mysql|maria)|os_family>\s*(?:mssql|oracle|mysql)|<platform>\s*dbms|fsi_(?:mssql|oracle|mysql)/.test(head);
+  } catch (_) { return false; }
+}
+
+function _findLatestScriptXml(hostname, pinnedDir = null, kind = 'os', returnAll = false) {
   const candidates = [];
   const host = String(hostname || '').toLowerCase();
-  const isCandidate = (filename) => {
+  const isCandidate = (filename, fullpath) => {
     const lower = filename.toLowerCase();
     if (!lower.endsWith('.xml') || !lower.includes(host)) return false;
-    return lower.includes('script') || /[-_]s[-_]\d{8}/.test(lower);
+    const nameLooksScript = lower.includes('script') || /[-_]s[-_]\d{8}/.test(lower) || /mssql|oracle|mysql/.test(lower);
+    if (!nameLooksScript) return false;
+    // 파일명으로 못 가르므로 내용(asset 헤더)으로 DBMS 여부 판별
+    const isDb = /mssql|oracle|mysql/.test(lower) || _xmlIsDbms(fullpath);
+    return kind === 'dbms' ? isDb : !isDb;
   };
   // 파일 1건당 statSync 1회만 — 후보 파일만 stat 한다.
   const scanDir = (dir) => {
     let entries;
     try { entries = fs.readdirSync(dir); } catch (_) { return; }
     for (const f of entries) {
-      if (!isCandidate(f)) continue;
       const fp = path.join(dir, f);
+      if (!isCandidate(f, fp)) continue;
       try {
         const st = fs.statSync(fp);
         if (st.isFile()) candidates.push({ path: fp, mtime: st.mtimeMs });
@@ -168,9 +186,9 @@ function _findLatestScriptXml(hostname, pinnedDir = null) {
     scanDir(UPLOAD_DIR);  // 루트 직속 파일
   }
 
-  if (!candidates.length) return null;
+  if (!candidates.length) return returnAll ? [] : null;
   candidates.sort((a, b) => b.mtime - a.mtime);
-  return candidates[0].path;
+  return returnAll ? candidates.map(c => c.path) : candidates[0].path;
 }
 
 function normalizeChkId(value) {
@@ -230,13 +248,42 @@ async function _extractFromSecums(server, opts) {
 }
 
 function _extractFromScript(server, opts) {
+  const adapter = require('./adapters/scriptResult');
   const xmlPath = resolveScriptXmlPath(server, opts);
-  if (!xmlPath) {
+
+  let items = [];
+  let asset = null;
+  let sourcePath = xmlPath;
+  if (xmlPath) {
+    const parsed = adapter.extractDiagnoseItems(xmlPath);
+    asset = parsed.asset;
+    items = parsed.items;
+  }
+
+  // DBMS(MSSQL/Oracle/MySQL) 전용 XML 이 있으면 같은 호스트의 점검결과로 병합 → OS/WAS/DBMS 한 결과.
+  // (OS/WAS 는 fsi_unix_ai.sh 한 XML 에 함께 들어옴; DB 는 접속 수집이라 각각 별도 XML)
+  try {
+    if (server.hostname && !opts.skipDbMerge) {
+      const dbXmls = _findLatestScriptXml(server.hostname, _pinnedScriptDir(opts), 'dbms', true) || [];
+      const seenChk = new Set(items.map(it => it.chk_id));
+      for (const dbXml of dbXmls) {
+        if (!dbXml || dbXml === xmlPath) continue;
+        const dbParsed = adapter.extractDiagnoseItems(dbXml);
+        for (const it of (dbParsed.items || [])) {
+          if (seenChk.has(it.chk_id)) continue;   // 중복 방지(여러 DB XML 간)
+          seenChk.add(it.chk_id);
+          items.push(it);
+        }
+        if (!asset && dbParsed.asset) asset = dbParsed.asset;
+        sourcePath = sourcePath ? `${sourcePath}; ${dbXml}` : dbXml;
+      }
+    }
+  } catch (_) { /* DB XML 없거나 파싱 실패 — OS/WAS 결과만으로 진행 */ }
+
+  if (!items.length) {
     return { items: [], error: `Script XML 없음 (hostname=${server.hostname})` };
   }
-  const adapter = require('./adapters/scriptResult');
-  const { asset, items } = adapter.extractDiagnoseItems(xmlPath);
-  return { items, sourcePath: xmlPath, asset };
+  return { items, sourcePath, asset };
 }
 
 // ─────────────────────────────────────────────────────────────────

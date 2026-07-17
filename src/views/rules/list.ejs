@@ -1,9 +1,9 @@
-<%- include('../_header', { title: '룰셋 관리' }) %>
+<%- include('../_header', { title: t('rulesets.list.title') }) %>
 
-<h1>룰셋 관리</h1>
+<h1><%= t('rulesets.list.h1') %></h1>
 
 <form method="get" class="form-inline">
-  <label>룰셋 버전</label>
+  <label><%= t('rulesets.list.rulesetVer') %></label>
   <select name="v" onchange="this.form.submit()">
     <% versions.forEach(v => { %>
       <option value="<%= v %>" <%= v === currentVer ? 'selected' : '' %>><%= v %></option>
@@ -14,8 +14,8 @@
 <table class="data-table">
   <thead>
     <tr>
-      <th>활성</th><th>항목ID</th><th>OS</th><th>분류</th>
-      <th>점검항목</th><th>중요도</th><th>check_type</th><th>파라미터</th>
+      <th><%= t('rulesets.list.th.enabled') %></th><th><%= t('rulesets.list.th.itemId') %></th><th>OS</th><th><%= t('rulesets.list.th.category') %></th>
+      <th><%= t('rulesets.list.th.checkItem') %></th><th><%= t('rulesets.list.th.severity') %></th><th>check_type</th><th><%= t('rulesets.list.th.params') %></th>
     </tr>
   </thead>
   <tbody>
@@ -34,7 +34,7 @@
         <td><span class="os-badge"><%= r.os_target.toUpperCase() %></span></td>
         <td><%= r.category %></td>
         <td><%= r.title %></td>
-        <td><span class="sev sev-<%= r.severity %>"><%= r.severity %></span></td>
+        <td><span class="sev sev-<%= r.severity %>"><%= td(r.severity) %></span></td>
         <td><code><%= r.check_type %></code></td>
         <td><code><%= JSON.stringify(r.check_param || {}) %></code></td>
       </tr>

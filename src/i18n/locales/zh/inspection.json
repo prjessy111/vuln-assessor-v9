@@ -1,0 +1,27 @@
+{
+  "title": "诊断状态",
+  "asOf": "基准日: {now}",
+  "os": {
+    "title": "按OS检查状态",
+    "category": "类别",
+    "total": "全部",
+    "checked": "已检查",
+    "unchecked": "未检查",
+    "sum": "合计",
+    "allDone": "✓ 全部服务器检查完成",
+    "noServers": "没有目标服务器 (请检查 servers.csv)"
+  },
+  "host": {
+    "title": "主机列表",
+    "hostname": "主机名",
+    "vulnCount": "漏洞数量",
+    "compliance": "合规率 (良好/全部)",
+    "operator": "运维人员",
+    "domain": "域",
+    "channel": "通信方式",
+    "status": "检查状态",
+    "done": "完成",
+    "unchecked": "未检查",
+    "empty": "没有目标服务器"
+  }
+}

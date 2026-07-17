@@ -1,0 +1,103 @@
+{
+  "title": "User Management",
+  "role": {
+    "admin": "Admin",
+    "operator": "Operator",
+    "viewer": "Viewer",
+    "adminFull": "Admin (admin)",
+    "operatorFull": "Operator (operator)",
+    "viewerFull": "Viewer (viewer)"
+  },
+  "index": {
+    "desc": "Manage system users. Only an <strong>Admin</strong> can add/edit/delete users.",
+    "addUser": "+ Add User",
+    "kpi": {
+      "total": "Total Users",
+      "active": "Active",
+      "admin": "Admins",
+      "inactive": "Inactive"
+    },
+    "listTitle": "User List",
+    "th": {
+      "username": "Username",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "enabled": "Active",
+      "lastLogin": "Last Login",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "mustChangePw": "⚠ Password change required",
+    "active": "Active",
+    "inactive": "Inactive",
+    "none": "Never",
+    "editBtn": "Edit",
+    "roleGuide": {
+      "title": "Role Guide",
+      "admin": "All features + user management",
+      "operator": "Run assessments, register exceptions/exclusions, view reports",
+      "viewer": "View reports only (no changes)"
+    },
+    "js": {
+      "deleteConfirm": "Delete user \"{username}\"?",
+      "deleted": "Deleted.",
+      "failPrefix": "Failed: ",
+      "errWord": "error"
+    }
+  },
+  "form": {
+    "titleEdit": "Edit User",
+    "titleNew": "Add User",
+    "headEdit": "Edit User #{id}",
+    "basicInfo": "Basic Info",
+    "username": "Username",
+    "usernamePh": "Letters/digits/_ 3-30 chars",
+    "usernameFixed": "Username cannot be changed",
+    "name": "Name",
+    "namePh": "Full name",
+    "email": "Email",
+    "pwSection": "Password",
+    "pwKeepHint": "Leave blank to keep the current password. Enter a new one to change it.",
+    "newPassword": "New Password",
+    "password": "Password",
+    "min8": "Min 8 characters",
+    "pwConfirm": "Confirm Password",
+    "retype": "Re-enter",
+    "roleSection": "Role",
+    "roleAdmin": "Admin (admin)",
+    "roleOperator": "Operator (operator)",
+    "roleViewer": "Viewer (viewer)",
+    "roleAdminDesc": "All features + user management",
+    "roleOperatorDesc": "General operations such as assessments/exceptions/exclusions",
+    "roleViewerDesc": "View reports only",
+    "statusSection": "Status",
+    "enabled": "Active",
+    "disabledHint": "Cannot log in while inactive",
+    "addUser": "Add User",
+    "js": {
+      "pwMismatch": "Passwords do not match.",
+      "updated": "Updated.",
+      "added": "User added.",
+      "failPrefix": "Failed: ",
+      "errWord": "error"
+    }
+  },
+  "password": {
+    "title": "Change Password",
+    "mustChangeTitle": "⚠ Password change required",
+    "mustChangeDesc": "For security, you must change your password on first login.",
+    "current": "Current Password",
+    "new": "New Password",
+    "newConfirm": "Confirm New Password",
+    "newPh": "Min 8 chars; mix of letters/digits/symbols recommended",
+    "change": "Change",
+    "js": {
+      "mismatch": "New passwords do not match.",
+      "sameAsCurrent": "The new password must differ from the current one.",
+      "changed": "Password changed.",
+      "failPrefix": "Failed: ",
+      "errWord": "error"
+    }
+  }
+}

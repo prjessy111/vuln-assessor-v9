@@ -1,0 +1,46 @@
+{
+  "idx": {
+    "title": "Raw 収集",
+    "heading": "Raw データ収集",
+    "desc": "AgentにSSH接続し、SecuMS raw SQLiteファイルを診断PCへ取得します。",
+    "noServers1": "SSH情報が登録されたサーバーがありません。",
+    "noServers2": "でSSH情報を登録してください。",
+    "thName": "表示名",
+    "thHost": "ホスト",
+    "thSshUser": "SSH ユーザー",
+    "thRawPath": "raw パス",
+    "thLastCollected": "最終収集",
+    "executor": "実行者",
+    "executorPh": "名前またはID (任意)",
+    "startCollect": "選択サーバーで収集開始",
+    "viewHistory": "収集履歴を見る",
+    "recentHeading": "最近の収集 (最近20件)",
+    "thStart": "開始",
+    "thServer": "サーバー",
+    "thStatus": "状態",
+    "thFile": "ファイル",
+    "thSize": "サイズ",
+    "empty": "収集履歴がありません。"
+  },
+  "hist": {
+    "title": "収集履歴",
+    "heading": "Raw 収集履歴",
+    "serverHistory": "{name} ({host}) の収集履歴",
+    "viewAll": "全履歴を見る",
+    "thStart": "開始",
+    "thEnd": "終了",
+    "thPathReason": "ファイルパス / 理由",
+    "thHash": "ハッシュ",
+    "backToCollect": "収集画面へ"
+  },
+  "result": {
+    "title": "収集結果",
+    "heading": "Raw 収集結果",
+    "total": "全体",
+    "success": "成功",
+    "fail": "失敗",
+    "thResult": "結果",
+    "thFileReason": "ファイル/理由",
+    "thAction": "アクション"
+  }
+}

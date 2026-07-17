@@ -1,0 +1,18 @@
+{
+  "intro": "Specify the raw file using one of the two methods below.",
+  "targetServer": "Target Server",
+  "methodA": "Method A. Select from collected raw files (recommended)",
+  "th": {
+    "select": "Select",
+    "fileName": "File Name",
+    "size": "Size",
+    "collectedAt": "Collected At"
+  },
+  "noRawFiles": "No collected raw files. Collect first from the <a href=\"/collect\">Raw Collection</a> menu.",
+  "methodB": "Method B. Direct upload",
+  "uploadHint": "SQLite file, up to 50MB. Use only if nothing is selected in the list above.",
+  "options": "Options",
+  "rulesetVer": "Ruleset Version",
+  "executedBy": "Executed By",
+  "phExecutedBy": "Name or ID (optional)"
+}

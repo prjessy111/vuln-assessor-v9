@@ -1,0 +1,43 @@
+{
+  "title": "通知管理",
+  "desc": "诊断/计划执行期间发生的事件(发现漏洞、失败等)的发送记录。通道通过环境变量 <code>NOTIFIER_CHANNELS</code> 设置 (例: <code>console,slack</code>)。",
+  "testBtn": "发送测试通知",
+  "kpi": {
+    "total": "全部",
+    "keep500": "最多保留500条",
+    "last24h": "最近24小时",
+    "sendAttempt": "发送尝试",
+    "last7d": "最近7天",
+    "sendFail": "发送失败",
+    "partialFail": "含各通道部分失败",
+    "urgent": "紧急通知"
+  },
+  "ch": {
+    "title": "通道设置",
+    "active": "启用通道",
+    "changeHint": "通过环境变量修改 (逗号分隔)",
+    "email": "邮件 (SMTP)",
+    "configured": "已设置",
+    "notConfigured": "未设置",
+    "required": "为必需项",
+    "envRequired": "需要环境变量"
+  },
+  "hist": {
+    "title": "发送记录 (最近 {n}条)",
+    "empty": "暂无已发送的通知。请执行诊断或点击上方[发送测试通知]按钮。",
+    "sentAt": "发送时间",
+    "severity": "严重程度",
+    "event": "事件",
+    "subject": "标题",
+    "channelResult": "通道结果"
+  },
+  "js": {
+    "promptSeverity": "严重程度 (info / warning / error / success):",
+    "promptTitle": "标题:",
+    "defaultTitle": "测试通知",
+    "testBody": "从UI触发的测试通知",
+    "sendResult": "发送结果: ",
+    "failPrefix": "失败: ",
+    "error": "错误"
+  }
+}

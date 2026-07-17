@@ -1,60 +1,60 @@
-<%- include('../_header', { title: '수집 이력', activeMenu: 'collection' }) %>
+<%- include('../_header', { title: t('collection.hist.title'), activeMenu: 'collection' }) %>
 
 <div class="page-header">
-  <h1>📋 자동 수집 이력</h1>
+  <h1><%= t('collection.hist.heading') %></h1>
   <div class="header-actions">
-    <a href="/collection" class="btn">🔄 수집 관리로</a>
-    <button class="btn" onclick="location.reload()">🔁 새로고침</button>
+    <a href="/collection" class="btn"><%= t('collection.hist.toManage') %></a>
+    <button class="btn" onclick="location.reload()"><%= t('collection.idx.refresh') %></button>
   </div>
 </div>
 
 <p class="muted small">
-  자동 수집 실행 이력 (최근 <strong><%= history.length %></strong>건 / 전체 <%= total %>건)
+  <%- t('collection.hist.summary', { recent: history.length, total: total }) %>
 </p>
 
 <div class="section-box">
   <div class="filter-row">
-    <input type="search" id="historySearch" placeholder="검색 (호스트/IP/OS/결과ID/오류)...">
+    <input type="search" id="historySearch" placeholder="<%= t('collection.hist.searchPh') %>">
     <select id="historyFetch">
-      <option value="">전체 수집 상태</option>
-      <option value="success">수집 성공</option>
-      <option value="failed">수집 실패</option>
+      <option value=""><%= t('collection.hist.fetchAll') %></option>
+      <option value="success"><%= t('collection.hist.fetchSuccess') %></option>
+      <option value="failed"><%= t('collection.hist.fetchFailed') %></option>
     </select>
     <select id="historyDiagnose">
-      <option value="">전체 진단 상태</option>
-      <option value="success">진단 완료</option>
-      <option value="failed">진단 실패</option>
-      <option value="skipped">건너뜀</option>
+      <option value=""><%= t('collection.hist.diagAll') %></option>
+      <option value="success"><%= t('collection.hist.diagSuccess') %></option>
+      <option value="failed"><%= t('collection.hist.diagFailed') %></option>
+      <option value="skipped"><%= t('collection.hist.skipped') %></option>
     </select>
     <select id="historySource">
-      <option value="">전체 소스</option>
+      <option value=""><%= t('collection.hist.sourceAll') %></option>
       <option value="secums">SecuMS</option>
       <option value="script">Script</option>
-      <option value="script_deploy">Script 배포</option>
+      <option value="script_deploy"><%= t('collection.hist.sourceScriptDeploy') %></option>
       <option value="both">SecuMS+Script</option>
     </select>
     <input type="date" id="historyFrom">
     <input type="date" id="historyTo">
-    <button class="btn-sm" onclick="applyHistoryFilter()">필터 적용</button>
-    <button class="btn-sm" onclick="resetHistoryFilter()">초기화</button>
+    <button class="btn-sm" onclick="applyHistoryFilter()"><%= t('collection.hist.applyFilter') %></button>
+    <button class="btn-sm" onclick="resetHistoryFilter()"><%= t('collection.hist.resetFilter') %></button>
   </div>
 </div>
 
 <table class="data-table" id="collectionHistoryTable">
   <thead>
     <tr>
-      <th style="width:140px;">시작 시각</th>
-      <th>호스트</th><th style="width:110px;">IP</th><th style="width:70px;">OS</th>
-      <th style="width:80px;">수집</th><th style="width:80px;">진단</th>
-      <th style="width:90px;">결과 ID</th><th>요약</th><th style="width:80px;">소요</th>
+      <th style="width:140px;"><%= t('collection.hist.thStarted') %></th>
+      <th><%= t('collection.hist.thHost') %></th><th style="width:110px;">IP</th><th style="width:70px;">OS</th>
+      <th style="width:80px;"><%= t('collection.hist.thFetch') %></th><th style="width:80px;"><%= t('collection.hist.thDiag') %></th>
+      <th style="width:90px;"><%= t('collection.hist.thResultId') %></th><th><%= t('collection.hist.thSummary') %></th><th style="width:80px;"><%= t('collection.hist.thElapsed') %></th>
     </tr>
   </thead>
   <tbody>
     <% if (!history.length) { %>
       <tr>
         <td colspan="9" class="empty" style="padding:40px;text-align:center;">
-          자동 수집 이력이 없습니다.<br>
-          <span class="muted small">[수집 관리] 에서 [▶ 전체 실행] 누르거나 <code>npm run scheduler</code> 실행 시 기록됩니다.</span>
+          <%= t('collection.hist.empty1') %><br>
+          <span class="muted small"><%- t('collection.hist.empty2') %></span>
         </td>
       </tr>
     <% } %>
@@ -69,16 +69,16 @@
         <td class="mono small"><%= h.ip %></td>
         <td><%= h.os %></td>
         <td>
-          <% if (h.fetch_status === 'success') { %><span style="color:#27ae60;font-weight:600;">✓ 성공</span>
-          <% } else if (h.fetch_status === 'failed') { %><span style="color:#c0392b;font-weight:600;" title="<%= h.fetch_error %>">✗ 실패</span>
-          <% } else if (h.fetch_status === 'queued') { %><span class="muted">대기</span>
+          <% if (h.fetch_status === 'success') { %><span style="color:#27ae60;font-weight:600;"><%= t('collection.hist.stSuccess') %></span>
+          <% } else if (h.fetch_status === 'failed') { %><span style="color:#c0392b;font-weight:600;" title="<%= h.fetch_error %>"><%= t('collection.hist.stFail') %></span>
+          <% } else if (h.fetch_status === 'queued') { %><span class="muted"><%= t('collection.hist.stQueued') %></span>
           <% } else { %><span class="muted">-</span><% } %>
         </td>
         <td>
-          <% if (h.diagnose_status === 'success') { %><span style="color:#27ae60;font-weight:600;">✓ 완료</span>
-          <% } else if (h.diagnose_status === 'skipped') { %><span class="muted">건너뜀</span>
-          <% } else if (h.diagnose_status === 'waiting_agent') { %><span class="muted">Agent 대기</span>
-          <% } else if (h.diagnose_status === 'failed') { %><span style="color:#c0392b;font-weight:600;" title="<%= h.diagnose_error %>">✗ 실패</span>
+          <% if (h.diagnose_status === 'success') { %><span style="color:#27ae60;font-weight:600;"><%= t('collection.hist.stDone') %></span>
+          <% } else if (h.diagnose_status === 'skipped') { %><span class="muted"><%= t('collection.hist.skipped') %></span>
+          <% } else if (h.diagnose_status === 'waiting_agent') { %><span class="muted"><%= t('collection.hist.stAgentWait') %></span>
+          <% } else if (h.diagnose_status === 'failed') { %><span style="color:#c0392b;font-weight:600;" title="<%= h.diagnose_error %>"><%= t('collection.hist.stFail') %></span>
           <% } else { %><span class="muted">-</span><% } %>
         </td>
         <td>
@@ -87,9 +87,9 @@
         </td>
         <td class="small">
           <% if (h.summary) { %>
-            <span style="color:#c0392b;">취약 <%= h.summary.vuln %></span> /
-            <span style="color:#27ae60;">양호 <%= h.summary.safe %></span>
-            <% if (h.summary.info) { %>/ 정보제공 <%= h.summary.info %><% } %>
+            <span style="color:#c0392b;"><%= t('collection.hist.vuln') %> <%= h.summary.vuln %></span> /
+            <span style="color:#27ae60;"><%= t('collection.hist.safe') %> <%= h.summary.safe %></span>
+            <% if (h.summary.info) { %>/ <%= t('collection.hist.info') %> <%= h.summary.info %><% } %>
             <% if (h.summary.na) { %>/ <span style="color:#b9770e;">N/A <%= h.summary.na %></span><% } %>
           <% } else if (h.fetch_error) { %>
             <span class="muted" style="font-size:0.85em;"><%= h.fetch_error.substring(0, 80) %></span>
@@ -97,7 +97,7 @@
             <span class="muted" style="font-size:0.85em;"><%= h.diagnose_error.substring(0, 80) %></span>
           <% } else { %><span class="muted">-</span><% } %>
         </td>
-        <td class="small mono"><%= h.elapsed_ms ? (function(ms){var s=Math.round(ms/1000);return s<60 ? s+'초' : Math.floor(s/60)+'분 '+(s%60)+'초';})(h.elapsed_ms) : '-' %></td>
+        <td class="small mono"><%= h.elapsed_ms ? (function(ms){var s=Math.round(ms/1000);return s<60 ? s+t('collection.hist.sec') : Math.floor(s/60)+t('collection.hist.min')+(s%60)+t('collection.hist.sec');})(h.elapsed_ms) : '-' %></td>
       </tr>
     <% }) %>
   </tbody>

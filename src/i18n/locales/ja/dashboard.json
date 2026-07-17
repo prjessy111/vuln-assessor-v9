@@ -1,0 +1,46 @@
+{
+  "title": "ダッシュボード",
+  "asOf": "基準時点: {now}",
+  "kpi": {
+    "totalVuln": "脆弱項目合計",
+    "severeHigh": "{n}件が危険度「高」",
+    "newFound": "新規発見（今回診断）",
+    "vsTotal": "全体比 {pct}%",
+    "pending": "未対応",
+    "noAssignee": "担当者未指定 {n}件",
+    "fixRate": "対応率",
+    "fixedOf": "{fixed} / {total} 完了",
+    "servers": "診断サーバー",
+    "recent7d": "直近7日間の診断 {n}件"
+  },
+  "chart": {
+    "category": "カテゴリ別脆弱分布",
+    "total": "合計",
+    "trend4w": "直近4週間の脆弱推移",
+    "hostVuln": "ホスト別脆弱項目数（危険度 高/中/低 累積）",
+    "tipSev": "高 {h} · 中 {m} · 低 {l}（計 {total}）"
+  },
+  "wq": {
+    "title": "未対応優先処理キュー",
+    "subtitle": "— 新規 + 危険度高 + 担当者未指定を優先",
+    "mgmtNo": "管理番号",
+    "server": "サーバー",
+    "vuln": "脆弱性",
+    "severity": "危険度",
+    "isNew": "新規",
+    "assignee": "担当者",
+    "deliveredAt": "伝達日",
+    "fixStatus": "対応状況",
+    "empty": "未対応項目はありません 🎉"
+  },
+  "srv": {
+    "title": "サーバー別診断状況",
+    "asset": "資産",
+    "lastAssess": "最終診断:",
+    "total": "計 {n}",
+    "vuln": "脆弱 {n}",
+    "safe": "良好 {n}",
+    "na": "N/A {n}",
+    "noHistory": "診断履歴なし"
+  }
+}

@@ -487,6 +487,13 @@ tr.test-step.skip td { color: #888; }
 .main-nav a:hover { background: rgba(255,255,255,0.1); }
 .main-nav a.active { background: #3B82F6; color: #fff; font-weight: bold; }
 .user-area { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.lang-switch { display: inline-flex; gap: 2px; }
+.lang-switch .lang-opt {
+  color: #cbd5e1; text-decoration: none; font-size: 11px; font-weight: 600;
+  padding: 3px 6px; border-radius: 4px; line-height: 1;
+}
+.lang-switch .lang-opt:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.lang-switch .lang-opt.active { background: #3B82F6; color: #fff; }
 .user-name { color: #bdc3c7; }
 .user-area .btn-sm { background: rgba(255,255,255,0.15); color: #fff; }
 

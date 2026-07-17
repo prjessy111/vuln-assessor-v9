@@ -1,0 +1,46 @@
+{
+  "idx": {
+    "title": "Raw 수집",
+    "heading": "Raw 데이터 수집",
+    "desc": "Agent에 SSH 접속하여 SecuMS raw SQLite 파일을 진단 PC로 가져옵니다.",
+    "noServers1": "SSH 정보가 등록된 서버가 없습니다.",
+    "noServers2": "에서 SSH 정보를 등록하세요.",
+    "thName": "표시명",
+    "thHost": "호스트",
+    "thSshUser": "SSH 사용자",
+    "thRawPath": "raw 경로",
+    "thLastCollected": "마지막 수집",
+    "executor": "실행자",
+    "executorPh": "이름 또는 ID (옵션)",
+    "startCollect": "선택 서버에서 수집 시작",
+    "viewHistory": "수집 이력 보기",
+    "recentHeading": "최근 수집 (최근 20건)",
+    "thStart": "시작",
+    "thServer": "서버",
+    "thStatus": "상태",
+    "thFile": "파일",
+    "thSize": "크기",
+    "empty": "수집 이력이 없습니다."
+  },
+  "hist": {
+    "title": "수집 이력",
+    "heading": "Raw 수집 이력",
+    "serverHistory": "{name} ({host}) 의 수집 이력",
+    "viewAll": "전체 이력 보기",
+    "thStart": "시작",
+    "thEnd": "종료",
+    "thPathReason": "파일 경로 / 사유",
+    "thHash": "해시",
+    "backToCollect": "수집 화면으로"
+  },
+  "result": {
+    "title": "수집 결과",
+    "heading": "Raw 수집 결과",
+    "total": "전체",
+    "success": "성공",
+    "fail": "실패",
+    "thResult": "결과",
+    "thFileReason": "파일/사유",
+    "thAction": "액션"
+  }
+}

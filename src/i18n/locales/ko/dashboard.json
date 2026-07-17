@@ -1,0 +1,46 @@
+{
+  "title": "대시보드",
+  "asOf": "기준 시점: {now}",
+  "kpi": {
+    "totalVuln": "전체 취약 항목",
+    "severeHigh": "{n}건이 위험도 '상'",
+    "newFound": "신규 발견 (이번 진단)",
+    "vsTotal": "전체 대비 {pct}%",
+    "pending": "미조치",
+    "noAssignee": "담당자 미지정 {n}건",
+    "fixRate": "조치율",
+    "fixedOf": "{fixed} / {total} 완료",
+    "servers": "진단 서버",
+    "recent7d": "최근 7일 진단 {n}건"
+  },
+  "chart": {
+    "category": "카테고리별 취약 분포",
+    "total": "전체",
+    "trend4w": "최근 4주 취약 추이",
+    "hostVuln": "호스트별 취약 항목 수 (위험도 상/중/하 누적)",
+    "tipSev": "상 {h} · 중 {m} · 하 {l} (총 {total})"
+  },
+  "wq": {
+    "title": "미조치 우선 처리 큐",
+    "subtitle": "— 신규 + 위험도 상 + 담당자 미지정 우선",
+    "mgmtNo": "관리번호",
+    "server": "서버",
+    "vuln": "취약점",
+    "severity": "위험도",
+    "isNew": "신규",
+    "assignee": "담당자",
+    "deliveredAt": "전달일자",
+    "fixStatus": "조치상태",
+    "empty": "미조치 항목이 없습니다 🎉"
+  },
+  "srv": {
+    "title": "서버별 진단 현황",
+    "asset": "자산",
+    "lastAssess": "최근 진단:",
+    "total": "총 {n}",
+    "vuln": "취약 {n}",
+    "safe": "양호 {n}",
+    "na": "N/A {n}",
+    "noHistory": "진단 이력 없음"
+  }
+}

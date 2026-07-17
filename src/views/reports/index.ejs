@@ -1,51 +1,50 @@
-<%- include('../_header', { title: '리포트', activeMenu: 'reports' }) %>
+<%- include('../_header', { title: t('reports.index.title'), activeMenu: 'reports' }) %>
 
 <div class="page-header">
-  <h1>리포트</h1>
+  <h1><%= t('reports.index.title') %></h1>
   <p class="muted small">
-    진단이 성공한 결과에 대한 리포트를 확인합니다. 한 진단당
-    <strong>리포트1</strong>(금보원)·<strong>리포트2</strong>·<strong>리포트3</strong>(타사정책)·<strong>조치 가이드</strong>·<strong>3-way 정합성</strong>을 제공합니다.
+    <%- t('reports.index.introHtml') %>
   </p>
 </div>
 
 <% if (!diagnoses.length) { %>
   <div class="section-box">
-    <p class="muted">아직 성공한 진단이 없습니다. <a href="/diagnosis">진단 관리</a>에서 진단을 먼저 실행하세요.</p>
+    <p class="muted"><%- t('reports.index.emptyHtml') %></p>
   </div>
 <% } else { %>
   <div class="kpi-grid kpi-3col">
     <div class="kpi-card">
-      <div class="kpi-label">최근 진단</div>
+      <div class="kpi-label"><%= t('reports.index.kpiRecent') %></div>
       <div class="kpi-num"><%= diagnoses.length %></div>
-      <div class="kpi-sub">표시 가능한 리포트 수</div>
+      <div class="kpi-sub"><%= t('reports.index.kpiRecentSub') %></div>
     </div>
     <div class="kpi-card kpi-fail">
-      <div class="kpi-label">취약 합계</div>
+      <div class="kpi-label"><%= t('reports.index.kpiVulnSum') %></div>
       <div class="kpi-num" style="color:#c0392b;">
         <%= diagnoses.reduce((s, d) => s + (d.vuln_count || 0), 0) %>
       </div>
-      <div class="kpi-sub">최근 <%= diagnoses.length %>건 합산</div>
+      <div class="kpi-sub"><%= t('reports.index.kpiSum', { n: diagnoses.length }) %></div>
     </div>
     <div class="kpi-card kpi-success">
-      <div class="kpi-label">양호 합계</div>
+      <div class="kpi-label"><%= t('reports.index.kpiSafeSum') %></div>
       <div class="kpi-num" style="color:#27ae60;">
         <%= diagnoses.reduce((s, d) => s + (d.safe_count || 0), 0) %>
       </div>
-      <div class="kpi-sub">최근 <%= diagnoses.length %>건 합산</div>
+      <div class="kpi-sub"><%= t('reports.index.kpiSum', { n: diagnoses.length }) %></div>
     </div>
   </div>
 
   <div class="section-box">
-    <h3>진단별 리포트 (최근 <%= diagnoses.length %>건)</h3>
+    <h3><%= t('reports.index.listTitle', { n: diagnoses.length }) %></h3>
     <table class="data-table">
       <thead>
         <tr>
-          <th>진단 ID</th>
-          <th>서버</th>
-          <th>진단 시각</th>
-          <th>유형</th>
-          <th>요약</th>
-          <th>리포트</th>
+          <th><%= t('reports.index.th.id') %></th>
+          <th><%= t('reports.index.th.server') %></th>
+          <th><%= t('reports.index.th.time') %></th>
+          <th><%= t('reports.index.th.type') %></th>
+          <th><%= t('reports.index.th.summary') %></th>
+          <th><%= t('reports.index.th.report') %></th>
         </tr>
       </thead>
       <tbody>
@@ -67,30 +66,30 @@
               <% } %>
               <div class="muted small">
                 <% if (d.diagnose_type === 'llm') { %>
-                  <span style="color:#0984e3;">🧠 LLM 판정 (최종)</span>
+                  <span style="color:#0984e3;"><%= t('reports.index.llmVerdict') %></span>
                 <% } else if (d.diagnose_type === 'ai') { %>
-                  <span style="color:#999;">🤖 mock (LLM 미사용 기준선)</span>
-                <% } else { %>룰셋<% } %>
+                  <span style="color:#999;"><%= t('reports.index.mockVerdict') %></span>
+                <% } else { %><%= t('reports.common.ruleset') %><% } %>
               </div>
             </td>
             <td>
-              <span style="color:#c0392b;font-weight:600;">취약 <%= d.vuln_count || 0 %></span>
+              <span style="color:#c0392b;font-weight:600;"><%= t('reports.index.vulnN', { n: d.vuln_count || 0 }) %></span>
               <span class="muted">/</span>
-              <span style="color:#27ae60;">양호 <%= d.safe_count || 0 %></span>
+              <span style="color:#27ae60;"><%= t('reports.index.safeN', { n: d.safe_count || 0 }) %></span>
               <% if (d.na_count) { %>
                 <span class="muted">/ N/A <%= d.na_count %></span>
               <% } %>
             </td>
             <td>
-              <a href="/reports/<%= d.assessment_id %>/fsi" class="btn-sm primary">리포트1</a>
-              <a href="/reports/<%= d.assessment_id %>/samsung" class="btn-sm">리포트2</a>
-              <a href="/reports/<%= d.assessment_id %>/fsi/vuln" class="btn-sm" style="background:#c0392b;color:#fff;">🚨 취약점1</a>
-              <a href="/reports/<%= d.assessment_id %>/samsung/vuln" class="btn-sm" style="background:#c0392b;color:#fff;">🚨 취약점2</a>
-              <a href="/reports/<%= d.assessment_id %>/policy3" class="btn-sm" style="background:#0984e3;color:#fff;">리포트3(타사)</a>
-              <a href="/reports/<%= d.assessment_id %>/remediation" class="btn-sm" style="background:#27ae60;color:#fff;">🔧 조치 가이드</a>
-              <a href="/reports/<%= d.assessment_id %>/threeway" class="btn-sm" style="background:#34495e;color:#fff;">🔀 3-way 정합성</a>
+              <a href="/reports/<%= d.assessment_id %>/fsi" class="btn-sm primary"><%= t('reports.index.btnR1') %></a>
+              <a href="/reports/<%= d.assessment_id %>/samsung" class="btn-sm"><%= t('reports.index.btnR2') %></a>
+              <a href="/reports/<%= d.assessment_id %>/fsi/vuln" class="btn-sm" style="background:#c0392b;color:#fff;"><%= t('reports.index.btnV1') %></a>
+              <a href="/reports/<%= d.assessment_id %>/samsung/vuln" class="btn-sm" style="background:#c0392b;color:#fff;"><%= t('reports.index.btnV2') %></a>
+              <a href="/reports/<%= d.assessment_id %>/policy3" class="btn-sm" style="background:#0984e3;color:#fff;"><%= t('reports.index.btnR3') %></a>
+              <a href="/reports/<%= d.assessment_id %>/remediation" class="btn-sm" style="background:#27ae60;color:#fff;"><%= t('reports.index.btnRemed') %></a>
+              <a href="/reports/<%= d.assessment_id %>/threeway" class="btn-sm" style="background:#34495e;color:#fff;"><%= t('reports.index.btnThreeway') %></a>
               <% if (d.diagnose_type === 'ai' || d.diagnose_type === 'llm') { %>
-                <a href="/diagnosis/<%= d.assessment_id %>/ai" class="btn-sm" style="background:#6c5ce7;color:#fff;">🤖 <%= d.diagnose_type === 'llm' ? 'LLM' : 'AI' %> 결과</a>
+                <a href="/diagnosis/<%= d.assessment_id %>/ai" class="btn-sm" style="background:#6c5ce7;color:#fff;"><%= d.diagnose_type === 'llm' ? t('reports.index.llmResult') : t('reports.index.aiResult') %></a>
               <% } %>
             </td>
           </tr>

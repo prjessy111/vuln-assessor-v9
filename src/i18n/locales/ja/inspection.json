@@ -1,0 +1,27 @@
+{
+  "title": "診断状況",
+  "asOf": "基準日: {now}",
+  "os": {
+    "title": "OS別点検状況",
+    "category": "区分",
+    "total": "全体",
+    "checked": "点検完了",
+    "unchecked": "未点検",
+    "sum": "合計",
+    "allDone": "✓ 全サーバー点検完了",
+    "noServers": "対象サーバーがありません (servers.csv を確認)"
+  },
+  "host": {
+    "title": "ホスト一覧",
+    "hostname": "ホスト名",
+    "vulnCount": "脆弱性件数",
+    "compliance": "遵守率 (良好/全体)",
+    "operator": "運用者",
+    "domain": "ドメイン",
+    "channel": "通信方式",
+    "status": "点検状態",
+    "done": "完了",
+    "unchecked": "未点検",
+    "empty": "対象サーバーがありません"
+  }
+}

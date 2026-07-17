@@ -1,0 +1,46 @@
+{
+  "title": "仪表盘",
+  "asOf": "基准时间: {now}",
+  "kpi": {
+    "totalVuln": "全部脆弱项",
+    "severeHigh": "{n}项为高风险",
+    "newFound": "新发现（本次诊断）",
+    "vsTotal": "占全部 {pct}%",
+    "pending": "未处理",
+    "noAssignee": "未指定负责人 {n}项",
+    "fixRate": "整改率",
+    "fixedOf": "{fixed} / {total} 已完成",
+    "servers": "诊断服务器",
+    "recent7d": "近7天诊断 {n}次"
+  },
+  "chart": {
+    "category": "按类别脆弱分布",
+    "total": "合计",
+    "trend4w": "近4周脆弱趋势",
+    "hostVuln": "各主机脆弱项数（高/中/低风险累积）",
+    "tipSev": "高 {h} · 中 {m} · 低 {l}（共 {total}）"
+  },
+  "wq": {
+    "title": "未处理优先队列",
+    "subtitle": "— 新增 + 高风险 + 未指定负责人优先",
+    "mgmtNo": "管理编号",
+    "server": "服务器",
+    "vuln": "漏洞",
+    "severity": "风险等级",
+    "isNew": "新增",
+    "assignee": "负责人",
+    "deliveredAt": "传达日期",
+    "fixStatus": "整改状态",
+    "empty": "没有未处理项 🎉"
+  },
+  "srv": {
+    "title": "各服务器诊断状态",
+    "asset": "资产",
+    "lastAssess": "最近诊断:",
+    "total": "共 {n}",
+    "vuln": "脆弱 {n}",
+    "safe": "良好 {n}",
+    "na": "N/A {n}",
+    "noHistory": "无诊断历史"
+  }
+}

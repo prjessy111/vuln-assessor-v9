@@ -1,0 +1,37 @@
+{
+  "listTitle": "诊断历史",
+  "selectServer": "选择服务器",
+  "selectPh": "--- 选择 ---",
+  "serverHistory": "{name} 诊断历史 ({n}条)",
+  "col": {
+    "select": "选择",
+    "assessId": "诊断ID",
+    "executedAt": "执行时间",
+    "executedBy": "执行者",
+    "ruleset": "规则集",
+    "total": "全部",
+    "vuln": "脆弱",
+    "safe": "良好",
+    "elapsedMs": "耗时(ms)",
+    "action": "操作"
+  },
+  "compareBtn": "比较所选2项",
+  "selectTwo": "请选择2项诊断进行比较。",
+  "compareTitle": "诊断比较",
+  "compareHeading": "诊断比较: #{a} vs #{b}",
+  "abSummary": "脆弱 {vuln} / 良好 {safe} / N/A {na}",
+  "chg": {
+    "improved": "改善",
+    "worsened": "恶化",
+    "unchanged": "维持",
+    "addedB": "新增(B)",
+    "removedA": "移除(A)"
+  },
+  "cmp": {
+    "ruleId": "项目ID",
+    "severity": "重要度",
+    "statusA": "A判定",
+    "statusB": "B判定",
+    "change": "变化"
+  }
+}

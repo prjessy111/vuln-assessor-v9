@@ -1,4 +1,4 @@
-<%- include('../_header', { title: '서버별 점검 이력 — ' + server.hostname, activeMenu: 'security-grade' }) %>
+<%- include('../_header', { title: t('security.detail.pageTitle', { host: server.hostname }), activeMenu: 'security-grade' }) %>
 <style>
   .srv-info { display:flex; gap:0; border:1px solid #e3e8ef; border-radius:8px; overflow:hidden; margin:12px 0 18px; }
   .srv-info .cell { flex:1; padding:14px 18px; border-right:1px solid #eef1f5; }
@@ -10,31 +10,31 @@
 </style>
 
 <div class="page-header">
-  <h1>서버별 진단 이력</h1>
+  <h1><%= t('security.heading') %></h1>
   <div class="header-actions">
-    <a href="/security-grade" class="btn">← 목록</a>
+    <a href="/security-grade" class="btn"><%= t('security.detail.backList') %></a>
   </div>
 </div>
 
 <!-- 서버 정보 -->
 <div class="srv-info">
-  <div class="cell"><div class="lbl">호스트명</div><div class="val">🖥 <%= server.hostname %></div></div>
+  <div class="cell"><div class="lbl"><%= t('security.detail.hostname') %></div><div class="val">🖥 <%= server.hostname %></div></div>
   <div class="cell"><div class="lbl">IP</div><div class="val"><%= server.ip_address || '-' %></div></div>
   <div class="cell"><div class="lbl">OS</div><div class="val"><%= (server.os_type||'-').toUpperCase() %></div></div>
-  <div class="cell"><div class="lbl">운영자</div><div class="val"><%= server.ssh_user || 'admin' %></div></div>
-  <div class="cell"><div class="lbl">통신방식</div><div class="val">Agentless</div></div>
+  <div class="cell"><div class="lbl"><%= t('security.detail.operator') %></div><div class="val"><%= server.ssh_user || 'admin' %></div></div>
+  <div class="cell"><div class="lbl"><%= t('security.detail.channel') %></div><div class="val">Agentless</div></div>
 </div>
 
 <!-- 점검 이력 -->
 <div class="section-box">
-  <h3>점검 이력 <span class="muted small" style="font-weight:normal;">— 진단 시각 최신순 · 준수율 = 양호 ÷ 전체</span></h3>
+  <h3><%= t('security.detail.histTitle') %> <span class="muted small" style="font-weight:normal;"><%= t('security.detail.histSubtitle') %></span></h3>
   <div class="table-scroll" style="overflow-x:auto;">
   <table class="data-table">
     <thead>
       <tr>
-        <th>진단 시각</th><th>유형</th><th>소스</th><th>소요시간</th>
-        <th>전체</th><th>취약</th><th>양호</th><th>판정불가</th>
-        <th>준수율 (양호/전체)</th><th>결과</th>
+        <th><%= t('security.detail.assessedAt') %></th><th><%= t('security.detail.type') %></th><th><%= t('security.detail.source') %></th><th><%= t('security.detail.elapsed') %></th>
+        <th><%= t('security.detail.total') %></th><th><%= t('security.detail.vuln') %></th><th><%= t('security.detail.safe') %></th><th><%= t('security.detail.na') %></th>
+        <th><%= t('security.detail.compliance') %></th><th><%= t('security.detail.result') %></th>
       </tr>
     </thead>
     <tbody>
@@ -55,11 +55,11 @@
             <% } else { %><span class="muted">-</span><% } %>
           </td>
           <td>
-            <% if (r.assessment_id) { %><a href="/diagnosis/<%= r.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;">결과</a><% } else { %>-<% } %>
+            <% if (r.assessment_id) { %><a href="/diagnosis/<%= r.assessment_id %>/ai" class="btn-sm primary" style="background:#6c5ce7;"><%= t('security.detail.resultBtn') %></a><% } else { %>-<% } %>
           </td>
         </tr>
       <% }); %>
-      <% if (!rows.length) { %><tr><td colspan="10" class="empty">진단 이력이 없습니다</td></tr><% } %>
+      <% if (!rows.length) { %><tr><td colspan="10" class="empty"><%= t('security.detail.empty') %></td></tr><% } %>
     </tbody>
   </table>
   </div>

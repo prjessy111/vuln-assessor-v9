@@ -1,0 +1,46 @@
+{
+  "idx": {
+    "title": "Raw Collection",
+    "heading": "Raw Data Collection",
+    "desc": "Connects to the Agent over SSH and fetches the SecuMS raw SQLite file to the assessment PC.",
+    "noServers1": "No servers with SSH info registered. Register SSH info in",
+    "noServers2": ".",
+    "thName": "Name",
+    "thHost": "Host",
+    "thSshUser": "SSH User",
+    "thRawPath": "raw path",
+    "thLastCollected": "Last Collected",
+    "executor": "Executor",
+    "executorPh": "Name or ID (optional)",
+    "startCollect": "Start Collection on Selected Servers",
+    "viewHistory": "View Collection History",
+    "recentHeading": "Recent Collections (last 20)",
+    "thStart": "Started",
+    "thServer": "Server",
+    "thStatus": "Status",
+    "thFile": "File",
+    "thSize": "Size",
+    "empty": "No collection history."
+  },
+  "hist": {
+    "title": "Collection History",
+    "heading": "Raw Collection History",
+    "serverHistory": "Collection history for {name} ({host})",
+    "viewAll": "View All History",
+    "thStart": "Started",
+    "thEnd": "Finished",
+    "thPathReason": "File Path / Reason",
+    "thHash": "Hash",
+    "backToCollect": "Back to Collection"
+  },
+  "result": {
+    "title": "Collection Result",
+    "heading": "Raw Collection Result",
+    "total": "Total",
+    "success": "Success",
+    "fail": "Failed",
+    "thResult": "Result",
+    "thFileReason": "File/Reason",
+    "thAction": "Action"
+  }
+}
