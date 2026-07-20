@@ -48,6 +48,9 @@
     "submit": "ログイン",
     "firstRunTitle": "初回実行のご案内",
     "firstRunAdmin": "デフォルト管理者:",
-    "firstRunChange": "初回ログイン後、すぐにパスワードを変更してください。"
+    "firstRunChange": "初回ログイン後、すぐにパスワードを変更してください。",
+    "badCredentials": "ユーザーIDまたはパスワードが正しくありません。",
+    "pendingApproval": "承認待ちのアカウントです。管理者の承認後にログインできます。",
+    "registerLink": "会員登録"
   }
 }

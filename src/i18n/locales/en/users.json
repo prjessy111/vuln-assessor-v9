@@ -43,7 +43,18 @@
       "deleteConfirm": "Delete user \"{username}\"?",
       "deleted": "Deleted.",
       "failPrefix": "Failed: ",
-      "errWord": "error"
+      "errWord": "error",
+      "approveConfirm": "Approve user {username} with the {role} role?",
+      "approved": "Approved.",
+      "rejectConfirm": "Reject (delete) the sign-up request for {username}?",
+      "rejected": "Rejected."
+    },
+    "pending": {
+      "title": "Pending Approval",
+      "desc": "Users who requested an account. Assign a role and approve.",
+      "grantRole": "Grant role",
+      "approve": "Approve",
+      "reject": "Reject"
     }
   },
   "form": {

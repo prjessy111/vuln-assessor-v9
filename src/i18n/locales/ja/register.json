@@ -1,0 +1,17 @@
+{
+  "title": "会員登録 — ADV (AI Diagnosis Verify)",
+  "heading": "会員登録",
+  "approvalNotice": "登録申請後、管理者の承認を受けてからログインできます。承認時に権限が付与されます。",
+  "username": "ユーザーID",
+  "name": "氏名",
+  "email": "メール (任意)",
+  "password": "パスワード (8文字以上)",
+  "password2": "パスワード確認",
+  "submit": "登録申請",
+  "backToLogin": "← ログインに戻る",
+  "submitted": "登録申請を受け付けました。管理者の承認後にログインできます。",
+  "errRequired": "ユーザーID・氏名・パスワードは必須です。",
+  "errPwLen": "パスワードは8文字以上で入力してください。",
+  "errPwMismatch": "パスワードが一致しません。",
+  "errDupUser": "既に存在するユーザーIDです。"
+}

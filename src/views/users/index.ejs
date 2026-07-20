@@ -29,6 +29,47 @@
   </div>
 </div>
 
+<% var pendingUsers = users.filter(u => u.pending && !u.enabled); %>
+<% if (pendingUsers.length) { %>
+<div class="section-box" style="border-left:4px solid #e67e22;">
+  <h3>⏳ <%= t('users.index.pending.title') %> (<%= pendingUsers.length %>)</h3>
+  <p class="muted small"><%= t('users.index.pending.desc') %></p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th><%= t('users.index.th.username') %></th>
+        <th><%= t('users.index.th.name') %></th>
+        <th><%= t('users.index.th.email') %></th>
+        <th><%= t('users.index.th.createdAt') %></th>
+        <th><%= t('users.index.pending.grantRole') %></th>
+        <th><%= t('users.index.th.actions') %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% pendingUsers.forEach(u => { %>
+        <tr>
+          <td class="mono"><strong><%= u.username %></strong></td>
+          <td><%= u.name %></td>
+          <td class="small"><%= u.email || '-' %></td>
+          <td class="small mono"><%= u.created_at %></td>
+          <td>
+            <select id="role-<%= u.user_id %>">
+              <option value="viewer">👁 <%= t('users.role.viewer') %></option>
+              <option value="operator">🔧 <%= t('users.role.operator') %></option>
+              <option value="admin">👑 <%= t('users.role.admin') %></option>
+            </select>
+          </td>
+          <td>
+            <button class="btn-sm primary" onclick="approveUser(<%= u.user_id %>, '<%= u.username %>')"><%= t('users.index.pending.approve') %></button>
+            <button class="btn-sm" onclick="rejectUser(<%= u.user_id %>, '<%= u.username %>')" style="background:#c0392b;color:#fff;"><%= t('users.index.pending.reject') %></button>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+
 <div class="section-box">
   <h3><%= t('users.index.listTitle') %></h3>
   <table class="data-table">
@@ -46,7 +87,7 @@
       </tr>
     </thead>
     <tbody>
-      <% users.forEach(u => { %>
+      <% users.filter(u => !(u.pending && !u.enabled)).forEach(u => { %>
         <tr class="<%= !u.enabled ? 'row-disabled' : '' %>">
           <td class="mono">#<%= u.user_id %></td>
           <td class="mono"><strong><%= u.username %></strong>
@@ -100,7 +141,11 @@ const I18N = <%- JSON.stringify({
   deleteConfirm: t('users.index.js.deleteConfirm'),
   deleted: t('users.index.js.deleted'),
   failPrefix: t('users.index.js.failPrefix'),
-  errWord: t('users.index.js.errWord')
+  errWord: t('users.index.js.errWord'),
+  approveConfirm: t('users.index.js.approveConfirm'),
+  approved: t('users.index.js.approved'),
+  rejectConfirm: t('users.index.js.rejectConfirm'),
+  rejected: t('users.index.js.rejected')
 }) %>;
 async function deleteUser(id, username) {
   if (!confirm(I18N.deleteConfirm.split('{username}').join(username))) return;
@@ -108,6 +153,33 @@ async function deleteUser(id, username) {
   const j = await res.json();
   if (j.status === 'success') {
     alert(I18N.deleted);
+    location.reload();
+  } else {
+    alert(I18N.failPrefix + (j.error || I18N.errWord));
+  }
+}
+async function approveUser(id, username) {
+  const role = document.getElementById('role-' + id).value;
+  if (!confirm(I18N.approveConfirm.split('{username}').join(username).split('{role}').join(role))) return;
+  const res = await fetch('/users/' + id + '/approve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'role=' + encodeURIComponent(role)
+  });
+  const j = await res.json();
+  if (j.status === 'success') {
+    alert(I18N.approved);
+    location.reload();
+  } else {
+    alert(I18N.failPrefix + (j.error || I18N.errWord));
+  }
+}
+async function rejectUser(id, username) {
+  if (!confirm(I18N.rejectConfirm.split('{username}').join(username))) return;
+  const res = await fetch('/users/' + id + '/delete', { method: 'POST' });
+  const j = await res.json();
+  if (j.status === 'success') {
+    alert(I18N.rejected);
     location.reload();
   } else {
     alert(I18N.failPrefix + (j.error || I18N.errWord));

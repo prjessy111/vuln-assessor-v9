@@ -48,6 +48,9 @@
     "submit": "Sign in",
     "firstRunTitle": "First-run notice",
     "firstRunAdmin": "Default admin:",
-    "firstRunChange": "Change the password immediately after your first login."
+    "firstRunChange": "Change the password immediately after your first login.",
+    "badCredentials": "Invalid username or password.",
+    "pendingApproval": "This account is awaiting approval. You can log in once an administrator approves it.",
+    "registerLink": "Sign up"
   }
 }

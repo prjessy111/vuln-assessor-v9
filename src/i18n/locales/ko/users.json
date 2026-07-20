@@ -43,7 +43,18 @@
       "deleteConfirm": "사용자 \"{username}\" 을(를) 삭제하시겠습니까?",
       "deleted": "삭제되었습니다.",
       "failPrefix": "실패: ",
-      "errWord": "오류"
+      "errWord": "오류",
+      "approveConfirm": "{username} 사용자를 {role} 권한으로 승인할까요?",
+      "approved": "승인되었습니다.",
+      "rejectConfirm": "{username} 가입 신청을 거절(삭제)할까요?",
+      "rejected": "거절되었습니다."
+    },
+    "pending": {
+      "title": "승인 대기",
+      "desc": "회원가입을 신청한 사용자입니다. 권한을 지정하고 승인하세요.",
+      "grantRole": "부여 권한",
+      "approve": "승인",
+      "reject": "거절"
     }
   },
   "form": {

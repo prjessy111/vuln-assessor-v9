@@ -330,7 +330,7 @@ app.use((req, res, next) => {
 // - /login: 로그인 화면 (세션 없음 허용)
 // - /static, /css: 정적 리소스
 // - /api: Agent Push REST API (별도 토큰 인증)
-const PUBLIC_PATHS = ['/login', '/static', '/css', '/api'];
+const PUBLIC_PATHS = ['/login', '/register', '/static', '/css', '/api'];
 
 app.use((req, res, next) => {
   const isPublic = PUBLIC_PATHS.some(p => req.path === p || req.path.startsWith(p + '/'));
@@ -434,8 +434,10 @@ app.post('/login', (req, res) => {
   const { username, password, from } = req.body;
   const user = auth.findUserByUsername(MOCK_DIR, username);
   if (!user || !auth.verifyPassword(password, user.password_hash)) {
+    // 승인 대기(가입 신청) 계정이면 별도 안내 — findUserByUsername은 enabled 계정만 반환하므로 직접 조회
+    const pendingUser = auth.loadUsers(MOCK_DIR).find(u => u.username === username && !u.enabled && u.pending);
     return res.render('login', {
-      error: '아이디 또는 비밀번호가 올바르지 않습니다.',
+      error: pendingUser ? res.locals.t('common.login.pendingApproval') : res.locals.t('common.login.badCredentials'),
       from: from || '/',
       firstRun: false,
     });
@@ -451,6 +453,37 @@ app.post('/login', (req, res) => {
   }
   // 로그인 첫 화면은 항상 대시보드 (from 무시)
   res.redirect('/');
+});
+
+// ─── 회원가입 (승인 대기 방식) ─────────────────────────────
+// 가입 신청 → enabled=0·pending=1·role=viewer 로 저장 → 관리자가 사용자 관리에서 승인(권한 지정)해야 로그인 가능
+app.get('/register', (req, res) => {
+  if (req.session) return res.redirect('/');
+  res.render('register', { error: null, form: {} });
+});
+
+app.post('/register', (req, res) => {
+  const t = res.locals.t;
+  const { username, password, password2, name, email } = req.body;
+  const form = { username: username || '', name: name || '', email: email || '' };
+  if (!username || !password || !name) {
+    return res.render('register', { error: t('register.errRequired'), form });
+  }
+  if (String(password).length < 8) {
+    return res.render('register', { error: t('register.errPwLen'), form });
+  }
+  if (password !== password2) {
+    return res.render('register', { error: t('register.errPwMismatch'), form });
+  }
+  try {
+    auth.createUser(MOCK_DIR, { username, password, name, email, role: 'viewer', enabled: 0, pending: 1 });
+  } catch (e) {
+    // createUser는 중복 아이디 시 한국어 메시지를 throw — 다국어 메시지로 치환
+    const dup = /이미 존재/.test(e.message);
+    return res.render('register', { error: dup ? t('register.errDupUser') : e.message, form });
+  }
+  console.log(`[웹] 회원가입 신청: ${username} (${name}) — 승인 대기`);
+  res.render('login', { error: null, notice: t('register.submitted'), from: '/', firstRun: false });
 });
 
 app.post('/logout', (req, res) => {
@@ -511,6 +544,17 @@ app.post('/users/:id/update', auth.requireRole('admin'), (req, res) => {
     const data = { name, email, role, enabled: enabled === '1' || enabled === 1 || enabled === true };
     if (password && password.length >= 8) data.password = password;
     auth.updateUser(MOCK_DIR, req.params.id, data);
+    res.json({ status: 'success' });
+  } catch (e) {
+    res.status(400).json({ status: 'error', error: e.message });
+  }
+});
+
+// 회원가입 승인 — 활성화 + 대기해제 + 역할 지정(권한 상승 동시 처리)
+app.post('/users/:id/approve', auth.requireRole('admin'), (req, res) => {
+  try {
+    const role = ['admin', 'operator', 'viewer'].includes(req.body.role) ? req.body.role : 'viewer';
+    auth.updateUser(MOCK_DIR, req.params.id, { enabled: true, pending: 0, role });
     res.json({ status: 'success' });
   } catch (e) {
     res.status(400).json({ status: 'error', error: e.message });

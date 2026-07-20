@@ -43,7 +43,18 @@
       "deleteConfirm": "确定删除用户\"{username}\"吗?",
       "deleted": "已删除。",
       "failPrefix": "失败: ",
-      "errWord": "错误"
+      "errWord": "错误",
+      "approveConfirm": "以 {role} 权限批准用户 {username}？",
+      "approved": "已批准。",
+      "rejectConfirm": "拒绝（删除）{username} 的注册申请？",
+      "rejected": "已拒绝。"
+    },
+    "pending": {
+      "title": "待批准",
+      "desc": "申请注册的用户。请指定权限并批准。",
+      "grantRole": "授予权限",
+      "approve": "批准",
+      "reject": "拒绝"
     }
   },
   "form": {

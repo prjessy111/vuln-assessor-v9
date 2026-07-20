@@ -43,7 +43,18 @@
       "deleteConfirm": "ユーザー「{username}」を削除しますか?",
       "deleted": "削除しました。",
       "failPrefix": "失敗: ",
-      "errWord": "エラー"
+      "errWord": "エラー",
+      "approveConfirm": "{username} を {role} 権限で承認しますか？",
+      "approved": "承認しました。",
+      "rejectConfirm": "{username} の登録申請を却下（削除）しますか？",
+      "rejected": "却下しました。"
+    },
+    "pending": {
+      "title": "承認待ち",
+      "desc": "会員登録を申請したユーザーです。権限を指定して承認してください。",
+      "grantRole": "付与権限",
+      "approve": "承認",
+      "reject": "却下"
     }
   },
   "form": {

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="<%= typeof lang !== 'undefined' ? lang : 'ko' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('register.title') %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "맑은 고딕", Roboto, sans-serif;
+    }
+    .login-box { width: 400px; background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); }
+    .login-logo { text-align: center; margin-bottom: 20px; }
+    .login-logo h1 { margin: 0; font-size: 22px; color: #2c3e50; }
+    .login-logo .sub { font-size: 12px; color: #7f8c8d; margin-top: 4px; }
+    .login-form .form-row { margin-bottom: 14px; }
+    .login-form label { display: block; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 4px; }
+    .login-form input { width: 100%; padding: 10px 12px; border: 1px solid #d5dbdb; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+    .login-form input:focus { outline: none; border-color: #3498db; }
+    .login-form button { width: 100%; padding: 12px; background: #2980b9; color: #fff; border: 0; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 8px; }
+    .login-form button:hover { background: #1b6f9c; }
+    .login-error { padding: 10px 12px; background: #fadbd8; border: 1px solid #c0392b; color: #a93226; border-radius: 4px; font-size: 13px; margin-bottom: 14px; }
+    .register-notice { background: #ebf5fb; border-left: 3px solid #3498db; padding: 10px 12px; font-size: 11px; color: #1b4f72; margin-bottom: 16px; border-radius: 0 4px 4px 0; }
+    .login-footer { text-align: center; font-size: 12px; color: #7f8c8d; margin-top: 20px; }
+    .login-footer a { color: #2980b9; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="login-lang" style="text-align:right;margin-bottom:8px;">
+      <% (typeof langs !== 'undefined' ? langs : ['ko']).forEach(function (l) { %><a href="/register?lang=<%= l %>" title="<%= langLabels[l] %>" style="text-decoration:none;font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;<%= lang === l ? 'background:#2980b9;color:#fff;' : 'color:#95a5a6;' %>"><%= l.toUpperCase() %></a><% }); %>
+    </div>
+    <div class="login-logo">
+      <h1 style="letter-spacing:2px;font-weight:800;">ADV</h1>
+      <div class="sub"><b><%= t('register.heading') %></b></div>
+    </div>
+
+    <div class="register-notice"><%= t('register.approvalNotice') %></div>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="login-error"><%= error %></div>
+    <% } %>
+
+    <form class="login-form" method="POST" action="/register">
+      <div class="form-row">
+        <label><%= t('register.username') %></label>
+        <input type="text" name="username" value="<%= typeof form !== 'undefined' ? (form.username || '') : '' %>" required autocomplete="username">
+      </div>
+      <div class="form-row">
+        <label><%= t('register.name') %></label>
+        <input type="text" name="name" value="<%= typeof form !== 'undefined' ? (form.name || '') : '' %>" required>
+      </div>
+      <div class="form-row">
+        <label><%= t('register.email') %></label>
+        <input type="email" name="email" value="<%= typeof form !== 'undefined' ? (form.email || '') : '' %>">
+      </div>
+      <div class="form-row">
+        <label><%= t('register.password') %></label>
+        <input type="password" name="password" required autocomplete="new-password">
+      </div>
+      <div class="form-row">
+        <label><%= t('register.password2') %></label>
+        <input type="password" name="password2" required autocomplete="new-password">
+      </div>
+      <button type="submit"><%= t('register.submit') %></button>
+    </form>
+
+    <div class="login-footer">
+      <a href="/login"><%= t('register.backToLogin') %></a>
+    </div>
+  </div>
+</body>
+</html>

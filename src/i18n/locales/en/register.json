@@ -1,0 +1,17 @@
+{
+  "title": "Sign up — ADV (AI Diagnosis Verify)",
+  "heading": "Sign Up",
+  "approvalNotice": "After signing up, an administrator must approve your account before you can log in. Your role is assigned upon approval.",
+  "username": "Username",
+  "name": "Name",
+  "email": "Email (optional)",
+  "password": "Password (min. 8 chars)",
+  "password2": "Confirm password",
+  "submit": "Request account",
+  "backToLogin": "← Back to sign in",
+  "submitted": "Your request has been submitted. You can log in once an administrator approves it.",
+  "errRequired": "Username, name and password are required.",
+  "errPwLen": "Password must be at least 8 characters.",
+  "errPwMismatch": "Passwords do not match.",
+  "errDupUser": "This username already exists."
+}

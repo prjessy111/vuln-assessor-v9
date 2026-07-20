@@ -120,6 +120,10 @@
       <div class="sub"><b>AI Diagnosis Verify</b> · SecuMS Diagnosis Verification</div>
     </div>
 
+    <% if (typeof notice !== 'undefined' && notice) { %>
+      <div class="first-run-notice"><%= notice %></div>
+    <% } %>
+
     <% if (typeof error !== 'undefined' && error) { %>
       <div class="login-error"><%= error %></div>
     <% } %>
@@ -145,6 +149,9 @@
       <button type="submit"><%= t('common.login.submit') %></button>
     </form>
 
+    <div class="login-footer" style="margin-top:16px;">
+      <a href="/register" style="color:#2980b9;text-decoration:none;font-weight:600;"><%= t('common.login.registerLink') %></a>
+    </div>
     <div class="login-footer">
       © LSware ADV (AI Diagnosis Verify) v9.14
     </div>

@@ -225,7 +225,8 @@ function createUser(mockDir, data) {
     name: data.name,
     email: data.email || '',
     role: data.role || 'operator',
-    enabled: 1,
+    enabled: data.enabled !== undefined ? (data.enabled ? 1 : 0) : 1,
+    pending: data.pending ? 1 : 0,
     created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
     last_login_at: null,
     must_change_password: data.must_change_password ? 1 : 0,
@@ -243,6 +244,7 @@ function updateUser(mockDir, userId, data) {
   if (data.email !== undefined) u.email = data.email;
   if (data.role !== undefined) u.role = data.role;
   if (data.enabled !== undefined) u.enabled = data.enabled ? 1 : 0;
+  if (data.pending !== undefined) u.pending = data.pending ? 1 : 0;
   if (data.password) {
     u.password_hash = hashPassword(data.password);
     u.must_change_password = 0;

@@ -1,0 +1,17 @@
+{
+  "title": "注册 — ADV (AI Diagnosis Verify)",
+  "heading": "注册",
+  "approvalNotice": "提交注册申请后，需管理员批准才能登录。批准时将授予权限。",
+  "username": "用户名",
+  "name": "姓名",
+  "email": "邮箱 (可选)",
+  "password": "密码 (至少8位)",
+  "password2": "确认密码",
+  "submit": "提交申请",
+  "backToLogin": "← 返回登录",
+  "submitted": "注册申请已提交。管理员批准后即可登录。",
+  "errRequired": "用户名、姓名和密码为必填项。",
+  "errPwLen": "密码至少需要8位。",
+  "errPwMismatch": "两次输入的密码不一致。",
+  "errDupUser": "该用户名已存在。"
+}
