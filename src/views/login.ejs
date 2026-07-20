@@ -105,6 +105,9 @@
 </head>
 <body>
   <div class="login-box">
+    <div class="login-lang" style="text-align:right;margin-bottom:8px;">
+      <% (typeof langs !== 'undefined' ? langs : ['ko']).forEach(function (l) { %><a href="/login?lang=<%= l %><%= (typeof from !== 'undefined' && from) ? '&from=' + encodeURIComponent(from) : '' %>" title="<%= langLabels[l] %>" style="text-decoration:none;font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;<%= lang === l ? 'background:#2980b9;color:#fff;' : 'color:#95a5a6;' %>"><%= l.toUpperCase() %></a><% }); %>
+    </div>
     <div class="login-logo">
       <div class="icon">
         <svg viewBox="0 0 40 46" width="52" height="60" aria-hidden="true">

@@ -70,7 +70,7 @@
     </div>
   </nav>
   <div class="user-area">
-    <span class="lang-switch"><% (typeof langs !== 'undefined' ? langs : ['ko']).forEach(function (l) { %><a href="?lang=<%= l %>" class="lang-opt <%= lang === l ? 'active' : '' %>"><%= langLabels[l] %></a><% }); %></span>
+    <span class="lang-switch"><% (typeof langs !== 'undefined' ? langs : ['ko']).forEach(function (l) { %><a href="?lang=<%= l %>" class="lang-opt <%= lang === l ? 'active' : '' %>" title="<%= langLabels[l] %>"><%= l.toUpperCase() %></a><% }); %></span>
     <% if (typeof currentUser !== 'undefined' && currentUser) { %>
       <a href="/users/me/password" class="user-name" title="<%= t('common.nav.changePassword') %>" style="text-decoration:none;color:inherit;">
         <%= currentUser.name %>

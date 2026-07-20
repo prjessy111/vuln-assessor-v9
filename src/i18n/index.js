@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const LANGS = ['ko', 'en', 'ja', 'zh'];
-const LANG_LABELS = { ko: '한국어', en: '영어', ja: '일본어', zh: '중국어' };
+const LANG_LABELS = { ko: '한국어', en: 'English', ja: '日本語', zh: '中文' };
 const LOCALE_DIR = path.join(__dirname, 'locales');
 
 const dicts = {}; // lang -> { 'ns.a.b': 'text' }
