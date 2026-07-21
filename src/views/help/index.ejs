@@ -1,0 +1,147 @@
+<%- include('../_header', { title: t('help.title'), activeMenu: 'help' }) %>
+
+<div class="page-header">
+  <h1><%= t('help.title') %></h1>
+  <p class="muted small"><%= t('help.subtitle') %></p>
+</div>
+
+<div class="section-box" style="border-left:4px solid #2980b9;background:#f0f7ff;">
+  <h3>🚀 <%= t('help.quickTitle') %></h3>
+  <ol style="line-height:2.1;margin:6px 0;">
+    <li><b><%= t('help.quick.s1t') %></b> — <%= t('help.quick.s1') %></li>
+    <li><b><%= t('help.quick.s2t') %></b> — <%= t('help.quick.s2') %></li>
+    <li><b><%= t('help.quick.s3t') %></b> — <%= t('help.quick.s3') %></li>
+    <li><b><%= t('help.quick.s4t') %></b> — <%= t('help.quick.s4') %></li>
+  </ol>
+  <p class="muted small">※ <%= t('help.quick.dcNote') %></p>
+</div>
+
+<div class="section-box">
+  <h3><%= t('help.flowTitle') %></h3>
+  <p>① <%= t('help.chk.register') %> → ② <%= t('help.row.conn') %> → ③ <%= t('help.chk.collect') %> → ④ <%= t('help.chk.diagnose') %> → ⑤ <%= t('help.chk.result') %></p>
+</div>
+
+<!-- ① 등록 -->
+<div class="section-box">
+  <h3>① 서버 등록</h3>
+  <p class="muted small">점검 대상을 <code>servers.csv</code>(프로젝트 루트)에 등록합니다. 저장 후 서버 재기동하면 <a href="/servers">서버 관리</a>에 반영됩니다.</p>
+  <pre style="background:#f6f8fa;padding:12px;border-radius:6px;overflow-x:auto;">name, ip, os, account, password, asset_no
+web-01,10.10.20.5,linux,root,&lt;비번&gt;,SVR-2026-0040
+jessy91,192.168.100.91,windows,JESSYDOMAIN\Administrator,&lt;비번&gt;,SVR-2026-0033</pre>
+  <p class="muted small">⚠ 접속 비번이 평문으로 저장됩니다. 파일 권한을 <code>600</code>으로 제한하고 git에 올리지 마세요(<code>.gitignore</code> 처리됨).</p>
+</div>
+
+<!-- ② 연동 (OS별) -->
+<div class="section-box">
+  <h3>② 연동 — OS별 원격 접속 방식 ★</h3>
+
+  <h4 style="color:#2980b9;">🐧 Linux — SSH 자동 연동 (지원)</h4>
+  <ul>
+    <li>SSH로 대상에 접속해 수집 스크립트(<code>fsi_unix_ai.sh</code>)를 <b>배포·실행·회수까지 자동</b>으로 처리합니다.</li>
+    <li>등록/연동에 필요한 값: <code>ssh_user</code>, 인증(<code>ssh_key_path</code> 또는 <code>ssh_password</code>), <code>ssh_port</code>(기본 22), <code>use_sudo</code></li>
+    <li>대상 서버 준비: SSH 데몬 기동, 해당 계정 로그인 허용, (권한 필요한 점검은) sudo 허용</li>
+    <li>진행: <a href="/collection">수집 관리</a> → 서버 선택 → 스크립트 배포·실행</li>
+  </ul>
+
+  <h4 style="color:#8e44ad;">🪟 Windows — WinRM 원격 연동 (지원)</h4>
+  <ul>
+    <li>컨트롤러(앱 PC)에서 <b>네이티브 <code>Invoke-Command</code>(Negotiate)</b>로 대상의 <b>WinRM/5985</b>에 붙어 스크립트를 <b>배포·실행·회수까지 자동</b> 처리합니다. Linux SSH와 동일한 원격 방식.</li>
+    <li><b>필수 준비 — 컨트롤러에 대상 IP를 <code>TrustedHosts</code>에 1회 등록</b>:
+      <code>Set-Item WSMan:\localhost\Client\TrustedHosts -Value "&lt;대상IP&gt;" -Concatenate -Force</code> → <code>Restart-Service WinRM</code></li>
+    <li>대상 서버 준비: WinRM 기동(<code>Enable-PSRemoting -Force</code>) + 방화벽 5985 인바운드 허용.</li>
+    <li>결과 파일은 <b>base64 청크</b>로 회수 → 수십 KB 이상 대용량 결과도 안전.</li>
+    <li>오프라인 회수(WinRM 불가 환경)도 병행 가능: 대상에서 <code>powershell -ExecutionPolicy Bypass -File .\fsi_win_ai.ps1</code> 실행 후 <a href="/diagnosis/upload">진단 관리 → 파일 업로드</a>.</li>
+  </ul>
+
+  <h4 style="color:#16a085;">🗄️ DB (MSSQL/MySQL/Oracle)</h4>
+  <ul>
+    <li>전용 스크립트(<code>fsi_mssql_ai.ps1</code> / <code>fsi_mysql_ai.sh</code> / <code>fsi_oracle_ai.sh</code>)에 DB 접속정보를 넘겨 수집합니다.</li>
+    <li>Windows 표준 스크립트에 DB 접속정보(<code>fsi_config.ini</code>)를 함께 주면 OS·DB를 한 번에 수집할 수 있습니다.</li>
+  </ul>
+
+  <h4 style="color:#c0392b;">🏢 AD (도메인 컨트롤러) — DC 로컬 실행 + 오프라인 판정 (권장)</h4>
+  <ul>
+    <li>DC는 <code>ad_collect.ps1</code>로 수집하며, 결과가 XML이 아니라 <b>JSON</b>(<code>&lt;host&gt;_AD_DC.txt</code>)입니다.</li>
+    <li>⚠ <b>AD cmdlet(<code>Get-AD*</code>)은 WinRM 원격 세션에서 더블홉(ADWS) 문제로 실패</b>합니다(로컬 실행은 정상). 그래서 DC는 원격 자동 실행 대신 아래 방식을 권장:</li>
+    <li><b>① DC에서 직접 실행</b> <code>.\ad_collect.ps1</code> → <code>C:\ad_audit\&lt;host&gt;_AD_DC.txt</code> 생성 → <b>② <a href="/adhoc"><%= t('common.nav.adhoc') %></a></b>에 그 JSON을 업로드/붙여넣어 자동 판정(계정·정책 등 20여 항목).</li>
+    <li>일반 Windows/Linux 서버(비 AD)는 위 SSH/WinRM 원격 자동 점검이 정상 동작합니다 — 더블홉은 AD cmdlet 특유의 제약입니다.</li>
+  </ul>
+</div>
+
+<!-- OS별 요약표 -->
+<div class="section-box">
+  <h3><%= t('help.tableTitle') %></h3>
+  <table class="data-table">
+    <thead>
+      <tr><th><%= t('help.th.item') %></th><th>Linux</th><th>Windows</th><th>DB</th><th>AD / DC</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><%= t('help.row.script') %></td><td>fsi_unix_ai.sh</td><td>fsi_win_ai.ps1</td><td>fsi_mssql/mysql/oracle</td><td>ad_collect.ps1</td></tr>
+      <tr><td><%= t('help.row.conn') %></td><td><b>SSH 22 (자동)</b></td><td><b>WinRM 5985 (자동)</b></td><td>DB 계정</td><td><b>DC 로컬 실행</b> (원격=더블홉 실패)</td></tr>
+      <tr><td>사전 필요</td><td>sshd·계정·(sudo)</td><td>컨트롤러 TrustedHosts + 대상 5985</td><td>DB 접속정보</td><td>DC 관리자 권한 + AD 모듈</td></tr>
+      <tr><td><%= t('help.row.result') %></td><td>XML</td><td>XML</td><td>XML</td><td><b>JSON</b></td></tr>
+      <tr><td><%= t('help.row.judge') %></td><td>진단 업로드/자동</td><td>진단 업로드/원격 자동</td><td>진단 업로드</td><td>DC 로컬 실행 → 수집결과 판정</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 신규 서버 연동 체크리스트 -->
+<div class="section-box" style="border-left:4px solid #16a085;background:#f0fbf7;">
+  <h3>✅ 신규 서버 연동 체크리스트 (Linux · Windows)</h3>
+  <p class="muted small">servers.csv 등록 후 OS별로 아래만 해주면 원격 점검 가능. 상세는 프로젝트 루트 <code>신규서버_연동_체크리스트.md</code>.</p>
+  <table class="data-table">
+    <thead><tr><th>단계</th><th>🐧 Linux</th><th>🪟 Windows (AD 포함)</th></tr></thead>
+    <tbody>
+      <tr><td>1. 등록</td><td colspan="2">servers.csv 에 <code>hostname,ip,os,user,password</code> (os=linux/windows 정확히)</td></tr>
+      <tr><td>2. 접속</td><td>SSH 22</td><td>WinRM 5985 (네이티브 Invoke-Command/Negotiate)</td></tr>
+      <tr><td>3. 컨트롤러</td><td>(없음)</td><td><b>TrustedHosts 에 대상 IP 등록</b> → <code>Restart-Service WinRM</code></td></tr>
+      <tr><td>4. 대상</td><td>sshd 기동·계정 허용·(파일점검 시 sudo)</td><td><code>Enable-PSRemoting -Force</code> + 방화벽 5985</td></tr>
+      <tr><td>5. 검증</td><td><code>ssh user@ip 'hostname;id'</code></td><td><code>Invoke-Command -ComputerName ip -Credential $c -ScriptBlock {hostname}</code></td></tr>
+      <tr><td>6. 반영</td><td colspan="2">앱(node) 재시작 → 수집·진단</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:10px;margin-bottom:4px;"><b>💻 컨트롤러 PC(앱 도는 PC)에서 실행 — 관리자 PowerShell (복붙)</b></p>
+  <pre style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;overflow-x:auto;font-size:12px;line-height:1.6;"># 1) WinRM 클라이언트 서비스 기동
+Start-Service WinRM; Set-Service WinRM -StartupType Automatic
+
+# 2) 대상 IP 를 신뢰 목록에 등록 (신규 Windows 서버마다 1회, 여러 대는 "IP1,IP2")
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "192.168.159.107" -Concatenate -Force
+Restart-Service WinRM
+
+# 3) 등록 확인 + 포트 도달 확인 (True 여야 함)
+Get-Item WSMan:\localhost\Client\TrustedHosts
+Test-NetConnection 192.168.159.107 -Port 5985
+
+# 4) 접속 검증 (Administrator / servers.csv 비번)
+$cred = Get-Credential
+Invoke-Command -ComputerName 192.168.159.107 -Credential $cred -ScriptBlock { hostname; whoami }
+# → 대상 hostname + '대상\administrator' 나오면 성공. 이후 앱 재시작.</pre>
+  <p class="small muted" style="margin:2px 0 8px;">※ 대상 서버에서 5985 가 닫혀 있으면(3번 False): 대상에서 <code>Enable-PSRemoting -Force</code> 실행 + 방화벽 5985 인바운드 허용. (RDP 불가 시 사전작업.md 부록 B의 PsExec 원격 활성화)</p>
+  <p class="small" style="margin-top:8px;"><b>🔴 자주 나는 에러:</b> <code>WinRM PowerShell execution failed: Failed to process the request, status Code:</code>
+    = 포트는 열렸는데 <b>권한(승인) 안 됨</b> → 대개 <b>컨트롤러 TrustedHosts 누락</b>. 3단계 등록 후 <code>Restart-Service WinRM</code> + 앱 재시작. (107이 되는 이유가 이 등록이 되어 있어서)</p>
+  <p class="small" style="color:#c0392b;">⚠ <code>servers.csv</code> 는 접속 비번이 <b>평문</b>으로 저장됩니다 — 파일권한 제한·git 제외(처리됨), <b>암호화는 향후 필수 개선 과제</b>.</p>
+</div>
+
+<!-- ③④⑤ -->
+<div class="section-box">
+  <h3>③ 수집 · ④ 진단 · ⑤ 결과</h3>
+  <ul>
+    <li><b>수집</b>: Linux는 원격 자동, Windows/DB/AD는 대상에서 스크립트 실행 후 결과 확보</li>
+    <li><b>진단</b>: 수집 결과를 AI/LLM이 항목별 <span class="status-cell st-vuln"><%= td('취약') %></span> / <span class="status-cell st-safe"><%= td('양호') %></span> 판정</li>
+    <li><b>결과</b>: <a href="/diagnosis">진단 관리</a> → AI 결과, <a href="/reports">리포트</a>에서 제출용 산출물</li>
+  </ul>
+</div>
+
+<div class="info-box">
+  <h4><%= t('help.checklistTitle') %></h4>
+  <ul>
+    <li><%= t('help.chk.register') %></li>
+    <li><%= t('help.chk.perm') %></li>
+    <li><%= t('help.chk.connect') %></li>
+    <li><%= t('help.chk.collect') %></li>
+    <li><%= t('help.chk.diagnose') %></li>
+    <li><%= t('help.chk.result') %></li>
+  </ul>
+</div>
+
+<%- include('../_footer') %>

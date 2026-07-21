@@ -100,5 +100,17 @@
     "hermesMissing": "Hermes 미설정 (HERMES_SSH_HOST 등)",
     "btnConfirm": "🚦 판정 확정",
     "btnOverride": "번복 확정"
+  },
+  "direct": {
+    "title": "⌨ 스크립트 직접 입력 (자연어 생성 대신)",
+    "hint": "점검 스크립트(ad_collect.ps1 등)를 직접 올리거나 붙여넣어 원격 실행합니다.",
+    "orPaste": "또는 아래에 붙여넣기:",
+    "codePh": "param(...)  # PowerShell / #!/bin/sh …",
+    "globPh": "결과 파일 경로(선택) 예) C:ad_audit*_AD_DC.txt",
+    "globHint": "스크립트가 결과를 파일에 쓰면 그 경로. 비우면 자동 감지, 못 찾으면 stdout 수집.",
+    "btn": "스크립트 등록",
+    "forceConfirm": "안전게이트가 위험으로 표시한 스크립트입니다. 직접 검토했고 실행을 승인합니까?",
+    "forceBtn": "⚠ 강제 승인",
+    "forceHint": "안전게이트 blocked — 운영자 책임 하에 강제 승인"
   }
 }

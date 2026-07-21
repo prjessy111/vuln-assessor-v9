@@ -135,6 +135,16 @@ const collectUpload = multer({
   },
 });
 
+// 스크립트 즉시 점검 — 어떤 스크립트 결과물이든 업로드 허용(형식 무관). 실행 파일(.exe 등)만 차단.
+const adhocUpload = multer({
+  storage: genericStorage,
+  limits: { fileSize: 50 * 1024 * 1024 },  // 50MB
+  fileFilter: (req, file, cb) => {
+    const blocked = /\.(exe|dll|com|scr|msi|bin)$/i.test(file.originalname || '');
+    cb(blocked ? new Error('실행 파일은 업로드할 수 없습니다') : null, !blocked);
+  },
+});
+
 const scriptDeployStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const { folder } = uploadDateParts();
@@ -3845,8 +3855,15 @@ function _agentErr(res, e) {
 app.get('/agent', (req, res) => {
   const items = agentRegistry.list(kvStorage);
   const summary = agentPipeline.summary(kvStorage);
-  // 대상 실행용 서버 목록 (간략 필드만)
-  const servers = (loadMock('servers') || []).map(s => ({
+  // 대상 실행용 서버 목록 — servers.csv(실 관리 대상)를 진실로 사용.
+  //  (MySQL 모드에선 seedMockData CSV 동기화가 생략돼 저장소 값이 낡을 수 있어, 여기서 CSV를 우선한다.)
+  let servers;
+  try {
+    const { getTargetServersFromFile } = require('./src/services/scheduler');
+    const csv = getTargetServersFromFile() || [];
+    if (csv.length) servers = csv.map(t => ({ server_id: t.server_id, hostname: t.hostname, ip_address: t.ip, os_type: t.os }));
+  } catch (_) {}
+  if (!servers) servers = (loadMock('servers') || []).map(s => ({
     server_id: s.server_id, hostname: s.hostname, ip_address: s.ip_address, os_type: s.os_type,
   }));
   res.render('agent/index', {
@@ -3894,6 +3911,24 @@ app.post('/agent/items/:id/generate', auth.requireRole('admin', 'operator'), asy
   } catch (e) { _agentErr(res, e); }
 });
 
+// 스크립트 직접 입력 — 자연어 생성 대신 운영자가 스크립트(ad_collect.ps1 등)를 그대로 제공.
+// 이후 승인 → 원격 실행(runOnTarget, SSH/WinRM) → 판정 파이프라인은 그대로 재사용.
+app.post('/agent/items/:id/provide-script', auth.requireRole('admin', 'operator'), adhocUpload.single('scriptfile'), async (req, res) => {
+  try {
+    let code = req.body?.code || '';
+    if (req.file) { try { code = fs.readFileSync(req.file.path, 'utf8'); } catch (e) {} }
+    const item = agentPipeline.provideScript(kvStorage, req.params.id, {
+      code,
+      lang: req.body?.lang || undefined,
+      note: req.body?.note || (req.file ? req.file.originalname : undefined),
+      result_glob: req.body?.result_glob || undefined,
+      by: req.session?.username || 'operator',
+    });
+    const rg = item.script?.result_glob ? ` · 결과파일: ${item.script.result_glob}` : ' · 결과=stdout';
+    _agentBack(res, `스크립트 직접 입력됨 (${item.script?.lang}, 안전도: ${item.script?.safety?.risk}${rg}). 승인 후 원격 실행하세요.`);
+  } catch (e) { _agentErr(res, e); }
+});
+
 // 게이트1: 스크립트 실행 승인/거부
 app.post('/agent/items/:id/review-script', auth.requireRole('admin', 'operator'), (req, res) => {
   try {
@@ -3901,6 +3936,7 @@ app.post('/agent/items/:id/review-script', auth.requireRole('admin', 'operator')
       decision: req.body?.decision,
       by: req.session?.username || 'operator',
       note: req.body?.note,
+      force: req.body?.force === '1' || req.body?.force === 'on' || req.body?.force === true,
     });
     _agentBack(res, req.body?.decision === 'approve' ? '스크립트 실행이 승인되었습니다.' : '스크립트가 거부되었습니다.');
   } catch (e) { _agentErr(res, e); }
@@ -3918,19 +3954,106 @@ app.post('/agent/items/:id/ingest', auth.requireRole('admin', 'operator'), (req,
   } catch (e) { _agentErr(res, e); }
 });
 
+// 원격 실행 진행상태 저장소 (인메모리) — 브라우저가 폴링해 진행바 표시
+const agentJobs = new Map();
+let _agentJobSeq = 0;
+function _pruneAgentJobs() {
+  // 완료 후 5분 지난 잡 정리
+  const now = Date.now();
+  for (const [k, v] of agentJobs) {
+    if (v.done && now - (v.updated_at || 0) > 5 * 60 * 1000) agentJobs.delete(k);
+  }
+}
+
+// 진행상태 폴링 엔드포인트
+app.get('/agent/jobs/:jobId', auth.requireRole('admin', 'operator'), (req, res) => {
+  const job = agentJobs.get(req.params.jobId);
+  if (!job) return res.json({ done: true, ok: false, pct: 100, msg: '진행정보 없음(만료)', message: '진행 정보를 찾을 수 없습니다.' });
+  res.json(job);
+});
+
 // 3-2(실행): 승인된 스크립트를 대상 서버에서 실행 → raw 자동 수집 (+옵션 판정)
+//  async=1 이면 백그라운드로 돌리고 jobId 를 즉시 반환 → 브라우저가 진행상태를 폴링.
 app.post('/agent/items/:id/run-on-target', auth.requireRole('admin', 'operator'), async (req, res) => {
+  const itemId = req.params.id;
+  const isAsync = req.body?.async === '1' || req.body?.async === 'true'
+    || String(req.get('accept') || '').includes('application/json');   // fetch 요청이면 항상 JSON 응답(HTML 리다이렉트 방지)
+  let server;
   try {
-    const servers = loadMock('servers') || [];
-    const server = servers.find(s => String(s.server_id) === String(req.body?.server_id));
-    if (!server) throw new Error('대상 서버를 선택하세요');
-    const item = await agentPipeline.runOnTarget(kvStorage, req.params.id, server, {
-      autoJudge: req.body?.auto_judge === 'on' || req.body?.auto_judge === 'true',
-      backend: req.body?.backend || undefined,
-      by: req.session?.username || 'operator',
-    });
-    _agentBack(res, `${server.hostname} 실행 완료 → raw 수집${item.judgment ? ' + 판정(' + item.judgment.verdict + ')' : ''}.`);
-  } catch (e) { _agentErr(res, e); }
+    const sid = String(req.body?.server_id || '');
+    // servers.csv = 실행 시점의 진실(IP·호스트명·OS·계정·비번). MySQL 모드에서 저장소가 낡아도 CSV로 결정.
+    let cred = null;
+    try {
+      const { getTargetServersFromFile } = require('./src/services/scheduler');
+      cred = (getTargetServersFromFile() || []).find(t => String(t.server_id) === sid);
+    } catch (_) {}
+    const stored = (loadMock('servers') || []).find(s => String(s.server_id) === sid) || null;
+    if (!cred && !stored) throw new Error('대상 서버를 선택하세요');
+    // 저장소 값(overlay: 헬스·포트 등) 위에 CSV 값을 덮어쓴다.
+    server = { ...(stored || {}) };
+    if (cred) {
+      server.server_id = cred.server_id;
+      server.hostname = cred.hostname;
+      server.name = server.name || cred.hostname;
+      server.ip_address = cred.ip;         // ★ 낡은 IP(100.91) 대신 CSV의 실제 IP(110.91)
+      server.os_type = cred.os;
+      server.ssh_user = cred.username;
+      server.username = cred.username;
+      server.ssh_password = cred.password;
+      server.password = cred.password;
+    }
+    console.log(`[agent/run] 대상=${server.hostname}(${server.ip_address}) OS=${server.os_type} 계정=${server.username || server.ssh_user} async=${isAsync}`);
+  } catch (e) {
+    if (isAsync) return res.status(400).json({ ok: false, message: e.message || String(e) });
+    return _agentErr(res, e);
+  }
+
+  const runOpts = {
+    autoJudge: req.body?.auto_judge === 'on' || req.body?.auto_judge === 'true',
+    backend: req.body?.backend || undefined,
+    by: req.session?.username || 'operator',
+  };
+
+  // ── 동기(폴백): JS 미지원 등 ──
+  if (!isAsync) {
+    try {
+      const item = await agentPipeline.runOnTarget(kvStorage, itemId, server, runOpts);
+      return _agentBack(res, `${server.hostname} 실행 완료 → raw 수집${item.judgment ? ' + 판정(' + item.judgment.verdict + ')' : ''}.`);
+    } catch (e) { return _agentErr(res, e); }
+  }
+
+  // ── 비동기: jobId 즉시 반환 후 백그라운드 실행 ──
+  _pruneAgentJobs();
+  const jobId = `ajob-${Date.now()}-${++_agentJobSeq}`;
+  agentJobs.set(jobId, { done: false, ok: false, pct: 1, msg: '시작', message: '', hostname: server.hostname, updated_at: Date.now() });
+  res.json({ jobId });
+
+  const onProgress = (pct, msg) => {
+    const j = agentJobs.get(jobId);
+    if (!j) return;
+    j.pct = Math.max(j.pct, Math.min(99, Math.round(pct)));   // 완료 전까지 99% 상한
+    j.msg = String(msg || '');
+    j.updated_at = Date.now();
+  };
+  (async () => {
+    try {
+      const item = await agentPipeline.runOnTarget(kvStorage, itemId, server, { ...runOpts, onProgress });
+      const v = item.judgment ? item.judgment.verdict : null;
+      const n = item.judgment && Array.isArray(item.judgment.findings) ? item.judgment.findings.length : 0;
+      agentJobs.set(jobId, {
+        done: true, ok: true, pct: 100,
+        msg: '완료', hostname: server.hostname,
+        verdict: v, findings: n,
+        message: `${server.hostname} 실행 완료 → raw 수집${v ? ` + 판정(${v}${n ? `, ${n}개 항목` : ''})` : ''}.`,
+        updated_at: Date.now(),
+      });
+    } catch (e) {
+      agentJobs.set(jobId, {
+        done: true, ok: false, pct: 100, msg: '실패', hostname: server.hostname,
+        message: e.message || String(e), updated_at: Date.now(),
+      });
+    }
+  })();
 });
 
 // 3-3: 자동 판정
@@ -3942,6 +4065,35 @@ app.post('/agent/items/:id/judge', auth.requireRole('admin', 'operator'), async 
     });
     const j = item.judgment || {};
     _agentBack(res, `판정: ${j.verdict}${j.needs_review ? ' (검토 필요)' : ''}.`);
+  } catch (e) { _agentErr(res, e); }
+});
+
+// 판정 결과 → 기존 리포트 재사용: judgment 을 diagnoses 레코드로 변환 후 /reports 로 이동.
+//  (새 리포트 화면을 만들지 않고 기존 fsi/samsung/policy3 HTML + XLSX + 인쇄PDF 를 그대로 사용)
+app.post('/agent/items/:id/to-report', auth.requireRole('admin', 'operator'), (req, res) => {
+  try {
+    const item = agentRegistry.get(kvStorage, req.params.id);
+    if (!item) throw new Error('항목 없음');
+    if (!item.judgment) throw new Error('판정된 항목만 리포트로 만들 수 있습니다');
+
+    // 대상 서버 추정: raw.source("ssh:host (..)" / "winrm:host (..)")의 host → servers.csv 조회
+    const src = String(item.raw && item.raw.source || '');
+    const hn = (src.match(/^[a-z]+:([^\s(]+)/) || [])[1] || '';
+    let server = {};
+    try {
+      const { getTargetServersFromFile } = require('./src/services/scheduler');
+      const hit = (getTargetServersFromFile() || []).find(t => String(t.hostname).toLowerCase() === hn.toLowerCase());
+      if (hit) server = { server_id: hit.server_id, hostname: hit.hostname, os_type: hit.os, asset_no: hit.asset_no };
+    } catch (_) {}
+    if (!server.hostname) server = { hostname: hn || item.title, os_type: item.os_target };
+
+    const { buildDiagnosisFromAgentItem } = require('./src/engine/agentReportAdapter');
+    const diagnoses = loadMock('diagnoses') || [];
+    const aid = diagnoses.reduce((m, d) => Math.max(m, Number(d.assessment_id) || 0), 0) + 1;
+    const diag = buildDiagnosisFromAgentItem(item, server, aid);
+    diagnoses.unshift(diag);
+    saveMock('diagnoses', diagnoses);
+    res.redirect('/reports/' + aid);
   } catch (e) { _agentErr(res, e); }
 });
 
@@ -3998,6 +4150,51 @@ app.post('/agent/items/:id/delete', auth.requireRole('admin'), (req, res) => {
     agentRegistry.remove(kvStorage, req.params.id);
     _agentBack(res, '항목이 삭제되었습니다.');
   } catch (e) { _agentErr(res, e); }
+});
+
+// ─── 도움말: 신규 서버 연동 가이드 ─────────────
+app.get('/help', (req, res) => {
+  res.render('help/index', { activeMenu: 'help' });
+});
+
+// ─── 애드혹 스크립트 점검 (그때그때 임의 결과물 즉석 판정) ─────────────
+// 방침: mock 기본(외부 호출 0) · 로컬 LLM(LSAP/ollama) 보조 · 망분리이므로 Claude 등 외부 API 미사용
+const adhocJudge = require('./src/engine/adhocJudge');
+app.get('/adhoc', auth.requireRole('admin', 'operator'), (req, res) => {
+  res.render('adhoc/index', { activeMenu: 'adhoc', result: null, input: {} });
+});
+app.post('/adhoc/judge', auth.requireRole('admin', 'operator'), adhocUpload.single('resultfile'), async (req, res) => {
+  let raw = req.body.raw || '';
+  let uploadedName = null;
+  // 파일 업로드가 있으면 그 내용을 판정 대상으로 사용(붙여넣기보다 우선). 어떤 스크립트 결과물이든 허용.
+  if (req.file) {
+    try { raw = fs.readFileSync(req.file.path, 'utf8'); uploadedName = req.file.originalname; }
+    catch (e) { console.error('[즉시점검] 업로드 파일 읽기 실패:', e.message); }
+  }
+  const instruction = req.body.instruction || '';
+  const backend = req.body.backend === 'local' ? 'local' : 'mock';
+  const input = { raw, instruction, backend, uploadedName };
+  let result;
+  try {
+    if (backend === 'local') {
+      const { buildClient, isBackendConfigured } = require('./src/agent/llmClient');
+      if (!isBackendConfigured('lsap')) {
+        // 로컬 LLM(LSAP/ollama) 미설정 → mock 기본으로 대체 (망분리라 외부 대체 없음)
+        result = adhocJudge.mockJudge(raw, instruction);
+        result.backend = 'mock';
+        result.note = '로컬 LLM(LSAP/ollama)이 설정되지 않아 mock 기본 스캔으로 대체했습니다. 사내 LLM 엔드포인트(LLM_ENDPOINT) 또는 ollama가 필요합니다. (망분리 — 외부 Claude 미사용)';
+      } else {
+        const client = buildClient('lsap');
+        result = await adhocJudge.llmJudge(raw, instruction, client);
+      }
+    } else {
+      result = adhocJudge.mockJudge(raw, instruction);
+    }
+  } catch (e) {
+    console.error('[애드혹 판정 오류]', e.message);
+    result = { backend, findings: [], summary: '', note: '판정 실패: ' + e.message, error: true };
+  }
+  res.render('adhoc/index', { activeMenu: 'adhoc', result, input });
 });
 
 /**

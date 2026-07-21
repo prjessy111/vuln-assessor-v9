@@ -13,6 +13,8 @@ servers.csv
 # DB 접속설정(평문 자격증명 — sa 비번 등) 커밋 금지
 scripts/ai-ready/fsi_config.ini
 fsi_config.ini
+# AD 수집 실결과(도메인·IP·계정 등 내부정보) 커밋 금지
+*_AD_DC.txt
 # VPS/Hermes 접속·점검 메모 (IP·키·경로 등 — 커밋 금지)
 info.txt
 info*.txt

@@ -100,5 +100,17 @@
     "hermesMissing": "Hermes未配置 (HERMES_SSH_HOST等)",
     "btnConfirm": "🚦 确定判定",
     "btnOverride": "推翻并确定"
+  },
+  "direct": {
+    "title": "⌨ 直接输入脚本(代替自然语言生成)",
+    "hint": "上传或粘贴检查脚本(如 ad_collect.ps1)以远程执行。",
+    "orPaste": "或在下方粘贴:",
+    "codePh": "param(...)  # PowerShell / #!/bin/sh …",
+    "globPh": "结果文件路径(可选) 例) C:ad_audit*_AD_DC.txt",
+    "globHint": "脚本将结果写入文件时的路径。留空=自动检测，找不到则收集stdout。",
+    "btn": "注册脚本",
+    "forceConfirm": "安全网关标记此脚本为危险。您已审查并批准执行?",
+    "forceBtn": "⚠ 强制批准",
+    "forceHint": "安全网关blocked — 由操作员负责强制批准"
   }
 }

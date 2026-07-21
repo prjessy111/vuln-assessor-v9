@@ -1,0 +1,36 @@
+{
+  "title": "신규 서버 연동 가이드",
+  "subtitle": "신규 점검 대상 서버를 등록하고 연동·수집·진단하는 절차입니다.",
+  "flowTitle": "전체 흐름",
+  "tableTitle": "OS·유형별 요약",
+  "checklistTitle": "빠른 체크리스트",
+  "th": {
+    "item": "구분"
+  },
+  "row": {
+    "script": "수집 스크립트",
+    "conn": "연동(접속)",
+    "result": "결과 형식",
+    "judge": "판정 경로"
+  },
+  "chk": {
+    "register": "servers.csv에 서버 행 추가",
+    "perm": "servers.csv 권한 600 확인",
+    "connect": "OS별 연동(Linux SSH / Windows 에이전트 실행)",
+    "collect": "수집 실행",
+    "diagnose": "진단(AI/LLM) 실행",
+    "result": "AI 결과·리포트 확인"
+  },
+  "quickTitle": "가장 쉬운 길 (요약)",
+  "quick": {
+    "s1t": "등록",
+    "s1": "servers.csv에 서버 한 줄 추가 (이름·IP·OS·계정·비번·포트)",
+    "s2t": "연결 준비",
+    "s2": "Linux는 SSH(포트 22). Windows는 대상에서 Enable-PSRemoting -Force 실행 후 WinRM(포트 5985) — 이게 신규 Windows 등록 시 하는 작업입니다.",
+    "s3t": "연결 확인",
+    "s3": "서버 관리 화면에서 헬스체크로 접속 성공 확인 ✅",
+    "s4t": "수집 → 진단 → 결과",
+    "s4": "수집 관리에서 실행하면 AI/LLM이 판정, AI 결과·리포트에서 확인",
+    "dcNote": "DC(도메인 컨트롤러)만 예외: AD cmdlet은 WinRM 원격에서 더블홉 문제로 실패하므로, DC에서 ad_collect.ps1 직접 실행 → 결과(JSON)를 수집결과 판정에 업로드. 아래 상세 참고."
+  }
+}

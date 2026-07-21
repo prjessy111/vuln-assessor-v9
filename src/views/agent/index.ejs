@@ -185,6 +185,18 @@
             <% } %>
             <button class="btn-sm primary" type="submit"><%= t('agent.actions.btnGenerate') %></button>
           </form>
+          <details class="gen" style="width:100%;">
+            <summary><%= t('agent.direct.title') %></summary>
+            <form method="post" action="/agent/items/<%= it.item_id %>/provide-script" enctype="multipart/form-data" style="margin-top:6px;">
+              <div class="muted small"><%= t('agent.direct.hint') %></div>
+              <input type="file" name="scriptfile" accept=".ps1,.sh,.bat,.cmd,.py,.pl,.txt"><br>
+              <div class="muted small" style="margin-top:4px;"><%= t('agent.direct.orPaste') %></div>
+              <textarea name="code" rows="6" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;padding:6px;" placeholder="<%= t('agent.direct.codePh') %>"></textarea>
+              <input type="text" name="result_glob" placeholder="<%= t('agent.direct.globPh') %>" style="width:100%;box-sizing:border-box;margin-top:4px;">
+              <div class="muted small"><%= t('agent.direct.globHint') %></div>
+              <button class="btn-sm primary" type="submit" style="margin-top:6px;"><%= t('agent.direct.btn') %></button>
+            </form>
+          </details>
         <% } %>
 
         <% if (it.status === 'script_generated') { %>
@@ -200,13 +212,19 @@
           <form method="post" action="/agent/items/<%= it.item_id %>/generate">
             <button class="btn-sm" type="submit"><%= t('agent.actions.btnRegenerate') %></button>
           </form>
+          <% if (it.script && it.script.safety.risk === 'blocked' && it.script.generated_by === 'manual') { %>
+            <form method="post" action="/agent/items/<%= it.item_id %>/review-script" onsubmit="return confirm('<%= t('agent.direct.forceConfirm') %>');">
+              <input type="hidden" name="decision" value="approve">
+              <input type="hidden" name="force" value="1">
+              <button class="btn-sm" type="submit" style="background:#c0392b;color:#fff;" title="<%= t('agent.direct.forceHint') %>"><%= t('agent.direct.forceBtn') %></button>
+            </form>
+          <% } %>
         <% } %>
 
         <% if (it.status === 'approved' || it.status === 'collected' || it.status === 'judged' || it.status === 'needs_review') { %>
           <details class="gen" style="width:100%;">
             <summary><%= t('agent.actions.runOnTargetTitle') %></summary>
-            <form method="post" action="/agent/items/<%= it.item_id %>/run-on-target" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;"
-                  onsubmit="return confirm('<%= t('agent.actions.confirmRun') %>');">
+            <form method="post" action="/agent/items/<%= it.item_id %>/run-on-target" class="run-target-form" data-confirm="<%= t('agent.actions.confirmRun') %>" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;">
               <select name="server_id" required>
                 <option value=""><%= t('agent.actions.selectServer') %></option>
                 <% (servers||[]).filter(function(s){ var win=String(s.os_type||'').toLowerCase().includes('win'); return it.os_target==='all' || (it.os_target==='windows' ? win : !win); }).forEach(function(s){ %>
@@ -248,6 +266,9 @@
         <% } %>
 
         <% if (it.judgment && (it.status === 'judged' || it.status === 'needs_review' || it.status === 'confirmed')) { %>
+          <form method="post" action="/agent/items/<%= it.item_id %>/to-report" title="판정 결과를 기존 리포트(HTML/XLSX/인쇄PDF)로 생성">
+            <button class="btn-sm primary" type="submit">📄 리포트 생성</button>
+          </form>
           <form method="post" action="/agent/items/<%= it.item_id %>/notify-hermes">
             <button class="btn-sm" type="submit" <%= hermesConfigured ? '' : 'disabled title="' + t('agent.actions.hermesMissing') + '"' %>><%= t('agent.actions.btnHermes') %></button>
           </form>
@@ -272,5 +293,79 @@
     </div>
   <% }); %>
 </div>
+
+<!-- 원격 실행 진행상태 오버레이 -->
+<div id="run-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#fff; width:min(460px,92vw); border-radius:12px; padding:22px 24px; box-shadow:0 10px 40px rgba(0,0,0,.3);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+      <div id="run-spin" style="width:18px; height:18px; border:3px solid #cbd5e1; border-top-color:#2980b9; border-radius:50%; animation:runspin 0.8s linear infinite;"></div>
+      <strong id="run-title" style="font-size:15px;">원격 점검 실행 중…</strong>
+    </div>
+    <div id="run-host" class="muted small" style="margin-bottom:10px;"></div>
+    <div style="background:#eef2f7; border-radius:8px; height:14px; overflow:hidden;">
+      <div id="run-bar" style="height:100%; width:2%; background:linear-gradient(90deg,#2980b9,#3fa7e0); transition:width .4s ease;"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:8px;">
+      <span id="run-msg" class="small">시작…</span>
+      <span id="run-pct" class="small" style="font-variant-numeric:tabular-nums;">2%</span>
+    </div>
+    <div id="run-done" style="display:none; margin-top:14px; text-align:right;">
+      <button id="run-close" class="btn-sm primary" type="button">확인</button>
+    </div>
+  </div>
+</div>
+<style>@keyframes runspin{to{transform:rotate(360deg)}}</style>
+<script>
+(function(){
+  var ov=document.getElementById('run-overlay'),
+      bar=document.getElementById('run-bar'), pctEl=document.getElementById('run-pct'),
+      msgEl=document.getElementById('run-msg'), titleEl=document.getElementById('run-title'),
+      hostEl=document.getElementById('run-host'), spin=document.getElementById('run-spin'),
+      doneBox=document.getElementById('run-done'), closeBtn=document.getElementById('run-close');
+  var timer=null;
+  function setPct(p){ p=Math.max(0,Math.min(100,p)); bar.style.width=p+'%'; pctEl.textContent=Math.round(p)+'%'; }
+  function show(host){ titleEl.textContent='원격 점검 실행 중…'; hostEl.textContent=host?('대상: '+host):''; spin.style.display='block'; doneBox.style.display='none'; setPct(2); msgEl.textContent='시작…'; ov.style.display='flex'; }
+  function finish(job){
+    if(timer){clearInterval(timer);timer=null;}
+    setPct(100); spin.style.display='none'; doneBox.style.display='block';
+    if(job.ok){ titleEl.textContent='✅ 완료'; bar.style.background='linear-gradient(90deg,#16a085,#2ecc71)'; }
+    else { titleEl.textContent='⚠ 실패'; bar.style.background='linear-gradient(90deg,#c0392b,#e74c3c)'; }
+    msgEl.textContent=job.message||job.msg||'';
+  }
+  function poll(jobId){
+    fetch('/agent/jobs/'+encodeURIComponent(jobId),{headers:{'Accept':'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(typeof j.pct==='number') setPct(j.pct);
+        if(j.msg) msgEl.textContent=j.msg;
+        if(j.done){ finish(j); }
+      })
+      .catch(function(){ /* 일시 오류는 다음 폴링에서 회복 */ });
+  }
+  document.querySelectorAll('form.run-target-form').forEach(function(f){
+    f.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      var sel=f.querySelector('[name=server_id]');
+      if(!sel||!sel.value){ alert('대상 서버를 선택하세요'); return; }
+      var cf=f.getAttribute('data-confirm'); if(cf && !confirm(cf)) return;
+      var host = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+      // urlencoded 로 전송(라우트에 multipart 파서 없음) — 텍스트 필드뿐이라 충분
+      var params=new URLSearchParams();
+      new FormData(f).forEach(function(v,k){ params.append(k,v); });
+      params.append('async','1');
+      show(host);
+      fetch(f.action,{method:'POST',body:params,headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          if(!d.jobId){ finish({ok:false,message:d.message||'실행을 시작하지 못했습니다.'}); return; }
+          timer=setInterval(function(){poll(d.jobId);},1000);
+          poll(d.jobId);
+        })
+        .catch(function(e){ finish({ok:false,message:'요청 실패: '+e}); });
+    });
+  });
+  if(closeBtn){ closeBtn.addEventListener('click', function(){ ov.style.display='none'; location.href='/agent'; }); }
+})();
+</script>
 
 <%- include('../_footer') %>

@@ -1,0 +1,36 @@
+{
+  "title": "新規サーバー連携ガイド",
+  "subtitle": "新規点検対象サーバーの登録・連携・収集・診断の手順です。",
+  "flowTitle": "全体の流れ",
+  "tableTitle": "OS・種別サマリ",
+  "checklistTitle": "クイックチェックリスト",
+  "th": {
+    "item": "区分"
+  },
+  "row": {
+    "script": "収集スクリプト",
+    "conn": "連携(接続)",
+    "result": "結果形式",
+    "judge": "判定経路"
+  },
+  "chk": {
+    "register": "servers.csv にサーバー行を追加",
+    "perm": "servers.csv の権限を600に設定",
+    "connect": "OS別に連携(Linux SSH / Windows エージェント実行)",
+    "collect": "収集を実行",
+    "diagnose": "診断(AI/LLM)を実行",
+    "result": "AI結果・レポートを確認"
+  },
+  "quickTitle": "最も簡単な流れ（要約）",
+  "quick": {
+    "s1t": "登録",
+    "s1": "servers.csv にサーバー1行を追加（名前・IP・OS・アカウント・パスワード・ポート）",
+    "s2t": "接続準備",
+    "s2": "Linux は SSH（ポート22）。Windows は対象で Enable-PSRemoting -Force 実行後 WinRM（ポート5985）— これが新規Windows登録時の作業です。",
+    "s3t": "接続確認",
+    "s3": "サーバー管理画面のヘルスチェックで接続成功を確認 ✅",
+    "s4t": "収集 → 診断 → 結果",
+    "s4": "収集管理で実行すると AI/LLM が判定、AI結果・レポートで確認",
+    "dcNote": "DC（ドメインコントローラ）のみ例外: ADコマンドレットはWinRMリモートでダブルホップ問題により失敗するため、DCで ad_collect.ps1 を直接実行 → 結果(JSON)を収集結果の判定にアップロード。下記詳細参照。"
+  }
+}

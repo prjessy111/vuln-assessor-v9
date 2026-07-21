@@ -100,5 +100,17 @@
     "hermesMissing": "Hermes not configured (HERMES_SSH_HOST, etc.)",
     "btnConfirm": "🚦 Confirm Verdict",
     "btnOverride": "Override & Confirm"
+  },
+  "direct": {
+    "title": "⌨ Provide script directly (instead of NL generation)",
+    "hint": "Upload or paste a check script (e.g. ad_collect.ps1) to run remotely.",
+    "orPaste": "Or paste below:",
+    "codePh": "param(...)  # PowerShell / #!/bin/sh …",
+    "globPh": "Result file path (optional) e.g. C:ad_audit*_AD_DC.txt",
+    "globHint": "Path where the script writes its result. Empty = auto-detect; if not found, stdout is collected.",
+    "btn": "Register script",
+    "forceConfirm": "The safety gate flagged this script as risky. You reviewed it and approve execution?",
+    "forceBtn": "⚠ Force approve",
+    "forceHint": "Safety gate blocked — force approve under operator responsibility"
   }
 }

@@ -23,7 +23,9 @@
     "audit": "Audit Log",
     "users": "Users",
     "logout": "Logout",
-    "changePassword": "Change password"
+    "changePassword": "Change password",
+    "adhoc": "Collected Result Judgment",
+    "help": "Help"
   },
   "btn": {
     "save": "Save",
@@ -39,8 +41,14 @@
     "newCollect": "+ New Collection",
     "aiResult": "🤖 AI Result"
   },
-  "sev": { "high": "High", "mid": "Med", "low": "Low" },
-  "unit": { "count": "{n}" },
+  "sev": {
+    "high": "High",
+    "mid": "Med",
+    "low": "Low"
+  },
+  "unit": {
+    "count": "{n}"
+  },
   "login": {
     "title": "Sign in — ADV (AI Diagnosis Verify)",
     "id": "Username",

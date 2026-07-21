@@ -1,0 +1,36 @@
+{
+  "title": "New Server Onboarding Guide",
+  "subtitle": "How to register, connect, collect and assess a new target server.",
+  "flowTitle": "Overall flow",
+  "tableTitle": "Summary by OS / type",
+  "checklistTitle": "Quick checklist",
+  "th": {
+    "item": "Item"
+  },
+  "row": {
+    "script": "Collector script",
+    "conn": "Connection",
+    "result": "Result format",
+    "judge": "Judging path"
+  },
+  "chk": {
+    "register": "Add a row to servers.csv",
+    "perm": "Set servers.csv permission to 600",
+    "connect": "Connect by OS (Linux SSH / Windows agent run)",
+    "collect": "Run collection",
+    "diagnose": "Run assessment (AI/LLM)",
+    "result": "Check AI result & reports"
+  },
+  "quickTitle": "Easiest path (summary)",
+  "quick": {
+    "s1t": "Register",
+    "s1": "Add one server row to servers.csv (name, IP, OS, account, password, port)",
+    "s2t": "Prepare connection",
+    "s2": "Linux uses SSH (port 22). For Windows, run Enable-PSRemoting -Force on the target, then WinRM (port 5985) — this is what you do when registering a new Windows server.",
+    "s3t": "Verify connection",
+    "s3": "Run a health check on the Servers page to confirm connectivity ✅",
+    "s4t": "Collect → Assess → Result",
+    "s4": "Run from Collection; AI/LLM judges, then check AI result & reports",
+    "dcNote": "Only a DC (Domain Controller) is an exception: AD cmdlets fail over WinRM remoting (double-hop), so run ad_collect.ps1 directly on the DC → upload the JSON result to Collected Result Judgment. See details below."
+  }
+}

@@ -100,5 +100,17 @@
     "hermesMissing": "Hermes未設定 (HERMES_SSH_HOSTなど)",
     "btnConfirm": "🚦 判定確定",
     "btnOverride": "上書き確定"
+  },
+  "direct": {
+    "title": "⌨ スクリプト直接入力(自然言語生成の代わり)",
+    "hint": "点検スクリプト(ad_collect.ps1 等)をアップロードまたは貼り付けて遠隔実行します。",
+    "orPaste": "または下に貼り付け:",
+    "codePh": "param(...)  # PowerShell / #!/bin/sh …",
+    "globPh": "結果ファイルパス(任意) 例) C:ad_audit*_AD_DC.txt",
+    "globHint": "スクリプトが結果をファイルに書く場合そのパス。空=自動検出、見つからなければstdout収集。",
+    "btn": "スクリプト登録",
+    "forceConfirm": "安全ゲートが危険と表示したスクリプトです。確認の上で実行を承認しますか?",
+    "forceBtn": "⚠ 強制承認",
+    "forceHint": "安全ゲートblocked — 運用者責任で強制承認"
   }
 }

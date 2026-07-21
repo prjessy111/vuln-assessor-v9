@@ -23,7 +23,9 @@
     "audit": "审计日志",
     "users": "用户管理",
     "logout": "退出登录",
-    "changePassword": "修改密码"
+    "changePassword": "修改密码",
+    "adhoc": "采集结果判定",
+    "help": "帮助"
   },
   "btn": {
     "save": "保存",
@@ -39,8 +41,14 @@
     "newCollect": "+ 新建采集",
     "aiResult": "🤖 AI结果"
   },
-  "sev": { "high": "高", "mid": "中", "low": "低" },
-  "unit": { "count": "{n}项" },
+  "sev": {
+    "high": "高",
+    "mid": "中",
+    "low": "低"
+  },
+  "unit": {
+    "count": "{n}项"
+  },
   "login": {
     "title": "登录 — ADV (AI Diagnosis Verify)",
     "id": "用户名",

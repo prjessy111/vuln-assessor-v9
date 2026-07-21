@@ -1,0 +1,36 @@
+{
+  "title": "新服务器接入指南",
+  "subtitle": "注册、接入、采集并诊断新的检查目标服务器的步骤。",
+  "flowTitle": "整体流程",
+  "tableTitle": "按OS/类型汇总",
+  "checklistTitle": "快速清单",
+  "th": {
+    "item": "类别"
+  },
+  "row": {
+    "script": "采集脚本",
+    "conn": "接入(连接)",
+    "result": "结果格式",
+    "judge": "判定路径"
+  },
+  "chk": {
+    "register": "在servers.csv中添加服务器行",
+    "perm": "将servers.csv权限设为600",
+    "connect": "按OS接入(Linux SSH / Windows代理执行)",
+    "collect": "执行采集",
+    "diagnose": "执行诊断(AI/LLM)",
+    "result": "查看AI结果与报告"
+  },
+  "quickTitle": "最简单的流程（摘要）",
+  "quick": {
+    "s1t": "注册",
+    "s1": "在servers.csv中添加一行服务器（名称·IP·OS·账户·密码·端口）",
+    "s2t": "连接准备",
+    "s2": "Linux用SSH（端口22）。Windows在目标上执行Enable-PSRemoting -Force后用WinRM（端口5985）——这就是注册新Windows服务器时要做的。",
+    "s3t": "连接确认",
+    "s3": "在服务器管理页面用健康检查确认连接成功 ✅",
+    "s4t": "采集 → 诊断 → 结果",
+    "s4": "在采集管理执行后由AI/LLM判定，在AI结果与报告中查看",
+    "dcNote": "仅DC（域控制器）例外：AD命令在WinRM远程下因双跳问题会失败，故在DC上直接运行 ad_collect.ps1 → 将结果(JSON)上传到采集结果判定。详见下文。"
+  }
+}

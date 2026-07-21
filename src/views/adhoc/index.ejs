@@ -1,0 +1,91 @@
+<%- include('../_header', { title: t('adhoc.title'), activeMenu: 'adhoc' }) %>
+
+<div class="page-header">
+  <h1><%= t('adhoc.title') %></h1>
+  <p class="muted small"><%= t('adhoc.desc') %></p>
+</div>
+
+<form method="POST" action="/adhoc/judge" enctype="multipart/form-data">
+  <div class="section-box">
+    <h3><%= t('adhoc.instructionLabel') %></h3>
+    <p class="muted small"><%= t('adhoc.instructionHint') %></p>
+    <div style="margin-bottom:8px;">
+      <span class="muted small"><%= t('adhoc.presetLabel') %>:</span>
+      <button type="button" class="btn-sm" onclick="document.querySelector('[name=instruction]').value=<%- JSON.stringify(t('adhoc.presetAdText')) %>;"><%= t('adhoc.presetAd') %></button>
+    </div>
+    <textarea name="instruction" rows="4" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:8px;"
+      placeholder="<%= t('adhoc.instructionPh') %>"><%= input && input.instruction ? input.instruction : '' %></textarea>
+  </div>
+
+  <div class="section-box">
+    <h3><%= t('adhoc.rawLabel') %></h3>
+    <p class="muted small"><%= t('adhoc.rawHint') %></p>
+    <div style="margin-bottom:8px;padding:8px;background:#f6f8fa;border-radius:6px;">
+      <label class="muted small" style="font-weight:600;"><%= t('adhoc.fileLabel') %></label><br>
+      <input type="file" name="resultfile" accept=".txt,.json,.xml,.csv,.log,.out,.inf,.conf">
+      <div class="muted small"><%= t('adhoc.fileHint') %></div>
+      <% if (input && input.uploadedName) { %><div class="muted small" style="color:#2980b9;">📎 <%= input.uploadedName %></div><% } %>
+    </div>
+    <p class="muted small"><%= t('adhoc.orPaste') %></p>
+    <textarea name="raw" rows="10" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;padding:8px;"
+      placeholder="<%= t('adhoc.rawPh') %>"><%= input && input.raw ? input.raw : '' %></textarea>
+  </div>
+
+  <div class="section-box">
+    <h3><%= t('adhoc.backendLabel') %></h3>
+    <label style="display:block;margin-bottom:8px;">
+      <input type="radio" name="backend" value="mock" <%= (!input || input.backend !== 'local') ? 'checked' : '' %>>
+      <strong><%= t('adhoc.backendMock') %></strong> — <span class="muted small"><%= t('adhoc.backendMockHint') %></span>
+    </label>
+    <label style="display:block;">
+      <input type="radio" name="backend" value="local" <%= (input && input.backend === 'local') ? 'checked' : '' %>>
+      <strong><%= t('adhoc.backendLocal') %></strong> — <span class="muted small"><%= t('adhoc.backendLocalHint') %></span>
+    </label>
+    <div style="margin-top:14px;">
+      <button type="submit" class="btn primary"><%= t('adhoc.judgeBtn') %></button>
+    </div>
+  </div>
+</form>
+
+<% if (typeof result !== 'undefined' && result) { %>
+  <div class="section-box" style="border-left:4px solid <%= result.error ? '#c0392b' : '#2980b9' %>;">
+    <h3><%= t('adhoc.resultTitle') %>
+      <span class="muted small">— <%= t('adhoc.backendUsed') %>: <%= result.backend %><%= result.model ? ' (' + result.model + ')' : '' %></span>
+    </h3>
+
+    <% if (result.note) { %>
+      <div class="first-run-notice" style="margin-bottom:12px;"><%= result.note %></div>
+    <% } %>
+
+    <% if (result.findings && result.findings.length) { %>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th><%= t('adhoc.thItem') %></th>
+            <th><%= t('adhoc.thVerdict') %></th>
+            <th><%= t('adhoc.thReason') %></th>
+            <th><%= t('adhoc.thEvidence') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% result.findings.forEach(f => { %>
+            <tr>
+              <td><%= f.item %></td>
+              <td>
+                <% var v = f.verdict; %>
+                <span class="status-cell <%= v === '취약' ? 'st-vuln' : (v === '양호' ? 'st-safe' : 'st-na') %>"><%= td(v) %></span>
+              </td>
+              <td class="small"><%= f.reason %></td>
+              <td class="small mono" style="max-width:280px;overflow-wrap:break-word;"><%= f.evidence || '-' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      <% if (result.summary) { %><p class="muted small" style="margin-top:10px;"><%= t('adhoc.summaryLabel') %>: <%= result.summary %></p><% } %>
+    <% } else if (!result.error) { %>
+      <p class="empty"><%= t('adhoc.noFindings') %></p>
+    <% } %>
+  </div>
+<% } %>
+
+<%- include('../_footer') %>

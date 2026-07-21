@@ -23,7 +23,9 @@
     "audit": "감사 로그",
     "users": "사용자 관리",
     "logout": "로그아웃",
-    "changePassword": "비밀번호 변경"
+    "changePassword": "비밀번호 변경",
+    "adhoc": "수집결과 판정",
+    "help": "도움말"
   },
   "btn": {
     "save": "저장",
@@ -39,8 +41,14 @@
     "newCollect": "+ 새 수집",
     "aiResult": "🤖 AI 결과"
   },
-  "sev": { "high": "상", "mid": "중", "low": "하" },
-  "unit": { "count": "{n}건" },
+  "sev": {
+    "high": "상",
+    "mid": "중",
+    "low": "하"
+  },
+  "unit": {
+    "count": "{n}건"
+  },
   "login": {
     "title": "로그인 — ADV (AI Diagnosis Verify)",
     "id": "아이디",

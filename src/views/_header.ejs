@@ -18,7 +18,7 @@
   </a>
   <%
     // 활성 메뉴 → 그룹 매핑 (부모 하이라이트용)
-    var _g = { diagnosis:'diag', collection:'diag', schedules:'diag', agent:'diag',
+    var _g = { diagnosis:'diag', collection:'diag', schedules:'diag', agent:'diag', adhoc:'diag',
                reports:'rpt', 'inspection-status':'rpt', 'security-grade':'rpt', 'cve-sync':'rpt',
                vuln:'vuln', remediation:'vuln', exceptions:'vuln', exclusions:'vuln',
                notifications:'ops', audit:'ops', users:'ops' };
@@ -35,6 +35,7 @@
         <a href="/collection" class="<%= activeMenu === 'collection' ? 'active' : '' %>"><%= t('common.nav.collection') %></a>
         <a href="/schedules" class="<%= activeMenu === 'schedules' ? 'active' : '' %>"><%= t('common.nav.schedules') %></a>
         <a href="/agent" class="<%= activeMenu === 'agent' ? 'active' : '' %>"><%= t('common.nav.agent') %></a>
+        <a href="/adhoc" class="<%= activeMenu === 'adhoc' ? 'active' : '' %>"><%= t('common.nav.adhoc') %></a>
       </div>
     </div>
 
@@ -70,6 +71,7 @@
     </div>
   </nav>
   <div class="user-area">
+    <a href="/help" class="<%= activeMenu === 'help' ? 'active' : '' %>" title="<%= t('common.nav.help') %>" style="text-decoration:none;color:inherit;font-size:13px;">❓</a>
     <span class="lang-switch"><% (typeof langs !== 'undefined' ? langs : ['ko']).forEach(function (l) { %><a href="?lang=<%= l %>" class="lang-opt <%= lang === l ? 'active' : '' %>" title="<%= langLabels[l] %>"><%= l.toUpperCase() %></a><% }); %></span>
     <% if (typeof currentUser !== 'undefined' && currentUser) { %>
       <a href="/users/me/password" class="user-name" title="<%= t('common.nav.changePassword') %>" style="text-decoration:none;color:inherit;">

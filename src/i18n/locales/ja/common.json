@@ -23,7 +23,9 @@
     "audit": "監査ログ",
     "users": "ユーザー管理",
     "logout": "ログアウト",
-    "changePassword": "パスワード変更"
+    "changePassword": "パスワード変更",
+    "adhoc": "収集結果の判定",
+    "help": "ヘルプ"
   },
   "btn": {
     "save": "保存",
@@ -39,8 +41,14 @@
     "newCollect": "+ 新規収集",
     "aiResult": "🤖 AI結果"
   },
-  "sev": { "high": "高", "mid": "中", "low": "低" },
-  "unit": { "count": "{n}件" },
+  "sev": {
+    "high": "高",
+    "mid": "中",
+    "low": "低"
+  },
+  "unit": {
+    "count": "{n}件"
+  },
   "login": {
     "title": "ログイン — ADV (AI Diagnosis Verify)",
     "id": "ユーザーID",
