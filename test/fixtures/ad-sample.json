@@ -1,0 +1,21 @@
+{
+  "meta": { "domain": "example.local", "netbios": "EXAMPLE" },
+  "password_policy": {
+    "MinPasswordLength": 7,
+    "ComplexityEnabled": true,
+    "MaxPasswordAgeDays": 0,
+    "ReversibleEncryptionEnabled": false,
+    "LockoutThreshold": 5
+  },
+  "builtin_accounts": [
+    { "RID": 501, "Sam": "Guest", "Enabled": false },
+    { "RID": 500, "Sam": "Administrator" }
+  ],
+  "admin_groups": { "Domain Admins": ["adminA", "adminB"] },
+  "users": [
+    { "Sam": "svc-legacy", "UAC": 32 },
+    { "Sam": "normal", "UAC": 512 }
+  ],
+  "smb": { "EnableSMB1Protocol": true },
+  "machine_account_quota": 0
+}
