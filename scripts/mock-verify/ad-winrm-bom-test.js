@@ -23,12 +23,14 @@ const { getTargetServersFromFile } = require(path.join(ROOT, 'src/services/sched
   };
   console.log(`[대상] ${server.hostname} (${server.ip_address}) 계정=${server.username}`);
 
-  const code = fs.readFileSync(path.join(ROOT, 'ad_collect.ps1'), 'utf8');
+  // repo 파일엔 BOM 이 있으므로 제거 → 사용자가 붙여넣은 내용(BOM 없음)과 동일 조건으로 만든다.
+  let code = fs.readFileSync(path.join(ROOT, 'ad_collect.ps1'), 'utf8');
+  if (code.charCodeAt(0) === 0xFEFF) code = code.slice(1);   // strip BOM → "붙여넣기" 재현
 
   for (const withBom of [false, true]) {
     const tmp = path.join(os.tmpdir(), `bomtest-${withBom ? 'bom' : 'nobom'}-${process.pid}.ps1`);
     fs.writeFileSync(tmp, (withBom ? '﻿' : '') + code, 'utf8');
-    console.log(`\n===== ${withBom ? 'BOM 있음(수정본)' : 'BOM 없음(기존 버그)'} =====`);
+    console.log(`\n===== ${withBom ? 'BOM 추가(수정본)' : 'BOM 없음(붙여넣기 재현=기존 버그)'} =====`);
     try {
       const dep = await scriptDeploy.runDirectScriptDeployment(server, tmp, {
         resultGlob: '*_AD_DC.txt', remoteResultDir: 'C:\\ad_audit',

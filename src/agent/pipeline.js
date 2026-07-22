@@ -182,9 +182,13 @@ async function _runViaScriptDeploy(server, script, opts = {}) {
   const tmpName = `adv-adhoc-${String(script.item_id || 'x').replace(/[^\w.-]/g, '_')}-${process.pid}.${ext}`;
   const tmpPath = path.join(os.tmpdir(), tmpName);
 
-  // UTF-8(BOM 없음)로 저장 — repo 원본 스크립트는 이 방식으로 원격 실행·회수 검증됨(110.91 ad_collect 34KB).
-  //  (BOM 을 붙이면 오히려 원격 PS 가 3행부터 깨져 실패 → 붙이지 않는다.)
-  fs.writeFileSync(tmpPath, String(script.code || ''), 'utf8');
+  // 인코딩: PowerShell 5.1 은 BOM 없는 파일을 cp949(ANSI)로 읽어 한글 주석/문자열이 깨져
+  //   원격 실행 시 파싱오류(예: ad_collect "…명" → 97행 char 57)가 난다.
+  //   → .ps1 은 UTF-8 BOM 을 붙여 원격 PS 가 UTF-8 로 인식하게 한다.
+  //   단, 이미 BOM 이 있으면 중복 금지(이중 BOM 은 3행부터 깨짐). .sh 는 shebang 보존 위해 BOM 미부착.
+  let code = String(script.code || '');
+  if (ext === 'ps1' && code.charCodeAt(0) !== 0xFEFF) code = '﻿' + code;
+  fs.writeFileSync(tmpPath, code, 'utf8');
 
   // result_glob 파싱: 절대 디렉터리 + 패턴 분리
   const glob = String(script.result_glob || '').trim();
