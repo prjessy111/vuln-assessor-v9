@@ -31,6 +31,6 @@
     "s3": "Run a health check on the Servers page to confirm connectivity ✅",
     "s4t": "Collect → Assess → Result",
     "s4": "Run from Collection; AI/LLM judges, then check AI result & reports",
-    "dcNote": "Only a DC (Domain Controller) is an exception: AD cmdlets fail over WinRM remoting (double-hop), so run ad_collect.ps1 directly on the DC → upload the JSON result to Result Report. See details below."
+    "dcNote": "Only a DC (Domain Controller) is an exception: AD cmdlets fail over WinRM remoting (double-hop), so run ad_collect.ps1 directly on the DC → upload the JSON result to Result Judgment & Report. See details below."
   }
 }

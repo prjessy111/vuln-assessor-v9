@@ -1,5 +1,5 @@
 {
-  "title": "Result Report",
+  "title": "Result Judgment & Report",
   "reportBtn": "📄 Generate Report",
   "desc": "Judge an unregistered, arbitrary script output on the spot using only a natural-language rubric. (mock by default · local LLM assist · air-gapped)",
   "instructionLabel": "Judging rubric (natural language)",
