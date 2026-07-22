@@ -1,94 +1,92 @@
 <%- include('../_header', { title: t('common.nav.intro'), activeMenu: 'intro' }) %>
 
 <div class="page-header">
-  <h1>ADV — AI Diagnosis Verify</h1>
-  <p class="muted small">취약점 점검 결과를 <b>AI·규칙으로 판정</b>하고 <b>리포트를 자동 생성</b>하는 도구 · <b>망분리(폐쇄망) 환경</b> 지원</p>
+  <h1>ADV — AI Diagnosis <span style="color:#2980b9;">Verify</span></h1>
+  <p class="muted small"><b>취약점 진단 결과를 "믿을 수 있는가"를 검증</b>하는 솔루션 · 핵심 = <b>SecuMS·AI·LLM 3-way 정합성 검증</b> · 망분리 지원</p>
 </div>
 
-<div class="section-box" style="border-left:4px solid #2980b9;background:#f0f7ff;">
+<div class="section-box" style="border-left:4px solid #c0392b;background:#fff6f5;">
+  <h3>왜 "검증(Verify)"인가</h3>
   <p style="font-size:15px;line-height:1.8;margin:4px 0;">
-    ADV 는 서버·DB·AD 에서 수집한 점검 결과를 <b>사내 로컬 LLM / 결정적 규칙</b>으로 판정하고,
-    국내 컴플라이언스 양식(FSI·금보원·삼성) 리포트까지 만들어 줍니다.
-    <b>외부 클라우드 API 없이</b> 도는 것이 핵심입니다.
+    자동 진단 도구(SecuMS 등)와 AI 판정은 <b>오탐·과탐·판정 근거 부족</b>이 생깁니다.
+    감사·제출에서 "이 취약/양호 판정을 믿어도 되는가"가 문제입니다.
+    <b>ADV 는 판정을 한 번 더 검증</b>합니다 — 서로 다른 소스의 판정을 교차 대조해 신뢰도를 만들고, 불일치·검토필요만 사람이 확정합니다.
   </p>
 </div>
 
-<!-- 왜 ADV 인가 — 강점 -->
-<div class="section-box">
-  <h3>왜 ADV 인가 — 3가지 강점</h3>
-  <div style="display:flex;gap:14px;flex-wrap:wrap;">
-    <div style="flex:1;min-width:240px;border:2px solid #2980b9;border-radius:10px;padding:16px;background:#f7fbff;">
-      <div style="font-size:20px;font-weight:700;color:#2980b9;">🔒 망분리에서 돈다</div>
-      <p class="small" style="margin:8px 0 0;line-height:1.7;">판정을 <b>사내 로컬 LLM·결정적 규칙</b>으로 수행 — <b>외부 클라우드 API 호출 0</b>. 클라우드 AI 반입이 금지된 금융·공공 폐쇄망에서 <b>그대로</b> 쓸 수 있는, 경쟁 도구가 못 들어오는 영역.</p>
+<!-- 핵심: 3-way 검증 -->
+<div class="section-box" style="border:2px solid #2980b9;">
+  <h3>🎯 핵심 기능 — 3-way 정합성 검증 (3-way Report)</h3>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:stretch;">
+    <div style="flex:2;min-width:280px;">
+      <p style="font-size:15px;line-height:1.8;">
+        <b>SecuMS(정답지) · AI · LLM</b> — 세 소스의 판정을 항목별로 대조합니다.
+      </p>
+      <ul style="line-height:1.9;margin:8px 0;">
+        <li><b>일치</b> → 신뢰 (판정 확정)</li>
+        <li><b>불일치</b> → 실제 오탐/과탐 후보 (사람 검토·확정)</li>
+        <li><b>검토필요 / SecuMS 미점검</b> → AI 추론 보완 표시</li>
+      </ul>
+      <p class="small muted">→ 결과물 = <b>3-way 리포트</b>: 일치율·불일치·검토필요를 정리한 <b>검증 산출물</b>(감사 대응). 리포트 화면 <code>/reports/:id/threeway</code>·<code>/report3</code>.</p>
+      <p class="small" style="margin-top:8px;"><b>실측(사내 LLM):</b> <span style="color:#16a085;font-weight:700;">SecuMS-AI 정합성 84.5%(49/58) · Script-AI 88.3%(53/60)</span> · 표준 = 금융보안원 전자금융기반시설 2026 OS 점검(64항목).</p>
+      <p class="small muted">정량 근거: 룰만 판정불가(N/A) <b>61%</b> → AI 적용 후 <b style="color:#16a085;">1.5%</b> = "AI 없이는 자동 진단 불가"의 실측.</p>
     </div>
-    <div style="flex:1;min-width:240px;border:2px solid #16a085;border-radius:10px;padding:16px;background:#f2fbf8;">
-      <div style="font-size:20px;font-weight:700;color:#16a085;">🧠 판정 지능이 우리 것</div>
-      <p class="small" style="margin:8px 0 0;line-height:1.7;"><b>수집/판정 분리</b> — 스크립트는 값만 긁고, 취약 판정은 <b>축적된 노하우 규칙</b>(KISA·AD 보안기준을 코드화)이 소유. 규칙을 우리가 수정·확장 → 정확도·일관성이 LLM 의존 도구보다 우위.</p>
-    </div>
-    <div style="flex:1;min-width:240px;border:2px solid #8e44ad;border-radius:10px;padding:16px;background:#faf7fd;">
-      <div style="font-size:20px;font-weight:700;color:#8e44ad;">📑 제출용 산출물 즉시</div>
-      <p class="small" style="margin:8px 0 0;line-height:1.7;"><b>국내 컴플라이언스 양식</b>(FSI·금보원·삼성) 리포트 + SecuMS 대비 <b>3-way 정합성</b>. 분석가가 손으로 하던 판정·문서화 공수를 <b>대폭 절감</b>.</p>
-    </div>
-  </div>
-  <p class="muted small" style="margin-top:10px;">→ 한 줄: <b>"클라우드 못 쓰는 폐쇄망에서, 우리 노하우로 판정하고, 국내 양식 리포트까지 자동."</b></p>
-</div>
-
-<!-- 핵심 기능 3 -->
-<div class="section-box">
-  <h3>핵심 기능</h3>
-  <div style="display:flex;gap:14px;flex-wrap:wrap;">
-    <div style="flex:1;min-width:240px;border:1px solid #e1e8f0;border-radius:10px;padding:14px;">
-      <div style="font-size:22px;">🧾</div>
-      <h4 style="margin:6px 0;">결과 판정·리포트</h4>
-      <p class="small muted">스크립트 결과물(파일/붙여넣기)을 올리면 → 항목별 취약/양호 판정 → 기존 리포트(HTML·XLSX·인쇄PDF). 원격 접속 불필요(오프라인).</p>
-    </div>
-    <div style="flex:1;min-width:240px;border:1px solid #e1e8f0;border-radius:10px;padding:14px;">
-      <div style="font-size:22px;">🤖</div>
-      <h4 style="margin:6px 0;">자율 진단 에이전트</h4>
-      <p class="small muted">자연어→스크립트 생성 또는 스크립트 직접 업로드 → WinRM/SSH 원격 실행 → 수집 → 판정 → 리포트까지 한 흐름.</p>
-    </div>
-    <div style="flex:1;min-width:240px;border:1px solid #e1e8f0;border-radius:10px;padding:14px;">
-      <div style="font-size:22px;">⚖️</div>
-      <h4 style="margin:6px 0;">3-way 정합성 검증</h4>
-      <p class="small muted">SecuMS(정답지) · AI · LLM 3소스 교차검증으로 판정 신뢰도를 확보. 불일치·검토필요 항목을 사람이 확정.</p>
+    <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px;justify-content:center;">
+      <div style="border:1px solid #e1e8f0;border-radius:10px;padding:12px;text-align:center;"><b style="color:#16a085;">SecuMS</b><div class="muted small">기존 진단 = 정답지</div></div>
+      <div style="text-align:center;color:#8896ab;">＋</div>
+      <div style="border:1px solid #e1e8f0;border-radius:10px;padding:12px;text-align:center;"><b style="color:#2980b9;">AI</b><div class="muted small">독립 재판정</div></div>
+      <div style="text-align:center;color:#8896ab;">＋</div>
+      <div style="border:1px solid #e1e8f0;border-radius:10px;padding:12px;text-align:center;"><b style="color:#8e44ad;">LLM</b><div class="muted small">교차 검증</div></div>
+      <div style="text-align:center;color:#2980b9;font-weight:700;">▼ 정합성 판정</div>
     </div>
   </div>
 </div>
 
-<!-- 차별점 -->
+<!-- 부가 기능 -->
 <div class="section-box">
-  <h3>차별점 (핵심 자산)</h3>
-  <ul style="line-height:1.9;">
-    <li><b>망분리 로컬 판정</b> — mock(결정적) 또는 <b>사내 로컬 LLM(LSAP/ollama)</b>. 외부 API 호출 0 → 폐쇄망 그대로 사용.</li>
-    <li><b>수집/판정 분리 + 노하우 규칙</b> — 스크립트는 원시값만 수집(read-only), <b>판정 지능은 우리 엔진</b>(예: AD 20여 항목 결정적 규칙 <code>evaluateAdDc</code>)이 소유·확장.</li>
-    <li><b>국내 컴플라이언스 산출물</b> — FSI·금보원·삼성 양식 리포트 + SecuMS 대비 정합성.</li>
-  </ul>
+  <h3>부가 기능 — 판정 소스 확보 (망분리 대비)</h3>
+  <p class="muted small" style="margin-top:-4px;">정답지가 없거나 폐쇄망일 때, <b>자체 판정 소스</b>를 만들어 검증에 투입하거나 단독 점검에 사용.</p>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:220px;border:1px solid #e1e8f0;border-radius:10px;padding:14px;">
+      <span class="muted small" style="font-family:monospace;">A · 자율 에이전트</span>
+      <h4 style="margin:6px 0;">자연어→스크립트 · 원격 실행</h4>
+      <p class="small muted">자연어로 점검 스크립트 생성 또는 직접 업로드 → WinRM/SSH 원격 실행 → 판정.</p>
+    </div>
+    <div style="flex:1;min-width:220px;border:1px solid #e1e8f0;border-radius:10px;padding:14px;">
+      <span class="muted small" style="font-family:monospace;">B · 스크립트 점검</span>
+      <h4 style="margin:6px 0;">스크립트 업로드 점검</h4>
+      <p class="small muted">보유한 점검 스크립트(ps1/sh)를 올려 대상에서 실행·수집·판정.</p>
+    </div>
+    <div style="flex:1;min-width:220px;border:1px solid #e1e8f0;border-radius:10px;padding:14px;">
+      <span class="muted small" style="font-family:monospace;">C · 결과 판정·리포트</span>
+      <h4 style="margin:6px 0;">결과 파일 → 판정·리포트</h4>
+      <p class="small muted">이미 수집한 결과물을 올리면 판정 + 리포트. 원격 불필요(오프라인).</p>
+    </div>
+  </div>
 </div>
 
-<!-- 지원 대상 / 판정 방식 -->
+<!-- 판정 방식 + 망분리 -->
 <div class="section-box">
-  <h3>지원 대상 · 판정 방식</h3>
+  <h3>판정 방식 · 망분리</h3>
   <table class="data-table">
     <thead><tr><th>구분</th><th>내용</th></tr></thead>
     <tbody>
-      <tr><td>점검 대상</td><td>Windows(WinRM 5985) · Linux(SSH 22) · DB(MSSQL/MySQL/Oracle) · AD(도메인 컨트롤러)</td></tr>
-      <tr><td>판정 방식</td><td><b>① 전용 evaluator</b>(결정적 규칙·최고정확) · <b>② mock 시그니처</b>(패턴) · <b>③ 로컬 LLM</b>(자연어 지침)</td></tr>
-      <tr><td>수집 방식</td><td>원격 자동(WinRM/SSH) 또는 오프라인(결과물 업로드) — AD DC 는 로컬실행+오프라인 권장</td></tr>
-      <tr><td>리포트</td><td>리포트1(FSI) · 리포트2(삼성) · XLSX · 브라우저 인쇄 PDF</td></tr>
+      <tr><td>판정 3층</td><td><b>① 전용 규칙(evaluator)</b> 결정적·최고정확 · <b>② mock 시그니처</b> · <b>③ 로컬 LLM</b> 자연어 지침</td></tr>
+      <tr><td><b>망분리</b></td><td>검증·판정 전부 <b>사내 로컬(mock/LSAP)</b> — 외부 클라우드 API 호출 0. 폐쇄망 그대로 사용</td></tr>
+      <tr><td>수집/판정 분리</td><td>스크립트는 원시값만, <b>판정 지능(노하우 규칙)은 ADV 소유·확장</b></td></tr>
+      <tr><td>지원 대상</td><td>Windows(WinRM) · Linux(SSH) · DB · AD(DC)</td></tr>
     </tbody>
   </table>
 </div>
 
-<!-- 빠른 시작 -->
 <div class="section-box" style="border-left:4px solid #16a085;background:#f0fbf7;">
   <h3>🚀 빠른 시작</h3>
   <ol style="line-height:2;">
-    <li><a href="/servers">서버 관리</a> — <code>servers.csv</code>에 대상 등록(비번 자동 암호화)</li>
-    <li><a href="/agent">자율 에이전트</a> — 스크립트 원격 점검, 또는 <a href="/adhoc">결과 판정·리포트</a>에 결과물 업로드</li>
-    <li><a href="/reports">리포트</a> — 제출용 산출물 확인</li>
+    <li><a href="/reports">리포트</a> → <b>3-way 정합성(검증)</b>으로 판정 신뢰도 확인 ★핵심</li>
+    <li>(부가) <a href="/agent">자율 에이전트</a> 원격 점검 · <a href="/adhoc">결과 판정·리포트</a> 결과물 업로드</li>
+    <li><a href="/servers">서버 관리</a>(비번 자동 암호화) · <a href="/help">도움말</a></li>
   </ol>
-  <p class="muted small">상세 절차·신규 서버 연동·배포는 <a href="/help">도움말</a> 참고. · 📊 <a href="/download/intro-pptx">소개 PPTX 다운로드</a></p>
-  <p class="small" style="margin-top:8px;">📦 <b>다른 서버에 배포</b>: 민감파일 제외 소스 패키지 <a href="/download/deploy-package">배포 패키지 다운로드</a> (없으면 서버에서 <code>npm run build-deploy</code>). 설치 절차는 <code>배포_가이드.md</code> — <b>MySQL 없이 mock 모드로 바로 실행</b> 가능.</p>
+  <p class="small" style="margin-top:8px;">📊 <a href="/download/intro-pptx">소개 PPTX 다운로드</a> · 📦 <a href="/download/deploy-package">배포 패키지</a> (MySQL 없이 mock 모드로 실행)</p>
 </div>
 
 <%- include('../_footer') %>
