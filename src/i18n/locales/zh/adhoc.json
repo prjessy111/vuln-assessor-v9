@@ -1,5 +1,6 @@
 {
-  "title": "采集结果判定",
+  "title": "结果报告",
+  "reportBtn": "📄 生成报告",
   "desc": "无需预先登记，仅凭自然语言判定指引即可当场判定任意脚本结果。(默认mock · 本地LLM辅助 · 网络隔离)",
   "instructionLabel": "判定指引（自然语言）",
   "instructionHint": "用自然语言描述检查什么、以何标准判定。供本地LLM使用。",

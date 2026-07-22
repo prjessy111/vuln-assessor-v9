@@ -24,7 +24,7 @@
     "users": "ユーザー管理",
     "logout": "ログアウト",
     "changePassword": "パスワード変更",
-    "adhoc": "収集結果の判定",
+    "adhoc": "結果レポート",
     "help": "ヘルプ"
   },
   "btn": {

@@ -4197,6 +4197,54 @@ app.post('/adhoc/judge', auth.requireRole('admin', 'operator'), adhocUpload.sing
   res.render('adhoc/index', { activeMenu: 'adhoc', result, input });
 });
 
+// 결과물 → 기존 리포트 생성: 올린 결과 판정 후 diagnoses 로 변환 → 기존 /reports(HTML/XLSX/인쇄PDF) 로 이동.
+//  (자율 에이전트 to-report 와 동일한 어댑터 재사용 — 새 리포트 화면 없음)
+async function _adhocJudgeRaw(raw, instruction, backend) {
+  if (backend === 'local') {
+    const { buildClient, isBackendConfigured } = require('./src/agent/llmClient');
+    if (isBackendConfigured('lsap')) return await adhocJudge.llmJudge(raw, instruction, buildClient('lsap'));
+  }
+  return adhocJudge.mockJudge(raw, instruction);
+}
+app.post('/adhoc/report', auth.requireRole('admin', 'operator'), adhocUpload.single('resultfile'), async (req, res) => {
+  try {
+    let raw = req.body.raw || '';
+    let uploadedName = req.body.uploadedName || null;
+    if (req.file) { try { raw = fs.readFileSync(req.file.path, 'utf8'); uploadedName = req.file.originalname; } catch (e) {} }
+    if (!raw || !String(raw).trim()) throw new Error('결과물(붙여넣기 또는 파일)이 필요합니다');
+    const instruction = req.body.instruction || '';
+    const backend = req.body.backend === 'local' ? 'local' : 'mock';
+    const result = await _adhocJudgeRaw(raw, instruction, backend);
+    const findings = (result && result.findings) || [];
+    const name = String(uploadedName || '결과물').replace(/\.[^.]+$/, '');
+    const pseudo = {
+      item_id: 'ADHOC-' + Date.now(),
+      title: name, category: '결과물 리포트', severity: '중', os_target: '',
+      judgment: {
+        verdict: findings.some(f => f.verdict === '취약') ? '취약' : '양호',
+        findings,
+        summary: result.summary || '',
+        model: result.model || result.evaluator || result.backend || backend,
+        backend: result.backend || backend,
+        judged_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      },
+    };
+    const { buildDiagnosisFromAgentItem } = require('./src/engine/agentReportAdapter');
+    const diagnoses = loadMock('diagnoses') || [];
+    const aid = diagnoses.reduce((m, d) => Math.max(m, Number(d.assessment_id) || 0), 0) + 1;
+    const diag = buildDiagnosisFromAgentItem(pseudo, { hostname: name, os_type: '' }, aid);
+    diagnoses.unshift(diag);
+    saveMock('diagnoses', diagnoses);
+    res.redirect('/reports/' + aid);
+  } catch (e) {
+    res.render('adhoc/index', {
+      activeMenu: 'adhoc',
+      result: { backend: 'mock', findings: [], summary: '', note: '리포트 생성 실패: ' + (e.message || String(e)), error: true },
+      input: {},
+    });
+  }
+});
+
 /**
  * 자율 루프 raw 자동 수집 (토큰 인증).
  * 승인된 점검 스크립트를 대상에서 실행한 래퍼가 결과(raw 텍스트)를 item_id로 push.

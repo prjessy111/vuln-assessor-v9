@@ -41,8 +41,9 @@
       <input type="radio" name="backend" value="local" <%= (input && input.backend === 'local') ? 'checked' : '' %>>
       <strong><%= t('adhoc.backendLocal') %></strong> — <span class="muted small"><%= t('adhoc.backendLocalHint') %></span>
     </label>
-    <div style="margin-top:14px;">
+    <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
       <button type="submit" class="btn primary"><%= t('adhoc.judgeBtn') %></button>
+      <button type="submit" class="btn" formaction="/adhoc/report" title="판정 결과를 기존 리포트(HTML/XLSX/인쇄PDF)로 생성"><%= t('adhoc.reportBtn') %></button>
     </div>
   </div>
 </form>
