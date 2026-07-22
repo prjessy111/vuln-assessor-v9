@@ -1,0 +1,28 @@
+<%- include('../_header', { title: '릴리즈노트', activeMenu: 'release-notes' }) %>
+
+<div class="page-header">
+  <h1>릴리즈노트 <span class="muted small">현재 v<%= appVersion %></span></h1>
+  <p class="muted small">
+    버전 선택:
+    <% files.forEach(function(f){ var v=f.replace(/^릴리즈노트_/,'').replace(/\.md$/,''); %>
+      <a href="/release-notes?f=<%= encodeURIComponent(f) %>" style="margin-right:8px;<%= f===sel ? 'font-weight:700;color:#2980b9;' : '' %>"><%= v %></a>
+    <% }); %>
+  </p>
+</div>
+
+<div class="section-box release-notes-body">
+  <%- body %>
+</div>
+
+<style>
+  .release-notes-body h1{font-size:24px;margin:4px 0 12px;}
+  .release-notes-body h2{font-size:19px;border-bottom:1px solid #e1e8f0;padding-bottom:6px;}
+  .release-notes-body h3{font-size:16px;color:#2980b9;}
+  .release-notes-body ul{line-height:1.8;}
+  .release-notes-body code{background:#f0f3f8;padding:1px 6px;border-radius:4px;font-size:.92em;}
+  .release-notes-body table{margin:10px 0;}
+  .release-notes-body blockquote{border-left:3px solid #cbd5e1;margin:8px 0;padding:4px 12px;color:#5a6b86;}
+  .release-notes-body hr{border:none;border-top:1px solid #e1e8f0;margin:18px 0;}
+</style>
+
+<%- include('../_footer') %>

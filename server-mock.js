@@ -303,6 +303,9 @@ function reconcileMockData() {
 app.set('view engine', 'ejs');
 app.set('views', path.join(ROOT, 'src/views'));
 
+// 앱 버전 — 모든 뷰에서 <%= appVersion %> 로 사용 (푸터/소개/릴리즈노트)
+app.locals.appVersion = (function () { try { return require('./package.json').version; } catch (_) { return ''; } })();
+
 // 모든 뷰 공통 시간 포맷 헬퍼 — ms를 사람이 읽기 쉽게 (<1초=ms, 분/초, 시간/분)
 app.locals.fmtMs = function (ms) {
   ms = Number(ms) || 0;
@@ -4177,6 +4180,57 @@ app.get('/download/intro-pptx', (req, res) => {
     return res.status(404).send('소개 PPTX가 아직 생성되지 않았습니다. 서버에서 <code>npm run build-pptx</code> 를 실행하세요.');
   }
   res.download(pptxPath, 'ADV_소개_v9.15.pptx');
+});
+
+// 다운로드 센터 — 산출물(PPTX·배포패키지) 목록 + 상태
+app.get('/downloads', (req, res) => {
+  const items = [
+    { key:'intro-pptx', title:'제품 소개 PPTX', desc:'ADV 소개 발표자료 (편집 가능한 PowerPoint, 8슬라이드)',
+      file:'ADV_소개_v9.15.pptx', url:'/download/intro-pptx', build:'npm run build-pptx', icon:'📊' },
+    { key:'deploy', title:'배포 패키지 (소스 zip)', desc:'다른 서버 설치용 소스 — 민감파일 제외, MySQL 없이 mock 실행',
+      file:'adv-deploy-package.zip', url:'/download/deploy-package', build:'npm run build-deploy', icon:'📦' },
+  ].map(it => {
+    const p = path.join(ROOT, 'dist', it.file);
+    const ok = fs.existsSync(p);
+    return { ...it, exists: ok, sizeKB: ok ? Math.round(fs.statSync(p).size/1024) : 0 };
+  });
+  res.render('downloads/index', { activeMenu:'downloads', items });
+});
+
+// 릴리즈노트 — 루트의 릴리즈노트_v*.md 를 앱에서 렌더
+function mdToHtml(md){
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inline = s => esc(s)
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2">$1</a>');
+  const lines = String(md).split(/\r?\n/); let html=''; let i=0;
+  while(i<lines.length){
+    let l=lines[i];
+    if(/^\s*\|.*\|\s*$/.test(l) && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i+1]||'')){ // 표
+      const cells=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+      html+='<table class="data-table"><thead><tr>'+cells(l).map(c=>'<th>'+inline(c)+'</th>').join('')+'</tr></thead><tbody>';
+      i+=2; while(i<lines.length && /^\s*\|.*\|\s*$/.test(lines[i])){ html+='<tr>'+cells(lines[i]).map(c=>'<td>'+inline(c)+'</td>').join('')+'</tr>'; i++; }
+      html+='</tbody></table>'; continue;
+    }
+    if(/^###\s+/.test(l)) html+='<h3>'+inline(l.replace(/^###\s+/,''))+'</h3>';
+    else if(/^##\s+/.test(l)) html+='<h2 style="margin-top:22px">'+inline(l.replace(/^##\s+/,''))+'</h2>';
+    else if(/^#\s+/.test(l)) html+='<h1>'+inline(l.replace(/^#\s+/,''))+'</h1>';
+    else if(/^\s*---\s*$/.test(l)) html+='<hr>';
+    else if(/^\s*[-*]\s+/.test(l)){ html+='<ul>'; while(i<lines.length && /^\s*[-*]\s+/.test(lines[i])){ html+='<li>'+inline(lines[i].replace(/^\s*[-*]\s+/,''))+'</li>'; i++; } html+='</ul>'; continue; }
+    else if(/^\s*>\s?/.test(l)) html+='<blockquote>'+inline(l.replace(/^\s*>\s?/,''))+'</blockquote>';
+    else if(l.trim()) html+='<p>'+inline(l)+'</p>';
+    i++;
+  }
+  return html;
+}
+app.get('/release-notes', (req, res) => {
+  let files = [];
+  try { files = fs.readdirSync(ROOT).filter(f => /^릴리즈노트_v.*\.md$/.test(f)).sort().reverse(); } catch (_) {}
+  if (!files.length) return res.status(404).send('릴리즈노트 파일이 없습니다.');
+  const sel = files.includes(req.query.f) ? req.query.f : files[0];
+  let md = ''; try { md = fs.readFileSync(path.join(ROOT, sel), 'utf8'); } catch (_) {}
+  res.render('release-notes/index', { activeMenu:'release-notes', files, sel, body: mdToHtml(md) });
 });
 
 // ─── 애드혹 스크립트 점검 (그때그때 임의 결과물 즉석 판정) ─────────────

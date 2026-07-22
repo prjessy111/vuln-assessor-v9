@@ -1,4 +1,13 @@
 </main>
+<footer class="app-footer no-print" style="max-width:1200px;margin:24px auto 30px;padding:14px 20px;border-top:1px solid #e1e8f0;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:#7386a6;">
+  <span><b style="color:#2980b9;">ADV</b> v<%= typeof appVersion !== 'undefined' ? appVersion : '' %></span>
+  <span style="color:#cbd5e1;">·</span>
+  <a href="/release-notes" style="color:inherit;">릴리즈노트</a>
+  <a href="/downloads" style="color:inherit;">다운로드</a>
+  <a href="/intro" style="color:inherit;">소개</a>
+  <a href="/help" style="color:inherit;">도움말</a>
+  <span style="margin-left:auto;">AI Diagnosis Verify — 정합성 자동 검증</span>
+</footer>
 <style>
 @media print {
   .topbar, .main-nav, .report-actions, .no-print, .user-area { display: none !important; }
