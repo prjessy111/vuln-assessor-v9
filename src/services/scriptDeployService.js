@@ -692,7 +692,10 @@ async function runWindowsWinRmScriptDeployment(server, localScriptPath, opts = {
     }
 
     await onProgress(45, 'script executing via WinRM');
-    const runScript = windowsWinRmRunScript(remoteWorkDirAbs, remoteScriptAbs, payload.ext, opts.scriptArgs, debugLogAbs, outputDirAbs);
+    // fsi 스크립트는 -OutputDir 인자를 기대하지만, 임의 스크립트(ad_collect=-OutDir 등)엔 강제 주입하면
+    // "매개변수를 찾을 수 없음"으로 실패. opts.noOutputDirArg 면 주입 생략(결과 탐색 경로는 그대로 유지).
+    const _runOutDir = opts.noOutputDirArg ? null : outputDirAbs;
+    const runScript = windowsWinRmRunScript(remoteWorkDirAbs, remoteScriptAbs, payload.ext, opts.scriptArgs, debugLogAbs, _runOutDir);
     const runOutput = await runWindowsPowerShell(target, runScript, 'WinRM PowerShell execution failed');
     const stdout = normalizeWinRmOutput(runOutput, 'WinRM PowerShell 실행 실패');
 

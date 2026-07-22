@@ -182,7 +182,8 @@ async function _runViaScriptDeploy(server, script, opts = {}) {
   const tmpName = `adv-adhoc-${String(script.item_id || 'x').replace(/[^\w.-]/g, '_')}-${process.pid}.${ext}`;
   const tmpPath = path.join(os.tmpdir(), tmpName);
 
-  // BOM 없는 UTF-8 로 저장 (원격 PowerShell/셸이 그대로 해석)
+  // UTF-8(BOM 없음)로 저장 — repo 원본 스크립트는 이 방식으로 원격 실행·회수 검증됨(110.91 ad_collect 34KB).
+  //  (BOM 을 붙이면 오히려 원격 PS 가 3행부터 깨져 실패 → 붙이지 않는다.)
   fs.writeFileSync(tmpPath, String(script.code || ''), 'utf8');
 
   // result_glob 파싱: 절대 디렉터리 + 패턴 분리
@@ -207,6 +208,7 @@ async function _runViaScriptDeploy(server, script, opts = {}) {
       remoteResultDir: remoteResultDir || undefined,
       timeout: opts.timeout,
       by: opts.by || 'agent',
+      noOutputDirArg: true,   // 임의 스크립트 — 앱이 -OutputDir 강제 주입하지 않음(스크립트별 인자명 상이)
       onProgress: typeof opts.onProgress === 'function' ? opts.onProgress : undefined,
     });
     let output = '';
