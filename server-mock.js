@@ -4233,6 +4233,16 @@ app.get('/release-notes', (req, res) => {
   res.render('release-notes/index', { activeMenu:'release-notes', files, sel, body: mdToHtml(md) });
 });
 
+// 가이드 — 배포/신규서버/사전작업 MD 를 앱에서 렌더
+app.get('/guides', (req, res) => {
+  const GUIDES = ['배포_가이드.md', '신규서버_연동_체크리스트.md', '사전작업.md'];
+  const avail = GUIDES.filter(f => fs.existsSync(path.join(ROOT, f)));
+  if (!avail.length) return res.status(404).send('가이드 파일이 없습니다.');
+  const sel = avail.includes(req.query.f) ? req.query.f : avail[0];
+  let md = ''; try { md = fs.readFileSync(path.join(ROOT, sel), 'utf8'); } catch (_) {}
+  res.render('guides/index', { activeMenu:'guides', files: avail, sel, body: mdToHtml(md) });
+});
+
 // ─── 애드혹 스크립트 점검 (그때그때 임의 결과물 즉석 판정) ─────────────
 // 방침: mock 기본(외부 호출 0) · 로컬 LLM(LSAP/ollama) 보조 · 망분리이므로 Claude 등 외부 API 미사용
 const adhocJudge = require('./src/engine/adhocJudge');

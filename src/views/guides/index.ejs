@@ -1,0 +1,28 @@
+<%- include('../_header', { title: '가이드', activeMenu: 'guides' }) %>
+
+<div class="page-header">
+  <h1>가이드</h1>
+  <p class="muted small">
+    <% files.forEach(function(f){ var name=f.replace(/\.md$/,''); %>
+      <a href="/guides?f=<%= encodeURIComponent(f) %>" style="margin-right:10px;<%= f===sel ? 'font-weight:700;color:#2980b9;' : '' %>"><%= name %></a>
+    <% }); %>
+  </p>
+</div>
+
+<div class="section-box release-notes-body">
+  <%- body %>
+</div>
+
+<style>
+  .release-notes-body h1{font-size:24px;margin:4px 0 12px;}
+  .release-notes-body h2{font-size:19px;border-bottom:1px solid #e1e8f0;padding-bottom:6px;}
+  .release-notes-body h3{font-size:16px;color:#2980b9;}
+  .release-notes-body ul{line-height:1.8;}
+  .release-notes-body code{background:#f0f3f8;padding:1px 6px;border-radius:4px;font-size:.92em;}
+  .release-notes-body pre{background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;overflow-x:auto;}
+  .release-notes-body table{margin:10px 0;}
+  .release-notes-body blockquote{border-left:3px solid #cbd5e1;margin:8px 0;padding:4px 12px;color:#5a6b86;}
+  .release-notes-body hr{border:none;border-top:1px solid #e1e8f0;margin:18px 0;}
+</style>
+
+<%- include('../_footer') %>

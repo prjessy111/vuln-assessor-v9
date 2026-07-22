@@ -27,7 +27,7 @@
   <p class="muted small">점검 대상을 <code>servers.csv</code>(프로젝트 루트)에 등록합니다. 저장 후 서버 재기동하면 <a href="/servers">서버 관리</a>에 반영됩니다.</p>
   <pre style="background:#f6f8fa;padding:12px;border-radius:6px;overflow-x:auto;">name, ip, os, account, password, asset_no
 web-01,10.10.20.5,linux,root,&lt;비번&gt;,SVR-2026-0040
-jessy91,192.168.100.91,windows,JESSYDOMAIN\Administrator,&lt;비번&gt;,SVR-2026-0033</pre>
+win-01,10.10.20.6,windows,Administrator,&lt;비번&gt;,SVR-2026-0002</pre>
   <p class="muted small">⚠ 접속 비번이 평문으로 저장됩니다. 파일 권한을 <code>600</code>으로 제한하고 git에 올리지 마세요(<code>.gitignore</code> 처리됨).</p>
 </div>
 
@@ -105,16 +105,16 @@ jessy91,192.168.100.91,windows,JESSYDOMAIN\Administrator,&lt;비번&gt;,SVR-2026
 Start-Service WinRM; Set-Service WinRM -StartupType Automatic
 
 # 2) 대상 IP 를 신뢰 목록에 등록 (신규 Windows 서버마다 1회, 여러 대는 "IP1,IP2")
-Set-Item WSMan:\localhost\Client\TrustedHosts -Value "192.168.159.107" -Concatenate -Force
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "<대상IP>" -Concatenate -Force
 Restart-Service WinRM
 
 # 3) 등록 확인 + 포트 도달 확인 (True 여야 함)
 Get-Item WSMan:\localhost\Client\TrustedHosts
-Test-NetConnection 192.168.159.107 -Port 5985
+Test-NetConnection <대상IP> -Port 5985
 
 # 4) 접속 검증 (Administrator / servers.csv 비번)
 $cred = Get-Credential
-Invoke-Command -ComputerName 192.168.159.107 -Credential $cred -ScriptBlock { hostname; whoami }
+Invoke-Command -ComputerName <대상IP> -Credential $cred -ScriptBlock { hostname; whoami }
 # → 대상 hostname + '대상\administrator' 나오면 성공. 이후 앱 재시작.</pre>
   <p class="small muted" style="margin:2px 0 8px;">※ 대상 서버에서 5985 가 닫혀 있으면(3번 False): 대상에서 <code>Enable-PSRemoting -Force</code> 실행 + 방화벽 5985 인바운드 허용. (RDP 불가 시 사전작업.md 부록 B의 PsExec 원격 활성화)</p>
   <p class="small" style="margin-top:8px;"><b>🔴 자주 나는 에러:</b> <code>WinRM PowerShell execution failed: Failed to process the request, status Code:</code>

@@ -137,7 +137,7 @@ s.addText([{text:'검증·판정 전부 사내 로컬 — 외부 클라우드 AP
 
 /* 7 지원/배포/성과 */
 s=pptx.addSlide(); base(s,7,'Coverage · Deploy'); h2(s,'지원 대상 · 성과 · 배포');
-const chips=['Windows·WinRM','Linux·SSH','DB·MSSQL/MySQL/Oracle','AD·DC'];
+const chips=['Windows·WinRM','Linux·SSH','DB·MSSQL/MySQL/Oracle','AD·DC','다국어·한/영/일/중'];
 let chx=0.6; chips.forEach(c=>{ const cwid=0.5+c.length*0.13;
   s.addShape(pptx.ShapeType.roundRect,{x:chx,y:2.35,w:cwid,h:0.5,rectRadius:0.25,fill:{color:PANEL},line:{color:LINE,width:1}});
   s.addText(c,{x:chx,y:2.35,w:cwid,h:0.5,fontFace:FONT,fontSize:12,bold:true,color:FG,align:'center',valign:'middle'}); chx+=cwid+0.2; });
