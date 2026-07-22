@@ -6,7 +6,8 @@
   "scripts": {
     "mock": "set NODE_OPTIONS=--openssl-legacy-provider && node server-mock.js",
     "test": "jest",
-    "scheduler": "set NODE_OPTIONS=--openssl-legacy-provider && node src/services/scheduler.js"
+    "scheduler": "set NODE_OPTIONS=--openssl-legacy-provider && node src/services/scheduler.js",
+    "enc-servers": "node scripts/encrypt-servers-csv.js"
   },
   "dependencies": {
     "@marsaud/smb2": "^0.18.0",

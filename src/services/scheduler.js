@@ -141,6 +141,21 @@ async function runDiagnosisByEngine(engine, server, opts = {}) {
     : executeAiDiagnosis(server, opts);
 }
 
+// servers.csv 비번 필드 복호화: 'enc:<base64>' 이면 복호화, 평문이면 그대로(하위호환).
+//  키(ENCRYPTION_KEY)는 상단 require('../config') 로 .env 에서 이미 로드됨.
+function _decryptCsvSecret(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s.startsWith('enc:')) return s;                 // 평문 — 그대로
+  try {
+    const { decrypt } = require('../util/crypto');
+    const out = decrypt(Buffer.from(s.slice(4), 'base64'));
+    return out == null ? '' : out;
+  } catch (e) {
+    console.error('[servers.csv] 비밀번호 복호화 실패 — ENCRYPTION_KEY(.env) 확인:', e.message);
+    return '';
+  }
+}
+
 function getTargetServersFromFile() {
   const csvPath = path.resolve(__dirname, '../../servers.csv');
   if (!fs.existsSync(csvPath)) return [];
@@ -156,7 +171,7 @@ function getTargetServersFromFile() {
       ip: parts[1],
       os: parts[2],
       username: parts[3],
-      password: parts[4],
+      password: _decryptCsvSecret(parts[4]),
       asset_no: parts[5] || parts[0],
       server_id: parts[6] || parts[1],
     }));
