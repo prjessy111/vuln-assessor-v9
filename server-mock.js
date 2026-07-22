@@ -4170,6 +4170,15 @@ app.get('/download/deploy-package', (req, res) => {
   res.download(zipPath, 'adv-deploy-package.zip');
 });
 
+// 소개 PPTX 다운로드 (빌드: npm run build-pptx)
+app.get('/download/intro-pptx', (req, res) => {
+  const pptxPath = path.join(ROOT, 'dist', 'ADV_소개_v9.15.pptx');
+  if (!fs.existsSync(pptxPath)) {
+    return res.status(404).send('소개 PPTX가 아직 생성되지 않았습니다. 서버에서 <code>npm run build-pptx</code> 를 실행하세요.');
+  }
+  res.download(pptxPath, 'ADV_소개_v9.15.pptx');
+});
+
 // ─── 애드혹 스크립트 점검 (그때그때 임의 결과물 즉석 판정) ─────────────
 // 방침: mock 기본(외부 호출 0) · 로컬 LLM(LSAP/ollama) 보조 · 망분리이므로 Claude 등 외부 API 미사용
 const adhocJudge = require('./src/engine/adhocJudge');

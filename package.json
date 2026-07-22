@@ -8,7 +8,8 @@
     "test": "jest",
     "scheduler": "set NODE_OPTIONS=--openssl-legacy-provider && node src/services/scheduler.js",
     "enc-servers": "node scripts/encrypt-servers-csv.js",
-    "build-deploy": "node scripts/build-deploy-package.js"
+    "build-deploy": "node scripts/build-deploy-package.js",
+    "build-pptx": "node scripts/build-intro-pptx.js"
   },
   "dependencies": {
     "@marsaud/smb2": "^0.18.0",
@@ -30,6 +31,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "pptxgenjs": "^4.0.1"
   }
 }
