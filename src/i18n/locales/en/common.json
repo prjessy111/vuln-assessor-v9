@@ -2,6 +2,7 @@
   "appTitle": "Vulnerability Assessment System",
   "nav": {
     "dashboard": "Dashboard",
+    "intro": "Intro",
     "diagGroup": "Assessment",
     "diagnosis": "Assessments",
     "collection": "Collections",

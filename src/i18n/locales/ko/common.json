@@ -2,6 +2,7 @@
   "appTitle": "취약점 진단 시스템",
   "nav": {
     "dashboard": "대시보드",
+    "intro": "소개",
     "diagGroup": "진단",
     "diagnosis": "진단 관리",
     "collection": "수집 관리",

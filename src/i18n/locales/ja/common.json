@@ -2,6 +2,7 @@
   "appTitle": "脆弱性診断システム",
   "nav": {
     "dashboard": "ダッシュボード",
+    "intro": "紹介",
     "diagGroup": "診断",
     "diagnosis": "診断管理",
     "collection": "収集管理",

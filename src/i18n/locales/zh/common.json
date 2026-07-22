@@ -2,6 +2,7 @@
   "appTitle": "漏洞诊断系统",
   "nav": {
     "dashboard": "仪表盘",
+    "intro": "简介",
     "diagGroup": "诊断",
     "diagnosis": "诊断管理",
     "collection": "采集管理",

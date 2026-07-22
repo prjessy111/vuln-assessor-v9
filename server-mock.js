@@ -4157,6 +4157,19 @@ app.get('/help', (req, res) => {
   res.render('help/index', { activeMenu: 'help' });
 });
 
+app.get('/intro', (req, res) => {
+  res.render('intro/index', { activeMenu: 'intro' });
+});
+
+// 배포 패키지 다운로드 — 민감파일 제외한 소스 zip (빌드: npm run build-deploy)
+app.get('/download/deploy-package', (req, res) => {
+  const zipPath = path.join(ROOT, 'dist', 'adv-deploy-package.zip');
+  if (!fs.existsSync(zipPath)) {
+    return res.status(404).send('배포 패키지가 아직 생성되지 않았습니다. 서버에서 <code>npm run build-deploy</code> 를 실행하세요.');
+  }
+  res.download(zipPath, 'adv-deploy-package.zip');
+});
+
 // ─── 애드혹 스크립트 점검 (그때그때 임의 결과물 즉석 판정) ─────────────
 // 방침: mock 기본(외부 호출 0) · 로컬 LLM(LSAP/ollama) 보조 · 망분리이므로 Claude 등 외부 API 미사용
 const adhocJudge = require('./src/engine/adhocJudge');

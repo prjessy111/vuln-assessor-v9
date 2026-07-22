@@ -119,7 +119,8 @@ Invoke-Command -ComputerName 192.168.159.107 -Credential $cred -ScriptBlock { ho
   <p class="small muted" style="margin:2px 0 8px;">※ 대상 서버에서 5985 가 닫혀 있으면(3번 False): 대상에서 <code>Enable-PSRemoting -Force</code> 실행 + 방화벽 5985 인바운드 허용. (RDP 불가 시 사전작업.md 부록 B의 PsExec 원격 활성화)</p>
   <p class="small" style="margin-top:8px;"><b>🔴 자주 나는 에러:</b> <code>WinRM PowerShell execution failed: Failed to process the request, status Code:</code>
     = 포트는 열렸는데 <b>권한(승인) 안 됨</b> → 대개 <b>컨트롤러 TrustedHosts 누락</b>. 3단계 등록 후 <code>Restart-Service WinRM</code> + 앱 재시작. (107이 되는 이유가 이 등록이 되어 있어서)</p>
-  <p class="small" style="color:#c0392b;">⚠ <code>servers.csv</code> 는 접속 비번이 <b>평문</b>으로 저장됩니다 — 파일권한 제한·git 제외(처리됨), <b>암호화는 향후 필수 개선 과제</b>.</p>
+  <p class="small" style="margin-top:8px;"><b>🔐 비밀번호 암호화 (신규 서버 추가):</b> 비번은 <b>AES-256-GCM 암호화</b>(<code>enc:...</code>)로 저장되고 앱이 자동 복호화합니다. <b>신규 추가 = ① servers.csv 에 평문 한 줄 추가 → ② <code>npm run enc-servers</code>(평문만 암호화) → ③ 앱 재시작.</b></p>
+  <p class="small" style="color:#c0392b;">⚠ 키는 <code>.env</code>의 <code>ENCRYPTION_KEY</code> — 분실 시 복호화 불가(별도 백업). servers.csv 단독 유출은 안전(키 없으면 못 풂), 단 <code>.env</code>와 함께 유출 금지·파일권한 최소화.</p>
 </div>
 
 <!-- ③④⑤ -->
