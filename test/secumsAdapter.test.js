@@ -1,12 +1,12 @@
 'use strict';
 /**
- * SecuMS Unix 어댑터 통합 테스트.
- * 실제 SecuMS Agent에서 export된 SQLite 샘플 파일로 검증.
+ * SecuMS Unix 어댑터 통합 테스트 (v5 raw 추출 API 기준).
+ * 실제 SecuMS Agent에서 export된 SQLite 샘플로 검증.
+ * better-sqlite3 native build 실패 시 스킵.
  *
- * 참고: better-sqlite3는 native build가 필요하므로
- * CI/샌드박스 환경에서 빌드 실패 시 이 테스트는 skip되도록 try-catch 처리.
+ * ※ 구 monolithic extract() 는 제거되고 extractMeta()+extractDiagnoseItems() 로 분리됨.
+ *   판정(OK→양호 등)은 어댑터가 아니라 상위 판정/리포트 계층 책임(수집/판정 분리).
  */
-
 const path = require('path');
 
 const FIXTURE = path.join(__dirname, 'fixtures/secums-unix-sample.db');
@@ -15,7 +15,7 @@ let Database;
 try {
   Database = require('better-sqlite3');
 } catch (e) {
-  console.warn('[skip] better-sqlite3 미설치 환경 - SecuMS 어댑터 통합 테스트 스킵');
+  console.warn('[skip] better-sqlite3 미설치 - SecuMS 어댑터 테스트 스킵');
 }
 
 const secumsUnix = require('../src/engine/adapters/secumsUnix');
@@ -29,67 +29,54 @@ const secumsUnix = require('../src/engine/adapters/secumsUnix');
     expect(secumsUnix.detect(db)).toBe(true);
   });
 
-  test('extract() — 기본 정보 추출', () => {
-    const r = secumsUnix.extract(db);
-    expect(r.host).toBe('jessy62');
-    expect(r.hostOs).toBe('linux');
-    expect(r.osVersion).toBe('CentOS7.5.1804');
+  test('extractMeta() — 기본 정보', () => {
+    const m = secumsUnix.extractMeta(db);
+    expect(m.host).toBe('jessy62');
+    expect(m.hostOs).toBe('linux');
+    expect(m.osVersion).toBe('CentOS7.5.1804');
   });
 
-  test('extract() — 50개 점검 항목, 정확한 카운트', () => {
-    const r = secumsUnix.extract(db);
-    expect(r.items.length).toBe(50);
-    expect(r.summary.total).toBe(50);
-    expect(r.summary.vuln).toBe(18);
-    expect(r.summary.safe).toBe(30);
-    expect(r.summary.na).toBe(2);
+  test('listTables() — 주요 U_*_TB 발견', () => {
+    const names = secumsUnix.listTables(db).map(t => t.table);
+    expect(names).toContain('U_PASSWD_TB');
+    expect(names).toContain('U_FILEATTR_TB');
+    expect(names).toContain('U_LISTENINGPORT_TB');
   });
 
-  test('extract() — 상태 매핑 (OK→양호, BAD→취약, INFO→점검불가)', () => {
-    const r = secumsUnix.extract(db);
-    const statuses = new Set(r.items.map(i => i.status));
-    expect(statuses).toEqual(new Set(['양호', '취약', '점검불가']));
+  test('querySlice() — /etc/passwd 권한 조회', () => {
+    const rows = secumsUnix.querySlice(db,
+      "SELECT FILEPATH, PERMISSION FROM U_FILEATTR_TB WHERE FILEPATH='/etc/passwd'");
+    expect(rows.length).toBe(1);
+    expect(rows[0].PERMISSION).toBe('0644');
   });
 
-  test('extract() — BAD 항목은 상세 사유가 포함됨', () => {
-    const r = secumsUnix.extract(db);
-    const vulns = r.items.filter(i => i.status === '취약');
-    for (const v of vulns) {
-      expect(v.reason).toBeTruthy();
-      expect(v.reason.length).toBeGreaterThan(0);
-    }
+  test('querySlice() — SELECT 외 거부', () => {
+    expect(() => secumsUnix.querySlice(db, "DROP TABLE U_PASSWD_TB")).toThrow(/SELECT/);
+    expect(() => secumsUnix.querySlice(db, "DELETE FROM U_PASSWD_TB")).toThrow(/SELECT/);
   });
 
-  test('extract() — 점검명이 채워짐 (대부분의 항목)', () => {
-    const r = secumsUnix.extract(db);
-    const withTitle = r.items.filter(i => i.title && !i.title.startsWith('(이름 없음'));
-    expect(withTitle.length).toBeGreaterThan(40);  // 50건 중 대다수
-  });
+  describe('extractDiagnoseItems() — 점검 항목 추출', () => {
+    let items;
+    beforeAll(() => { items = secumsUnix.extractDiagnoseItems(db); });
 
-  test('extract() — 카테고리 자동 분류', () => {
-    const r = secumsUnix.extract(db);
-    const cats = {};
-    for (const it of r.items) cats[it.category] = (cats[it.category] || 0) + 1;
-    expect(cats['계정관리']).toBeGreaterThan(0);
-    expect(cats['서비스관리']).toBeGreaterThan(0);
-    expect(cats['파일및디렉토리관리']).toBeGreaterThan(0);
-  });
+    test('50개 항목', () => {
+      expect(Array.isArray(items)).toBe(true);
+      expect(items.length).toBe(50);
+    });
 
-  test('extract() — 특정 알려진 취약 항목 검증', () => {
-    const r = secumsUnix.extract(db);
-    const items = new Map(r.items.map(i => [i.rule_id, i]));
+    test('각 항목에 chk_id·secums_verdict', () => {
+      for (const it of items) {
+        expect(it.chk_id).toBeTruthy();
+        expect(['OK', 'BAD', 'INFO']).toContain(it.secums_verdict);
+      }
+    });
 
-    // BAD 항목들의 sample 검증
-    expect(items.get('os-linux-340').status).toBe('취약');     // ftp
-    expect(items.get('os-linux-2389').status).toBe('취약');    // ftp port listen
-    expect(items.get('os-linux-271').status).toBe('취약');     // 계정잠금
-    expect(items.get('os-linux-377').status).toBe('취약');     // 패스워드 복잡도
-
-    // OK 항목 검증
-    expect(items.get('os-linux-1973').status).toBe('양호');    // telnet (OK)
-    expect(items.get('os-linux-188').status).toBe('양호');     // /etc/passwd OK
-
-    // INFO 검증
-    expect(items.get('os-linux-380').status).toBe('점검불가'); // cron.allow INFO
+    test('SecuMS 정답지 분포 — OK 30 · BAD 18 · INFO 2', () => {
+      const vd = {};
+      for (const it of items) vd[it.secums_verdict] = (vd[it.secums_verdict] || 0) + 1;
+      expect(vd.OK).toBe(30);
+      expect(vd.BAD).toBe(18);
+      expect(vd.INFO).toBe(2);
+    });
   });
 });

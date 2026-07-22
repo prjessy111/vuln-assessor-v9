@@ -68,6 +68,10 @@ async function evaluateAll({ adapter, db, rules, hostOs, llmClient }) {
  * 반환: { status, reason, evidence, eval_method, subs }
  */
 async function evaluateOne({ adapter, db, rule, llmClient }) {
+  // 방어: rule 누락 시 명확히 점검불가 반환(구 크래시 'Cannot read context_sql' 방지)
+  if (!rule || typeof rule !== 'object') {
+    return { status: '점검불가', reason: '룰 정의 없음(rule=undefined)', evidence: '', eval_method: 'na', subs: [] };
+  }
   // 1) context_sql 실행
   let context;
   if (rule.context_sql) {
