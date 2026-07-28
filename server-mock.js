@@ -4272,6 +4272,17 @@ app.post('/adhoc/judge', auth.requireRole('admin', 'operator'), adhocUpload.sing
   let result;
   try {
     if (backend === 'local') {
+      // 구조 인식 결과물(AD JSON 등)은 LLM 백엔드에서도 결정적 규칙 판정을 우선 (정확·무비용)
+      const structured = adhocJudge.detectAndEvaluate(raw);
+      if (structured) {
+        result = {
+          backend: 'rule',
+          model: structured.evaluator,
+          findings: structured.findings,
+          summary: structured.summary,
+          note: structured.note + ' (구조 인식 — 결정적 규칙 판정, LLM 미사용)',
+        };
+      } else {
       const { buildClient, isBackendConfigured } = require('./src/agent/llmClient');
       if (!isBackendConfigured('lsap')) {
         // 로컬 LLM(LSAP/ollama) 미설정 → mock 기본으로 대체 (망분리라 외부 대체 없음)
@@ -4281,6 +4292,7 @@ app.post('/adhoc/judge', auth.requireRole('admin', 'operator'), adhocUpload.sing
       } else {
         const client = buildClient('lsap');
         result = await adhocJudge.llmJudge(raw, instruction, client);
+      }
       }
     } else {
       result = adhocJudge.mockJudge(raw, instruction);
