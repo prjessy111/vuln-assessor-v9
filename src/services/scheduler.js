@@ -174,6 +174,8 @@ function getTargetServersFromFile() {
       password: _decryptCsvSecret(parts[4]),
       asset_no: parts[5] || parts[0],
       server_id: parts[6] || parts[1],
+      // 8번째 컬럼(선택): Windows 원격 방식 'winrm'(기본) | 'ssh'(OpenSSH)
+      transport: (parts[7] || '').toLowerCase(),
     }));
 }
 

@@ -83,6 +83,8 @@
       "deployScript": "Deploy Script",
       "workDir": "Remote working folder (empty = per-OS default)",
       "workDirPh": "e.g. C:\\Windows\\Temp or /tmp",
+      "winTransport": "Windows remote transport",
+      "winTransportDefault": "Default (server setting / WinRM)",
       "submit": "Run Selected Step",
       "footNote": "<code>1. Deploy only</code> transfers files without running them. Standard mode auto-selects the per-OS standard check script, so mixed Windows/Linux selections each get the right script.",
       "recentJobs": "Recent Script Deploy Jobs ({n})",

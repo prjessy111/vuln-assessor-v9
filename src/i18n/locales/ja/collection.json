@@ -83,6 +83,8 @@
       "deployScript": "配布 Script",
       "workDir": "リモート作業フォルダ (空欄でOS別既定値)",
       "workDirPh": "例: C:\\Windows\\Temp または /tmp",
+      "winTransport": "Windows リモート方式",
+      "winTransportDefault": "デフォルト（サーバー設定 / WinRM）",
       "submit": "選択段階を実行",
       "footNote": "<code>1. 配布のみ</code>はファイル転送後に実行しません。標準モードはOS別標準点検スクリプトを自動使用するため、Windows/Linuxサーバーを混在選択しても各自に合ったスクリプトで配布されます。",
       "recentJobs": "最近のScript配布ジョブ ({n}件)",

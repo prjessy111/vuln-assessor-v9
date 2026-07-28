@@ -289,6 +289,16 @@
       <input type="text" name="remote_work_dir" placeholder="<%= t('collection.idx.deploy.workDirPh') %>">
     </label>
 
+    <!-- 공통: Windows 원격 방식 (Linux 대상은 항상 SSH — 이 옵션 무시) -->
+    <label style="grid-column:3 / span 2;">
+      <span class="small muted"><%= t('collection.idx.deploy.winTransport') %></span>
+      <select name="remote_transport">
+        <option value=""><%= t('collection.idx.deploy.winTransportDefault') %></option>
+        <option value="winrm">WinRM</option>
+        <option value="ssh">SSH (OpenSSH)</option>
+      </select>
+    </label>
+
     <div style="grid-column:1 / span 4;text-align:right;">
       <button type="submit" class="btn primary" style="background:#0984e3;border-color:#0984e3;"><%= t('collection.idx.deploy.submit') %></button>
     </div>

@@ -229,7 +229,23 @@ async function uploadPackageFiles(conn, target, packageRoot, files, remoteDir) {
   }
 }
 
-function resolveTarget(server) {
+// Windows 원격 전송 방식: 'winrm'(기본) | 'ssh'(OpenSSH).
+// 우선순위: opts > server 필드(servers.csv transport 컬럼 등) > 환경변수 > 기본 winrm.
+function resolveWindowsTransport(server = {}, opts = {}) {
+  const raw = String(
+    opts.transport ||
+    opts.windowsTransport ||
+    opts.windows_transport ||
+    server.transport ||
+    server.windows_transport ||
+    server.win_transport ||
+    process.env.SCRIPT_DEPLOY_WINDOWS_TRANSPORT ||
+    'winrm'
+  ).trim().toLowerCase();
+  return (raw === 'ssh' || raw === 'openssh' || raw === 'sftp') ? 'ssh' : 'winrm';
+}
+
+function resolveTarget(server, opts = {}) {
   let decrypted = null;
   if (!server.password && !server.ssh_password && server.ssh_password_enc) {
     try {
@@ -244,12 +260,13 @@ function resolveTarget(server) {
   const password = server.password || server.ssh_password || decrypted;
   const port = Number(server.ssh_port || server.port || 22);
   const isWindows = os.includes('win');
+  const transport = isWindows ? resolveWindowsTransport(server, opts) : 'ssh';
   const winrmPort = Number(server.winrm_port || server.winrmPort || server.remote_port || (server.port && isWindows ? server.port : 5985));
 
   if (!host) throw new Error('원격 실행 대상 IP/host가 없습니다.');
   if (!username) throw new Error('원격 실행 사용자(username/ssh_user)가 없습니다.');
-  if (isWindows && !password) throw new Error('Windows WinRM 인증 정보(password)가 없습니다.');
-  if (!isWindows && !password && !server.ssh_key_path) throw new Error('원격 실행 인증 정보(password 또는 ssh_key_path)가 없습니다.');
+  if (isWindows && transport === 'winrm' && !password) throw new Error('Windows WinRM 인증 정보(password)가 없습니다.');
+  if (transport === 'ssh' && !password && !server.ssh_key_path) throw new Error('원격 실행 인증 정보(password 또는 ssh_key_path)가 없습니다.');
 
   return {
     host,
@@ -261,6 +278,7 @@ function resolveTarget(server) {
     privateKeyPath: server.ssh_key_path || null,
     os,
     isWindows,
+    transport,
   };
 }
 
@@ -743,10 +761,11 @@ async function runWindowsWinRmScriptDeployment(server, localScriptPath, opts = {
 }
 
 async function runDirectScriptDeployment(server, localScriptPath, opts = {}) {
-  const target = resolveTarget(server);
-  if (target.isWindows) {
+  const target = resolveTarget(server, opts);
+  if (target.isWindows && target.transport === 'winrm') {
     return runWindowsWinRmScriptDeployment(server, localScriptPath, opts);
   }
+  // Windows + transport=ssh 는 아래 SSH/SFTP 경로로 진행 (OpenSSH Server 필요)
   const hostname = server.hostname || server.name || target.host;
   const jobId = opts.jobId || `direct-${Date.now()}`;
   const localXmlPath = localResultPath(hostname);
@@ -766,9 +785,11 @@ async function runDirectScriptDeployment(server, localScriptPath, opts = {}) {
     await onProgress(20, 'remote workspace preparing');
     let remoteDir;
     if (target.isWindows) {
-      const r = await exec(conn, `powershell -NoProfile -Command "$d = Join-Path $env:TEMP ${quotePs(`vuln-assessor-${jobId}`)}; New-Item -ItemType Directory -Force -Path $d | Out-Null; $d"`);
-      if (r.code !== 0 || !r.stdout.trim()) throw new Error(`Windows 원격 작업 폴더 생성 실패: ${r.stderr || r.stdout}`);
-      remoteDir = r.stdout.trim().split(/\r?\n/).pop();
+      // OpenSSH 기본 셸(cmd.exe) 기준 — powershell 호출로 폴더 생성. 경로는 WinRM 경로와 동일 규약.
+      const winDirAbs = winPathJoin(resolveWindowsRemoteBaseDir(server, opts), `vuln-assessor-${jobId}`);
+      const r = await exec(conn, `powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path ${quotePs(winDirAbs)} | Out-Null"`);
+      if (r.code !== 0) throw new Error(`Windows 원격 작업 폴더 생성 실패: ${r.stderr || r.stdout}`);
+      remoteDir = winDirAbs;
     } else {
       remoteDir = `${resolveUnixRemoteBaseDir(server, opts)}/vuln-assessor-${jobId}`;
       const r = await exec(conn, `mkdir -p ${quoteSh(remoteDir)}`);
@@ -805,14 +826,19 @@ async function runDirectScriptDeployment(server, localScriptPath, opts = {}) {
         stderr: '',
         exit_code: null,
         deployed_only: true,
+        transport: target.isWindows ? 'ssh' : undefined,
       };
     }
 
+    // fsi .ps1 스크립트는 -OutputDir 를 기대 → WinRM 경로와 동일하게 주입(opts.noOutputDirArg 로 생략 가능)
+    const winScriptArgs = (target.isWindows && payload.ext === '.ps1' && !opts.noOutputDirArg)
+      ? addPowerShellOutputDirArg(opts.scriptArgs, remoteWorkDir)
+      : opts.scriptArgs;
     const runCmd = target.isWindows
-      ? windowsRunCommand(remoteWorkDir, remoteScript, payload.ext, opts.scriptArgs)
+      ? windowsRunCommand(remoteWorkDir, remoteScript, payload.ext, winScriptArgs)
       : unixRunCommand(remoteWorkDir, remoteScript, payload.ext, opts.scriptArgs);
     await onProgress(45, 'script executing');
-    const runResult = await exec(conn, runCmd, { timeout: opts.timeout || 300000 });
+    const runResult = await exec(conn, runCmd, { timeout: opts.timeout || (target.isWindows ? 900000 : 300000) });
     if (runResult.code !== 0) {
       throw new Error(`원격 Script 실행 실패(exit ${runResult.code}): ${runResult.stderr || runResult.stdout}`);
     }
@@ -847,6 +873,7 @@ async function runDirectScriptDeployment(server, localScriptPath, opts = {}) {
       stdout: runResult.stdout,
       stderr: runResult.stderr,
       exit_code: runResult.code,
+      transport: target.isWindows ? 'ssh' : undefined,
     };
     });
   } finally {
@@ -861,4 +888,5 @@ module.exports = {
   prepareDeployPayload,
   cleanupDeployPayload,
   resolveTarget,
+  resolveWindowsTransport,
 };

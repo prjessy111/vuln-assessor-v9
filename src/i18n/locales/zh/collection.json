@@ -83,6 +83,8 @@
       "deployScript": "部署 Script",
       "workDir": "远程工作目录 (留空为按OS默认值)",
       "workDirPh": "例如: C:\\Windows\\Temp 或 /tmp",
+      "winTransport": "Windows 远程方式",
+      "winTransportDefault": "默认（服务器设置 / WinRM）",
       "submit": "执行所选阶段",
       "footNote": "<code>1. 仅部署</code>仅传输文件不执行。标准模式自动使用按OS的标准检查脚本，混合选择Windows/Linux服务器也会分别部署合适的脚本。",
       "recentJobs": "最近的Script部署任务 ({n}个)",

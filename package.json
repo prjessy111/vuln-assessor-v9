@@ -1,6 +1,6 @@
 {
   "name": "adv",
-  "version": "9.15.0",
+  "version": "9.16.0",
   "description": "ADV (AI Diagnosis Verify) — OS 컴플라이언스 + 설치자산/OSS 라이브러리 CVE + AI 정합성 검증",
   "main": "server-mock.js",
   "scripts": {

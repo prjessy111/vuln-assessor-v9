@@ -911,6 +911,10 @@ function findServerForUpload(serverId, hostname) {
         os: csvHit.os,
         os_type: csvHit.os,
       };
+      // 8번째 컬럼(선택): Windows 원격 방식 winrm | ssh
+      if (csvHit.transport === 'winrm' || csvHit.transport === 'ssh') {
+        csvServer.transport = csvHit.transport;
+      }
       server = server ? { ...server, ...csvServer } : csvServer;
     }
   } catch (_) {}
@@ -935,6 +939,11 @@ function withScriptDeployAuthOverrides(server, body = {}) {
   const password = String(body.remote_password || '');
   const sshKeyPath = String(body.remote_ssh_key_path || '').trim();
   const port = String(body.remote_port || '').trim();
+  // Windows 원격 방식 오버라이드: 'winrm' | 'ssh' (미지정 시 서버 설정/기본값 사용)
+  const transport = String(body.remote_transport || '').trim().toLowerCase();
+  if (transport === 'winrm' || transport === 'ssh') {
+    target.transport = transport;
+  }
 
   if (username) {
     target.username = username;
