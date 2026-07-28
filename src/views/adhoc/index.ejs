@@ -9,9 +9,14 @@
   <div class="section-box">
     <h3><%= t('adhoc.instructionLabel') %></h3>
     <p class="muted small"><%= t('adhoc.instructionHint') %></p>
-    <div style="margin-bottom:8px;">
+    <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
       <span class="muted small"><%= t('adhoc.presetLabel') %>:</span>
       <button type="button" class="btn-sm" onclick="document.querySelector('[name=instruction]').value=<%- JSON.stringify(t('adhoc.presetAdText')) %>;"><%= t('adhoc.presetAd') %></button>
+      <button type="button" class="btn-sm" onclick="document.querySelector('[name=instruction]').value=<%- JSON.stringify(t('adhoc.presetLinuxText')) %>;"><%= t('adhoc.presetLinux') %></button>
+      <button type="button" class="btn-sm" onclick="document.querySelector('[name=instruction]').value=<%- JSON.stringify(t('adhoc.presetWinText')) %>;"><%= t('adhoc.presetWin') %></button>
+      <button type="button" class="btn-sm" onclick="document.querySelector('[name=instruction]').value=<%- JSON.stringify(t('adhoc.presetSvcText')) %>;"><%= t('adhoc.presetSvc') %></button>
+      <button type="button" class="btn-sm" onclick="document.querySelector('[name=instruction]').value=<%- JSON.stringify(t('adhoc.presetWasText')) %>;"><%= t('adhoc.presetWas') %></button>
+      <button type="button" class="btn-sm" onclick="var el=document.querySelector('[name=instruction]'); var s=<%- JSON.stringify(t('adhoc.presetStrictText')) %>; el.value = el.value ? (el.value.replace(/\s+$/,'') + '\n' + s) : s;"><%= t('adhoc.presetStrict') %></button>
     </div>
     <textarea name="instruction" rows="4" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:8px;"
       placeholder="<%= t('adhoc.instructionPh') %>"><%= input && input.instruction ? input.instruction : '' %></textarea>
