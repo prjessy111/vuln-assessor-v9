@@ -23,6 +23,8 @@
   "noFindings": "未发现风险信号。",
   "summaryLabel": "摘要",
   "presetLabel": "预设",
+  "progressMsg": "判定进行中… 本地LLM可能需要30秒~2分钟。完成后结果将显示在下方。",
+  "progressElapsed": "已用",
   "presetAd": "🏢 AD域控制器",
   "presetAdText": "检查AD域控制器(ad_collect.ps1结果): 密码策略(长度/复杂度/过期/可逆加密/锁定)、Guest/Administrator账户、Domain Admins特权过多、PASSWD_NOTREQD/DONT_EXPIRE_PASSWD/DONT_REQ_PREAUTH账户、krbtgt经过、机器账户配额、SMB1/SMB签名、WDigest/匿名访问/LM哈希/NTLM级别、DC Spooler、GPP cpassword、SID History、无约束委派。",
   "presetLinux": "🐧 Linux 账户·SSH",

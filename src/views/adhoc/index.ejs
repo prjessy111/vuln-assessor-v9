@@ -64,8 +64,46 @@
       <button type="submit" class="btn primary"><%= t('adhoc.judgeBtn') %></button>
       <button type="submit" class="btn" formaction="/adhoc/report" title="판정 결과를 기존 리포트(HTML/XLSX/인쇄PDF)로 생성"><%= t('adhoc.reportBtn') %></button>
     </div>
+    <!-- 판정 진행바: 폼 제출(동기 POST) 동안 소프트 진행 표시 — 응답이 오면 페이지가 교체되며 사라짐 -->
+    <div id="adhocProgress" style="display:none;margin-top:12px;">
+      <div style="background:#e8ecef;border-radius:6px;overflow:hidden;height:14px;">
+        <div id="adhocProgressFill" style="height:100%;width:4%;background:linear-gradient(90deg,#2980b9,#5dade2);transition:width .9s;"></div>
+      </div>
+      <div id="adhocProgressMsg" class="muted small" style="margin-top:5px;"></div>
+    </div>
   </div>
 </form>
+<script>
+(function () {
+  var form = document.querySelector('form[action="/adhoc/judge"]');
+  if (!form) return;
+  var MSG = <%- JSON.stringify(t('adhoc.progressMsg')) %>;
+  var ELAPSED = <%- JSON.stringify(t('adhoc.progressElapsed')) %>;
+  var timer = null;
+  form.addEventListener('submit', function () {
+    var box = document.getElementById('adhocProgress');
+    var fill = document.getElementById('adhocProgressFill');
+    var msg = document.getElementById('adhocProgressMsg');
+    var buttons = form.querySelectorAll('button[type=submit]');
+    box.style.display = 'block';
+    buttons.forEach(function (b) { b.disabled = true; });
+    var pct = 4, t0 = Date.now();
+    if (timer) clearInterval(timer);
+    timer = setInterval(function () {
+      pct = Math.min(95, pct + Math.max(0.5, (95 - pct) * 0.06));
+      fill.style.width = pct + '%';
+      msg.textContent = MSG + ' — ' + ELAPSED + ' ' + Math.round((Date.now() - t0) / 1000) + 's';
+    }, 900);
+  });
+  // 뒤로가기(bfcache) 복원 시 진행바/버튼 원복
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    if (timer) clearInterval(timer);
+    document.getElementById('adhocProgress').style.display = 'none';
+    form.querySelectorAll('button[type=submit]').forEach(function (b) { b.disabled = false; });
+  });
+})();
+</script>
 
 <% if (typeof result !== 'undefined' && result) { %>
   <div class="section-box" style="border-left:4px solid <%= result.error ? '#c0392b' : '#2980b9' %>;">

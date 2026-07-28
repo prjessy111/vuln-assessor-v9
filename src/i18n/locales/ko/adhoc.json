@@ -23,6 +23,8 @@
   "noFindings": "발견된 위험 신호가 없습니다.",
   "summaryLabel": "요약",
   "presetLabel": "프리셋",
+  "progressMsg": "판정 실행 중… 로컬 LLM은 30초~2분 정도 걸립니다. 완료되면 결과가 아래에 표시됩니다.",
+  "progressElapsed": "경과",
   "presetAd": "🏢 AD 도메인 컨트롤러",
   "presetAdText": "AD 도메인 컨트롤러(ad_collect.ps1 결과) 점검: 패스워드 정책(길이·복잡도·만료·가역암호화·계정잠금), Guest/Administrator 계정, Domain Admins 특권 과다, PASSWD_NOTREQD·DONT_EXPIRE_PASSWD·DONT_REQ_PREAUTH 계정, krbtgt 경과, 머신계정쿼터, SMB1·SMB서명, WDigest·익명접근·LM해시·NTLM수준, DC Spooler, GPP cpassword, SID History, 무제약 위임.",
   "presetLinux": "🐧 Linux 계정·SSH",

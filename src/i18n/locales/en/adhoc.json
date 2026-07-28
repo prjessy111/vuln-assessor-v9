@@ -23,6 +23,8 @@
   "noFindings": "No risk signals found.",
   "summaryLabel": "Summary",
   "presetLabel": "Preset",
+  "progressMsg": "Judging… the local LLM may take 30s–2min. Results will appear below when done.",
+  "progressElapsed": "elapsed",
   "presetAd": "🏢 AD Domain Controller",
   "presetAdText": "Assess an AD domain controller (ad_collect.ps1 output): password policy (length/complexity/expiry/reversible encryption/lockout), Guest/Administrator accounts, excessive Domain Admins, PASSWD_NOTREQD/DONT_EXPIRE_PASSWD/DONT_REQ_PREAUTH accounts, krbtgt age, machine account quota, SMB1/SMB signing, WDigest/anonymous access/LM hash/NTLM level, DC Print Spooler, GPP cpassword, SID History, unconstrained delegation.",
   "presetLinux": "🐧 Linux accounts & SSH",

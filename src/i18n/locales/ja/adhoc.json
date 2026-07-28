@@ -23,6 +23,8 @@
   "noFindings": "検出されたリスク信号はありません。",
   "summaryLabel": "要約",
   "presetLabel": "プリセット",
+  "progressMsg": "判定実行中… ローカルLLMは30秒~2分ほどかかります。完了すると結果が下に表示されます。",
+  "progressElapsed": "経過",
   "presetAd": "🏢 ADドメインコントローラ",
   "presetAdText": "ADドメインコントローラ(ad_collect.ps1結果)の点検: パスワードポリシー(長さ・複雑性・有効期限・可逆暗号化・ロックアウト)、Guest/Administratorアカウント、Domain Admins特権過多、PASSWD_NOTREQD/DONT_EXPIRE_PASSWD/DONT_REQ_PREAUTHアカウント、krbtgt経過、マシンアカウントクォータ、SMB1/SMB署名、WDigest/匿名アクセス/LMハッシュ/NTLMレベル、DC Spooler、GPP cpassword、SID History、無制約委任。",
   "presetLinux": "🐧 Linux アカウント・SSH",
