@@ -53,6 +53,27 @@ win-01,10.10.20.6,windows,Administrator,&lt;비번&gt;,SVR-2026-0002</pre>
     <li>오프라인 회수(WinRM 불가 환경)도 병행 가능: 대상에서 <code>powershell -ExecutionPolicy Bypass -File .\fsi_win_ai.ps1</code> 실행 후 <a href="/diagnosis/upload">진단 관리 → 파일 업로드</a>.</li>
   </ul>
 
+  <h4 style="color:#2980b9;">🪟 Windows — SSH(OpenSSH) 원격 연동 (v9.16+, WinRM 대안)</h4>
+  <ul>
+    <li>Windows 대상도 <b>SSH(OpenSSH Server, 22/tcp)</b>로 배포·실행·회수 가능 — Linux와 동일한 SSH/SFTP 경로. <b>TrustedHosts 등록 불필요</b>, <b>키 인증도 지원</b>(비밀번호 필수 아님).</li>
+    <li><b>ADV 설정 (셋 중 하나, 미지정 시 WinRM 기본)</b>:
+      <ol style="margin:4px 0 4px 18px;">
+        <li><a href="/collection">수집 관리</a> 배포 폼 → <b>"Windows 원격 방식"</b> 셀렉트 = <code>SSH (OpenSSH)</code> — 일회성</li>
+        <li><code>servers.csv</code> <b>8번째 컬럼</b>에 <code>ssh</code> — 서버별 고정 (예: <code>host,ip,windows,user,pw,자산번호,ID,<b>ssh</b></code>)</li>
+        <li><code>.env</code>에 <code>SCRIPT_DEPLOY_WINDOWS_TRANSPORT=ssh</code> — 전체 기본값 변경</li>
+      </ol></li>
+    <li><b>대상 서버 OpenSSH 준비 (OS 버전별)</b>:
+      <table class="data-table" style="margin:6px 0;">
+        <thead><tr><th>대상 OS</th><th>설치 방법</th></tr></thead>
+        <tbody>
+          <tr><td><b>Server 2025</b></td><td>OpenSSH <b>기본 포함</b> — 서비스만 켜면 됨: <code>Set-Service sshd -StartupType Automatic; Start-Service sshd</code> + 방화벽 22 허용</td></tr>
+          <tr><td><b>Server 2019/2022 · Win10 1809+</b></td><td><code>Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0</code> → 서비스 시작·자동시작 + 방화벽 22</td></tr>
+          <tr><td><b>Server 2016 이하 (2012 R2 포함)</b></td><td>Windows Capability 미지원 → <b>GitHub Win32-OpenSSH zip 설치</b> (PS 4.0은 <code>Expand-Archive</code>도 없어 .NET ZipFile 사용). 상세 절차 = <a href="/guides?f=사전작업.md">가이드 → 사전작업 부록 C</a>. WinRM이 되는 서버면 <b>컨트롤러에서 원격 설치</b> 가능(zip은 SMB C$ 복사).</td></tr>
+        </tbody>
+      </table></li>
+    <li>✔ 실측: 110.91(Server 2012 R2 DC)에 OpenSSH 10.0p2 원격 설치 후 표준 점검 SSH 배포→실행→회수 92초 성공(127항목).</li>
+  </ul>
+
   <h4 style="color:#16a085;">🗄️ DB (MSSQL/MySQL/Oracle)</h4>
   <ul>
     <li>전용 스크립트(<code>fsi_mssql_ai.ps1</code> / <code>fsi_mysql_ai.sh</code> / <code>fsi_oracle_ai.sh</code>)에 DB 접속정보를 넘겨 수집합니다.</li>
@@ -77,8 +98,8 @@ win-01,10.10.20.6,windows,Administrator,&lt;비번&gt;,SVR-2026-0002</pre>
     </thead>
     <tbody>
       <tr><td><%= t('help.row.script') %></td><td>fsi_unix_ai.sh</td><td>fsi_win_ai.ps1</td><td>fsi_mssql/mysql/oracle</td><td>ad_collect.ps1</td></tr>
-      <tr><td><%= t('help.row.conn') %></td><td><b>SSH 22 (자동)</b></td><td><b>WinRM 5985 (자동)</b></td><td>DB 계정</td><td><b>DC 로컬 실행</b> (원격=더블홉 실패)</td></tr>
-      <tr><td>사전 필요</td><td>sshd·계정·(sudo)</td><td>컨트롤러 TrustedHosts + 대상 5985</td><td>DB 접속정보</td><td>DC 관리자 권한 + AD 모듈</td></tr>
+      <tr><td><%= t('help.row.conn') %></td><td><b>SSH 22 (자동)</b></td><td><b>WinRM 5985 또는 SSH 22 (자동, 선택)</b></td><td>DB 계정</td><td><b>DC 로컬 실행</b> (원격=더블홉 실패)</td></tr>
+      <tr><td>사전 필요</td><td>sshd·계정·(sudo)</td><td>WinRM: 컨트롤러 TrustedHosts + 대상 5985 / SSH: 대상 OpenSSH(22)</td><td>DB 접속정보</td><td>DC 관리자 권한 + AD 모듈</td></tr>
       <tr><td><%= t('help.row.result') %></td><td>XML</td><td>XML</td><td>XML</td><td><b>JSON</b></td></tr>
       <tr><td><%= t('help.row.judge') %></td><td>진단 업로드/자동</td><td>진단 업로드/원격 자동</td><td>진단 업로드</td><td>DC 로컬 실행 → 결과 판정·리포트</td></tr>
     </tbody>
@@ -93,9 +114,9 @@ win-01,10.10.20.6,windows,Administrator,&lt;비번&gt;,SVR-2026-0002</pre>
     <thead><tr><th>단계</th><th>🐧 Linux</th><th>🪟 Windows (AD 포함)</th></tr></thead>
     <tbody>
       <tr><td>1. 등록</td><td colspan="2">servers.csv 에 <code>hostname,ip,os,user,password</code> (os=linux/windows 정확히)</td></tr>
-      <tr><td>2. 접속</td><td>SSH 22</td><td>WinRM 5985 (네이티브 Invoke-Command/Negotiate)</td></tr>
-      <tr><td>3. 컨트롤러</td><td>(없음)</td><td><b>TrustedHosts 에 대상 IP 등록</b> → <code>Restart-Service WinRM</code></td></tr>
-      <tr><td>4. 대상</td><td>sshd 기동·계정 허용·(파일점검 시 sudo)</td><td><code>Enable-PSRemoting -Force</code> + 방화벽 5985</td></tr>
+      <tr><td>2. 접속</td><td>SSH 22</td><td>WinRM 5985 (기본) 또는 <b>SSH 22</b> (csv 8컬럼 <code>ssh</code>)</td></tr>
+      <tr><td>3. 컨트롤러</td><td>(없음)</td><td>WinRM: <b>TrustedHosts 에 대상 IP 등록</b> → <code>Restart-Service WinRM</code> / SSH: (없음)</td></tr>
+      <tr><td>4. 대상</td><td>sshd 기동·계정 허용·(파일점검 시 sudo)</td><td>WinRM: <code>Enable-PSRemoting -Force</code> + 방화벽 5985 / SSH: OpenSSH Server + 방화벽 22</td></tr>
       <tr><td>5. 검증</td><td><code>ssh user@ip 'hostname;id'</code></td><td><code>Invoke-Command -ComputerName ip -Credential $c -ScriptBlock {hostname}</code></td></tr>
       <tr><td>6. 반영</td><td colspan="2">앱(node) 재시작 → 수집·진단</td></tr>
     </tbody>
