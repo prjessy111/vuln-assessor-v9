@@ -9,29 +9,49 @@
   <div class="section-box">
     <h3><%= t('adhoc.instructionLabel') %></h3>
     <p class="muted small"><%= t('adhoc.instructionHint') %></p>
+    <div id="adhocPresetBar" style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+      <span class="muted small"><%= t('adhoc.presetLabel') %>:</span>
+      <button type="button" class="btn-sm" data-preset="ad"><%= t('adhoc.presetAd') %></button>
+      <button type="button" class="btn-sm" data-preset="linux"><%= t('adhoc.presetLinux') %></button>
+      <button type="button" class="btn-sm" data-preset="win"><%= t('adhoc.presetWin') %></button>
+      <button type="button" class="btn-sm" data-preset="svc"><%= t('adhoc.presetSvc') %></button>
+      <button type="button" class="btn-sm" data-preset="was"><%= t('adhoc.presetWas') %></button>
+      <button type="button" class="btn-sm" data-preset="strict" data-append="1"><%= t('adhoc.presetStrict') %></button>
+    </div>
     <script>
-      // 프리셋 적용: 지침 채우기 + 판정 백엔드를 로컬 LLM으로 자동 전환(지침은 LLM 판정에서만 해석됨)
-      function adhocApplyPreset(text, append) {
+    // 프리셋 문구 — onclick 속성에 넣으면 따옴표가 HTML 을 깨므로 script 블록에서 안전하게 주입
+    var ADHOC_PRESETS = <%- JSON.stringify({
+      ad: t('adhoc.presetAdText'),
+      linux: t('adhoc.presetLinuxText'),
+      win: t('adhoc.presetWinText'),
+      svc: t('adhoc.presetSvcText'),
+      was: t('adhoc.presetWasText'),
+      strict: t('adhoc.presetStrictText'),
+    }).replace(/</g, '\\u003c') %>;
+    // 적용: 지침 채우기(깜빡임+포커스) + 판정 백엔드를 로컬 LLM 으로 자동 전환(지침은 LLM 판정에서만 해석됨)
+    document.querySelectorAll('#adhocPresetBar [data-preset]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = ADHOC_PRESETS[btn.getAttribute('data-preset')] || '';
         var el = document.querySelector('[name=instruction]');
+        var append = btn.hasAttribute('data-append');
         el.value = (append && el.value) ? (el.value.replace(/\s+$/, '') + '\n' + text) : text;
+        el.style.transition = 'background .25s';
+        el.style.background = '#fff9d6';
+        setTimeout(function () { el.style.background = ''; }, 1000);
+        el.focus();
         var local = document.querySelector('input[name=backend][value=local]');
         if (local && !local.checked) {
           local.checked = true;
-          local.closest('label').style.transition = 'background .2s';
-          local.closest('label').style.background = '#fff9d6';
-          setTimeout(function(){ local.closest('label').style.background = ''; }, 1200);
+          var lbl = local.closest('label');
+          if (lbl) {
+            lbl.style.transition = 'background .25s';
+            lbl.style.background = '#fff9d6';
+            setTimeout(function () { lbl.style.background = ''; }, 1200);
+          }
         }
-      }
+      });
+    });
     </script>
-    <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
-      <span class="muted small"><%= t('adhoc.presetLabel') %>:</span>
-      <button type="button" class="btn-sm" onclick="adhocApplyPreset(<%- JSON.stringify(t('adhoc.presetAdText')) %>)"><%= t('adhoc.presetAd') %></button>
-      <button type="button" class="btn-sm" onclick="adhocApplyPreset(<%- JSON.stringify(t('adhoc.presetLinuxText')) %>)"><%= t('adhoc.presetLinux') %></button>
-      <button type="button" class="btn-sm" onclick="adhocApplyPreset(<%- JSON.stringify(t('adhoc.presetWinText')) %>)"><%= t('adhoc.presetWin') %></button>
-      <button type="button" class="btn-sm" onclick="adhocApplyPreset(<%- JSON.stringify(t('adhoc.presetSvcText')) %>)"><%= t('adhoc.presetSvc') %></button>
-      <button type="button" class="btn-sm" onclick="adhocApplyPreset(<%- JSON.stringify(t('adhoc.presetWasText')) %>)"><%= t('adhoc.presetWas') %></button>
-      <button type="button" class="btn-sm" onclick="adhocApplyPreset(<%- JSON.stringify(t('adhoc.presetStrictText')) %>, true)"><%= t('adhoc.presetStrict') %></button>
-    </div>
     <textarea name="instruction" rows="4" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:8px;"
       placeholder="<%= t('adhoc.instructionPh') %>"><%= input && input.instruction ? input.instruction : '' %></textarea>
   </div>
