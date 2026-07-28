@@ -186,6 +186,31 @@ case "$FSI_LASTLOG_LIMIT" in ''|*[!0-9]*) FSI_LASTLOG_LIMIT=200 ;; esac
 FSI_CONFIG_LABEL="${FSI_CONFIG_PATH:-none}"
 FSI_SCAN_SCOPE="home=${FSI_HOME_SCAN_DIRS:-auto};etc=$FSI_ETC_SCAN_DIRS;dev=$FSI_DEV_SCAN_DIRS;netstat_limit=$FSI_NETSTAT_LIMIT;ps_limit=$FSI_PS_LIMIT;last_limit=$FSI_LAST_LIMIT"
 #------------------------------------------------------------
+# net-tools 폴백 (Ubuntu 18.04+ 등 netstat/ifconfig 미설치 환경)
+#  - netstat 부재 시 ss 출력을 netstat 컬럼 순서(1:Proto 2:Recv-Q 3:Send-Q 4:Local 5:Foreign 6:State)로 재배열
+#    → 기존 파서(arrTcpPort/arrUdpPort/CheckService: $1=proto, $4=local, LISTEN 필터)와 호환 유지
+#  - "-i"(인터페이스 통계)는 ss 미지원 → ip -s link 원문으로 대체(증적용)
+if ! command -v netstat >/dev/null 2>&1 && command -v ss >/dev/null 2>&1; then
+	netstat() {
+		case "$*" in
+			*-i*)
+				ip -s link 2>/dev/null
+				return ;;
+		esac
+		ss "$@" 2>/dev/null | awk 'NR>1 {
+			state=$2
+			if (state=="UNCONN") state=""
+			else if (state=="ESTAB") state="ESTABLISHED"
+			rest=""
+			for (i=7; i<=NF; i++) rest=rest" "$i
+			printf "%-6s %6s %6s %-24s %-24s %-12s%s\n", $1, $3, $4, $5, $6, state, rest
+		}'
+	}
+fi
+if ! command -v ifconfig >/dev/null 2>&1 && command -v ip >/dev/null 2>&1; then
+	ifconfig() { ip addr 2>/dev/null; }
+fi
+#------------------------------------------------------------
 # Default Value Setting
 CMD_CPUINFO="cat /proc/cpuinfo"
 CMD_CPUSTAT="cat /proc/stat"
@@ -365,9 +390,10 @@ elif [ $OS = "Linux" ]; then
 	CMD_LOGIN3="grep LOG_OK_LOGINS /etc/login.defs"
 	CMD_LOGIN4="grep LOGIN_RETRIES /etc/login.defs"
 	CMD_LOGIN5="grep LOGIN_TIMEOUT /etc/login.defs"
-	CMD_PAM1="grep minlen /etc/pam.d/system-auth"
-	CMD_PAM2="grep credit /etc/pam.d/system-auth"
-	CMD_PAM3="grep retry /etc/pam.d/system-auth"
+	# RHEL 계열=system-auth, Debian/Ubuntu 계열=common-password (없는 파일은 grep 에러가 stderr 로만 감)
+	CMD_PAM1="grep minlen /etc/pam.d/system-auth /etc/pam.d/common-password"
+	CMD_PAM2="grep credit /etc/pam.d/system-auth /etc/pam.d/common-password"
+	CMD_PAM3="grep retry /etc/pam.d/system-auth /etc/pam.d/common-password"
 	CMD_INETD_LOG="egrep 'log_Type|log_on_success|log_on_failure' \
 		/etc/xinetd.conf /etc/xinetd.d/*"
 	CMD_RLOGIN=""
