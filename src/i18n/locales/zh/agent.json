@@ -79,7 +79,7 @@
     "blockedNoApprove": "blocked脚本不可批准",
     "btnReject": "拒绝",
     "btnRegenerate": "重新生成",
-    "runOnTargetTitle": "③-A 在目标上自动执行 (Linux=SSH / Windows=WinRM)",
+    "runOnTargetTitle": "③-A 在目标上自动执行 (Linux=SSH / Windows=WinRM·SSH)",
     "confirmRun": "将在目标服务器上执行已批准的脚本。是否继续？",
     "selectServer": "— 选择目标服务器 —",
     "autoJudge": "执行后自动判定",

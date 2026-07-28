@@ -79,7 +79,7 @@
     "blockedNoApprove": "blocked 스크립트는 승인 불가",
     "btnReject": "거부",
     "btnRegenerate": "재생성",
-    "runOnTargetTitle": "③-A 대상에서 자동 실행 (Linux=SSH / Windows=WinRM)",
+    "runOnTargetTitle": "③-A 대상에서 자동 실행 (Linux=SSH / Windows=WinRM·SSH)",
     "confirmRun": "승인된 스크립트를 대상 서버에서 실행합니다. 진행할까요?",
     "selectServer": "— 대상 서버 선택 —",
     "autoJudge": "실행 후 자동 판정",

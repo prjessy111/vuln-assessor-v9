@@ -79,7 +79,7 @@
     "blockedNoApprove": "blockedスクリプトは承認不可",
     "btnReject": "拒否",
     "btnRegenerate": "再生成",
-    "runOnTargetTitle": "③-A 対象で自動実行 (Linux=SSH / Windows=WinRM)",
+    "runOnTargetTitle": "③-A 対象で自動実行 (Linux=SSH / Windows=WinRM·SSH)",
     "confirmRun": "承認されたスクリプトを対象サーバーで実行します。続行しますか？",
     "selectServer": "— 対象サーバー選択 —",
     "autoJudge": "実行後に自動判定",

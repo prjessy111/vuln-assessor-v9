@@ -79,7 +79,7 @@
     "blockedNoApprove": "Blocked scripts cannot be approved",
     "btnReject": "Reject",
     "btnRegenerate": "Regenerate",
-    "runOnTargetTitle": "③-A Auto-run on target (Linux=SSH / Windows=WinRM)",
+    "runOnTargetTitle": "③-A Auto-run on target (Linux=SSH / Windows=WinRM·SSH)",
     "confirmRun": "The approved script will run on the target server. Proceed?",
     "selectServer": "— Select target server —",
     "autoJudge": "Auto-judge after run",
