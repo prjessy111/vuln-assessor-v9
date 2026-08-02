@@ -608,7 +608,7 @@ function buildAgentGrades() {
   const verdictOf = (r) => r.status || r.ai_verdict;
   const letter = (p) => p == null ? '-' : p >= 90 ? 'A' : p >= 80 ? 'B' : p >= 70 ? 'C' : p >= 60 ? 'D' : 'F';
   return servers.map(s => {
-    const ds = diagnoses.filter(d => d.hostname === s.hostname).sort((a, b) => ts(b) - ts(a));
+    const ds = diagnoses.filter(d => diagBelongsToServer(d, s)).sort((a, b) => ts(b) - ts(a));
     const latest = ds[0];
     const results = latest ? (latest.results || []) : [];
     const total = results.length;
@@ -663,7 +663,7 @@ function buildServerHistory(host) {
   const ts = (d) => { const t = d.executed_at || d.completed_at || d.started_at; return t ? new Date(String(t).replace(' ', 'T')).getTime() : 0; };
   const verdictOf = (r) => r.status || r.ai_verdict;
   const rows = (loadMock('diagnoses') || [])
-    .filter(d => d.hostname === host)
+    .filter(d => diagBelongsToServer(d, server) || d.hostname === host)
     .sort((a, b) => ts(b) - ts(a))
     .map(d => {
       const results = d.results || [];
@@ -880,6 +880,16 @@ function resolveCveSource(diag, server) {
 
   // 4) 데이터 없음
   return { platform: osType.includes('win') ? 'windows' : 'linux', kind: null, path: null };
+}
+
+// 진단 이력 매칭: server_id(불변키) 우선, 없을 때만 hostname 폴백.
+//  hostname/IP 가 바뀌어도 server_id 로 과거 이력이 이어지게 한다(숫자/문자 혼용 안전 비교).
+function diagBelongsToServer(diag, server) {
+  const sid = server && server.server_id;
+  if (sid != null && String(sid) !== '' && diag.server_id != null && String(diag.server_id) !== '') {
+    return String(diag.server_id) === String(sid);
+  }
+  return server && diag.hostname === server.hostname;
 }
 
 function findServerForUpload(serverId, hostname) {
@@ -4575,7 +4585,7 @@ function buildDashboardData() {
 
   // 서버별 최신 진단 요약
   const summaries = servers.map(s => {
-    const ds = diagnoses.filter(d => d.hostname === s.hostname).sort((a, b) => ts(b) - ts(a));
+    const ds = diagnoses.filter(d => diagBelongsToServer(d, s)).sort((a, b) => ts(b) - ts(a));
     const latest = ds[0];
     const results = latest ? (latest.results || []) : [];
     const verdictOf = (r) => r.status || r.ai_verdict;
